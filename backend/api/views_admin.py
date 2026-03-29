@@ -1748,22 +1748,19 @@ class AdminSubmissionTrendsView(APIView):
             count=Count('id')
         ).order_by('month')
         
-        months = []
-        submission_counts = []
-        accepted_counts = []
-        
         accepted_dict = {a['month']: a['count'] for a in accepted}
         
+        trends = []
         for s in submissions:
             if s['month']:
-                months.append(s['month'].strftime('%Y-%m'))
-                submission_counts.append(s['count'])
-                accepted_counts.append(accepted_dict.get(s['month'], 0))
+                trends.append({
+                    "label": s['month'].strftime('%b %Y'),
+                    "submissions": s['count'],
+                    "accepted": accepted_dict.get(s['month'], 0)
+                })
         
         return Response({
-            "months": months,
-            "submissions": submission_counts,
-            "accepted": accepted_counts
+            "trends": trends
         }, status=status.HTTP_200_OK)
 
 
@@ -1795,12 +1792,12 @@ class AdminTopReviewersView(APIView):
                     "reviewer_id": reviewer.id,
                     "name": f"{reviewer.fname or ''} {reviewer.lname or ''}".strip() or reviewer.email,
                     "email": reviewer.email,
-                    "completed_reviews": r['completed_count'],
+                    "reviews_completed": r['completed_count'],
                     "affiliation": reviewer.affiliation
                 })
         
         return Response({
-            "top_reviewers": result,
+            "reviewers": result,
             "total": len(result)
         }, status=status.HTTP_200_OK)
 
@@ -1816,15 +1813,33 @@ class AdminStatusDistributionView(APIView):
         if not check_admin_role(request.user):
             return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
         
+        STATUS_COLORS = {
+            'submitted': '#3B82F6',
+            'under_review': '#F59E0B',
+            'accepted': '#10B981',
+            'rejected': '#EF4444',
+            'published': '#8B5CF6',
+            'revision_requested': '#06B6D4',
+            'withdrawn': '#6B7280',
+            'pending': '#F97316',
+        }
+        
         distribution = Paper.objects.values('status').annotate(
             count=Count('id')
         ).order_by('status')
         
-        result = {d['status']: d['count'] for d in distribution if d['status']}
+        result = []
+        for d in distribution:
+            if d['status']:
+                result.append({
+                    "status": d['status'],
+                    "count": d['count'],
+                    "color": STATUS_COLORS.get(d['status'], '#6B7280')
+                })
         
         return Response({
             "distribution": result,
-            "total": sum(result.values())
+            "total": sum(d['count'] for d in result)
         }, status=status.HTTP_200_OK)
 
 
@@ -1845,6 +1860,8 @@ class AdminJournalStatsView(APIView):
         for j in journals:
             total_submissions = Paper.objects.filter(journal=j.fld_id).count()
             accepted = Paper.objects.filter(journal=j.fld_id, status="accepted").count()
+            under_review = Paper.objects.filter(journal=j.fld_id, status="under_review").count()
+            rejected = Paper.objects.filter(journal=j.fld_id, status="rejected").count()
             published = PaperPublished.objects.filter(journal_id=j.fld_id).count()
             
             acceptance_rate = (accepted / total_submissions * 100) if total_submissions > 0 else 0
@@ -1855,12 +1872,14 @@ class AdminJournalStatsView(APIView):
                 "short_form": j.short_form,
                 "total_submissions": total_submissions,
                 "accepted": accepted,
+                "under_review": under_review,
+                "rejected": rejected,
                 "published": published,
                 "acceptance_rate": round(acceptance_rate, 1)
             })
         
         return Response({
-            "journals": result,
+            "journal_stats": result,
             "total_journals": len(result)
         }, status=status.HTTP_200_OK)
 
@@ -1896,15 +1915,15 @@ class AdminUserGrowthView(APIView):
         for g in growth:
             if g['month']:
                 month_str = g['month'].strftime('%Y-%m')
+                label = g['month'].strftime('%b %Y')
                 if month_str not in months_data:
-                    months_data[month_str] = {"total": 0}
-                role = g['role'] or 'unknown'
-                months_data[month_str][role] = g['count']
-                months_data[month_str]["total"] += g['count']
+                    months_data[month_str] = {"label": label, "new_users": 0}
+                months_data[month_str]["new_users"] += g['count']
+        
+        growth_list = [months_data[k] for k in sorted(months_data.keys())]
         
         return Response({
-            "growth_by_month": months_data,
-            "months_count": len(months_data)
+            "growth": growth_list
         }, status=status.HTTP_200_OK)
 
 
@@ -1919,27 +1938,51 @@ class AdminReviewMetricsView(APIView):
         if not check_admin_role(request.user):
             return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
         
+        total_reviews = ReviewSubmission.objects.filter(status="submitted").count()
+        
+        # Average ratings from submitted reviews
+        from django.db.models import Avg
+        averages = ReviewSubmission.objects.filter(status="submitted").aggregate(
+            avg_technical=Avg('technical_quality'),
+            avg_clarity=Avg('clarity'),
+            avg_originality=Avg('originality'),
+            avg_significance=Avg('significance'),
+        )
+        
+        average_ratings = {
+            "technical_quality": round(averages['avg_technical'] or 0, 1),
+            "clarity": round(averages['avg_clarity'] or 0, 1),
+            "originality": round(averages['avg_originality'] or 0, 1),
+            "significance": round(averages['avg_significance'] or 0, 1),
+        }
+        
+        # Recommendation distribution
+        rec_dist = ReviewSubmission.objects.filter(
+            status="submitted"
+        ).exclude(
+            recommendation__isnull=True
+        ).values('recommendation').annotate(
+            count=Count('id')
+        ).order_by('recommendation')
+        
+        recommendation_distribution = [
+            {"recommendation": r['recommendation'], "count": r['count']}
+            for r in rec_dist
+        ]
+        
+        # Also include assignment-level stats
         total_assignments = OnlineReview.objects.count()
         completed = OnlineReview.objects.filter(review_status="completed").count()
         pending = OnlineReview.objects.filter(review_status="pending").count()
-        in_progress = OnlineReview.objects.filter(review_status="in_progress").count()
-        declined = OnlineReview.objects.filter(review_status="declined").count()
-        
         completion_rate = (completed / total_assignments * 100) if total_assignments > 0 else 0
         
-        # Count overdue (due_date passed, not completed)
-        overdue = OnlineReview.objects.filter(
-            review_status__in=["pending", "in_progress"],
-            due_date__lt=datetime.utcnow()
-        ).count()
-        
         return Response({
+            "total_reviews": total_reviews,
+            "average_ratings": average_ratings,
+            "recommendation_distribution": recommendation_distribution,
             "total_assignments": total_assignments,
             "completed": completed,
             "pending": pending,
-            "in_progress": in_progress,
-            "declined": declined,
-            "overdue": overdue,
             "completion_rate": round(completion_rate, 1)
         }, status=status.HTTP_200_OK)
 

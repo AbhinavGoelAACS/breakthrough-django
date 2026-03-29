@@ -544,10 +544,12 @@ class EditorAssignReviewerView(APIView):
             return Response({"detail": "Reviewer is already assigned to this paper"}, status=status.HTTP_400_BAD_REQUEST)
             
         # Create assignment
+        from datetime import date
         new_review = OnlineReview.objects.create(
             paper_id=str(paper.id),
             reviewer_id=str(reviewer.id),
-            review_status="pending"
+            review_status="pending",
+            assigned_on=date.today()
         )
         
         paper.status = "under_review"
@@ -1319,7 +1321,8 @@ class AcceptInvitationView(APIView):
         online_review = OnlineReview.objects.create(
             paper_id=str(invitation.paper_id),
             reviewer_id=str(user.id),
-            review_status="pending" # Mocking structure
+            review_status="pending",
+            assigned_on=date.today()
         )
         
         return Response({
@@ -1395,10 +1398,12 @@ class RegisterAcceptInvitationView(APIView):
         invitation.reviewer_id = new_user.id
         invitation.save()
         
+        from datetime import date
         online_review = OnlineReview.objects.create(
             paper_id=str(invitation.paper_id),
             reviewer_id=str(new_user.id),
-            review_status="pending"
+            review_status="pending",
+            assigned_on=date.today()
         )
         
         return Response({
