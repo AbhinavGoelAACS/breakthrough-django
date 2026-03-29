@@ -1,0 +1,679 @@
+import os
+import re
+import uuid
+from datetime import date
+
+from django.conf import settings
+from rest_framework import permissions, status
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import Issue, Journal, JournalDetails, PaperPublished, UserRole, Volume
+from .serializers import (
+    JournalCreateUpdateSerializer,
+    JournalDetailsSerializer,
+    JournalListSerializer,
+    JournalSerializer,
+)
+
+
+def save_journal_image(file, journal_short_form, field_name):
+    """Save uploaded image file and return the relative path."""
+    if not file:
+        return ""
+    
+    # Validate file extension
+    allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+    ext = os.path.splitext(file.name)[1].lower()
+    if ext not in allowed_extensions:
+        raise ValueError(f"Invalid file type. Allowed: {', '.join(allowed_extensions)}")
+    
+    # Create directory
+    upload_dir = os.path.join(settings.MEDIA_ROOT, 'journals', journal_short_form)
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate unique filename
+    filename = f"{field_name}_{uuid.uuid4().hex[:8]}{ext}"
+    filepath = os.path.join(upload_dir, filename)
+    
+    # Save file
+    with open(filepath, 'wb+') as dest:
+        for chunk in file.chunks():
+            dest.write(chunk)
+    
+    # Return relative path for database
+    return f"journals/{journal_short_form}/{filename}"
+
+
+def strip_html_tags(text: str) -> str:
+    if not text:
+        return text
+    clean = re.sub(r"<[^>]+>", "", text)
+    clean = re.sub(r"\s+", " ", clean)
+    return clean.strip()
+
+
+class JournalListView(APIView):
+    """
+    GET: list journals (public)
+    POST: create journal (admin only)
+    """
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get(self, request):
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 10))
+        journals = Journal.objects.all()[skip : skip + limit]
+        serializer = JournalListSerializer(journals, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        if getattr(request.user, "role", "").lower() != "admin":
+            return Response(
+                {"detail": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = JournalCreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if Journal.objects.filter(
+            fld_journal_name=data["fld_journal_name"]
+        ).exists():
+            return Response(
+                {
+                    "detail": f"Journal '{data['fld_journal_name']}' already exists"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Handle file uploads for journal_image and journal_logo
+        journal_image_path = ""
+        journal_logo_path = ""
+        short_form = data["short_form"]
+        
+        try:
+            if 'journal_image' in request.FILES:
+                journal_image_path = save_journal_image(
+                    request.FILES['journal_image'], short_form, 'image'
+                )
+            if 'journal_logo' in request.FILES:
+                journal_logo_path = save_journal_image(
+                    request.FILES['journal_logo'], short_form, 'logo'
+                )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        journal = Journal.objects.create(
+            fld_journal_name=data["fld_journal_name"],
+            freq=data.get("freq") or "",
+            issn_ol=data.get("issn_ol") or "",
+            issn_prt=data.get("issn_prt") or "",
+            cheif_editor=data.get("cheif_editor") or "",
+            co_editor=data.get("co_editor") or "",
+            password=data.get("password") or "",
+            abs_ind=data.get("abs_ind") or "",
+            short_form=short_form,
+            journal_image=journal_image_path,
+            journal_logo=journal_logo_path,
+            guidelines=data.get("guidelines") or "",
+            copyright=data.get("copyright") or "",
+            membership=data.get("membership") or "",
+            subscription=data.get("subscription") or "",
+            publication=data.get("publication") or "",
+            advertisement=data.get("advertisement") or "",
+            description=data.get("description") or "",
+            added_on=date.today(),
+        )
+
+        chief_editor_id = data.get("chief_editor_id")
+        if chief_editor_id:
+            role = (
+                UserRole.objects.filter(
+                    id=chief_editor_id,
+                    role="editor",
+                )
+                .first()
+            )
+            if role:
+                role.journal_id = journal.fld_id
+                role.editor_type = "chief_editor"
+                role.save(update_fields=["journal_id", "editor_type"])
+
+        co_editor_id = data.get("co_editor_id")
+        if co_editor_id:
+            role = (
+                UserRole.objects.filter(
+                    id=co_editor_id,
+                    role="editor",
+                )
+                .first()
+            )
+            if role:
+                role.journal_id = journal.fld_id
+                role.editor_type = "co_editor"
+                role.save(update_fields=["journal_id", "editor_type"])
+
+        section_ids = data.get("section_editor_ids") or []
+        if section_ids:
+            for rid in section_ids:
+                role = (
+                    UserRole.objects.filter(
+                        id=rid,
+                        role="editor",
+                    )
+                    .first()
+                )
+                if role:
+                    role.journal_id = journal.fld_id
+                    role.editor_type = "section_editor"
+                    role.save(update_fields=["journal_id", "editor_type"])
+
+        if any(
+            [
+                data.get("about_journal"),
+                data.get("chief_say"),
+                data.get("aim_objective"),
+                data.get("criteria"),
+                data.get("scope"),
+                data.get("detailed_guidelines"),
+                data.get("readings"),
+            ]
+        ):
+            JournalDetails.objects.create(
+                journal_id=str(journal.fld_id),
+                about_journal=data.get("about_journal"),
+                cheif_say=data.get("chief_say"),
+                aim_objective=data.get("aim_objective"),
+                criteria=data.get("criteria"),
+                scope=data.get("scope"),
+                guidelines=data.get("detailed_guidelines"),
+                readings=data.get("readings"),
+                added_on=date.today(),
+            )
+
+        response = JournalSerializer(journal)
+        return Response(response.data, status=status.HTTP_201_CREATED)
+
+
+class JournalByShortFormView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, short_form: str):
+        try:
+            journal = Journal.objects.get(short_form__iexact=short_form)
+        except Journal.DoesNotExist:
+            return Response(
+                {"detail": f"Journal with short_form '{short_form}' not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = JournalSerializer(journal)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class JournalDetailView(APIView):
+    """
+    GET: retrieve journal (public)
+    PUT/DELETE: update/delete (admin only)
+    """
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_object(self, journal_id: int):
+        try:
+            return Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return None
+
+    def get(self, request, journal_id: int):
+        journal = self.get_object(journal_id)
+        if not journal:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = JournalSerializer(journal)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, journal_id: int):
+        if getattr(request.user, "role", "").lower() != "admin":
+            return Response(
+                {"detail": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        journal = self.get_object(journal_id)
+        if not journal:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = JournalCreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Handle file uploads for journal_image and journal_logo
+        short_form = data["short_form"]
+        try:
+            if 'journal_image' in request.FILES:
+                journal.journal_image = save_journal_image(
+                    request.FILES['journal_image'], short_form, 'image'
+                )
+            if 'journal_logo' in request.FILES:
+                journal.journal_logo = save_journal_image(
+                    request.FILES['journal_logo'], short_form, 'logo'
+                )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        journal.fld_journal_name = data["fld_journal_name"]
+        journal.freq = data.get("freq", journal.freq)
+        journal.issn_ol = data.get("issn_ol", journal.issn_ol)
+        journal.issn_prt = data.get("issn_prt", journal.issn_prt)
+        journal.cheif_editor = data.get("cheif_editor", journal.cheif_editor)
+        journal.co_editor = data.get("co_editor", journal.co_editor)
+        journal.password = data.get("password") or journal.password
+        journal.abs_ind = data.get("abs_ind", journal.abs_ind)
+        journal.short_form = short_form
+        journal.guidelines = data.get("guidelines", journal.guidelines)
+        journal.copyright = data.get("copyright", journal.copyright)
+        journal.membership = data.get("membership", journal.membership)
+        journal.subscription = data.get("subscription", journal.subscription)
+        journal.publication = data.get("publication", journal.publication)
+        journal.advertisement = data.get("advertisement", journal.advertisement)
+        journal.description = data.get("description", journal.description)
+        journal.save()
+
+        if any(
+            [
+                data.get("about_journal"),
+                data.get("chief_say"),
+                data.get("aim_objective"),
+                data.get("criteria"),
+                data.get("scope"),
+                data.get("detailed_guidelines"),
+                data.get("readings"),
+            ]
+        ):
+            details, _ = JournalDetails.objects.get_or_create(
+                journal_id=str(journal_id),
+                defaults={"added_on": date.today()},
+            )
+            if data.get("about_journal") is not None:
+                details.about_journal = data.get("about_journal")
+            if data.get("chief_say") is not None:
+                details.cheif_say = data.get("chief_say")
+            if data.get("aim_objective") is not None:
+                details.aim_objective = data.get("aim_objective")
+            if data.get("criteria") is not None:
+                details.criteria = data.get("criteria")
+            if data.get("scope") is not None:
+                details.scope = data.get("scope")
+            if data.get("detailed_guidelines") is not None:
+                details.guidelines = data.get("detailed_guidelines")
+            if data.get("readings") is not None:
+                details.readings = data.get("readings")
+            details.save()
+
+        response = JournalSerializer(journal)
+        return Response(response.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, journal_id: int):
+        if getattr(request.user, "role", "").lower() != "admin":
+            return Response(
+                {"detail": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        journal = self.get_object(journal_id)
+        if not journal:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        JournalDetails.objects.filter(journal_id=str(journal_id)).delete()
+        journal.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class JournalExtendedDetailsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, journal_id: int):
+        try:
+            Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            details = JournalDetails.objects.get(journal_id=str(journal_id))
+        except JournalDetails.DoesNotExist:
+            return Response(
+                {"detail": f"Details for journal {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = JournalDetailsSerializer(details)
+        data = serializer.data
+        # align field name to original schema
+        data["chief_say"] = data.pop("chief_say", None)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class JournalVolumesView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, journal_id: int):
+        try:
+            journal = Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        volumes = (
+            Volume.objects.filter(journal=str(journal_id))
+            .order_by("-volume_no")
+            .all()
+        )
+
+        volumes_list = []
+        for vol in volumes:
+            issue_count = Issue.objects.filter(volume=vol.id).count()
+            volumes_list.append(
+                {
+                    "id": vol.id,
+                    "volume_no": vol.volume_no,
+                    "year": vol.year,
+                    "issue_count": issue_count,
+                    "added_on": vol.added_on.isoformat() if vol.added_on else None,
+                }
+            )
+
+        return Response(
+            {
+                "journal_id": journal_id,
+                "journal_name": journal.fld_journal_name,
+                "total_volumes": len(volumes_list),
+                "volumes": volumes_list,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class VolumeIssuesView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, journal_id: int, volume_no: int):
+        try:
+            journal = Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        volume = Volume.objects.filter(
+            volume_no=volume_no, journal=str(journal_id)
+        ).first()
+        if not volume:
+            return Response(
+                {
+                    "detail": f"Volume {volume_no} not found for this journal",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        issues = Issue.objects.filter(volume=volume.id).order_by("issue_no").all()
+        issues_list = []
+        for issue in issues:
+            paper_count = PaperPublished.objects.filter(
+                journal_id=journal_id,
+                volume=str(volume.volume_no),
+                issue=str(issue.issue_no),
+            ).count()
+            issues_list.append(
+                {
+                    "id": issue.id,
+                    "issue_no": issue.issue_no,
+                    "month": issue.month,
+                    "pages": issue.pages,
+                    "paper_count": paper_count,
+                    "complete_issue": issue.complete_issue,
+                }
+            )
+
+        return Response(
+            {
+                "journal_id": journal_id,
+                "journal_name": journal.fld_journal_name,
+                "volume_id": volume.id,
+                "volume_no": volume.volume_no,
+                "year": volume.year,
+                "total_issues": len(issues_list),
+                "issues": issues_list,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class JournalAllIssuesView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, journal_id: int):
+        try:
+            journal = Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        volumes = (
+            Volume.objects.filter(journal=str(journal_id))
+            .order_by("-volume_no")
+            .all()
+        )
+
+        result = []
+        for vol in volumes:
+            issues = Issue.objects.filter(volume=vol.id).order_by("issue_no").all()
+            issues_list = []
+            for issue in issues:
+                paper_count = PaperPublished.objects.filter(
+                    journal_id=journal_id,
+                    volume=str(vol.volume_no),
+                    issue=str(issue.issue_no),
+                ).count()
+                issues_list.append(
+                    {
+                        "id": issue.id,
+                        "issue_no": issue.issue_no,
+                        "month": issue.month,
+                        "pages": issue.pages,
+                        "paper_count": paper_count,
+                        "complete_issue": issue.complete_issue,
+                    }
+                )
+            result.append(
+                {
+                    "volume_id": vol.id,
+                    "volume_no": vol.volume_no,
+                    "year": vol.year,
+                    "issues": issues_list,
+                }
+            )
+
+        return Response(
+            {
+                "journal_id": journal_id,
+                "journal_name": journal.fld_journal_name,
+                "journal_short": journal.short_form,
+                "volumes": result,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class IssuePapersView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, journal_id: int, volume_no: int, issue_no: int):
+        try:
+            journal = Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return Response(
+                {"detail": f"Journal with ID {journal_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        volume = Volume.objects.filter(
+            journal=str(journal_id), volume_no=volume_no
+        ).first()
+        if not volume:
+            return Response(
+                {
+                    "detail": f"Volume {volume_no} not found for journal {journal_id}",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        issue = Issue.objects.filter(volume=volume.id, issue_no=issue_no).first()
+        if not issue:
+            return Response(
+                {
+                    "detail": f"Issue {issue_no} not found in volume {volume_no}",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        papers = (
+            PaperPublished.objects.filter(
+                journal_id=journal_id,
+                volume=str(volume.id),
+                issue=str(issue.id),
+            )
+            .order_by("pages")
+            .all()
+        )
+
+        papers_list = []
+        for paper in papers:
+            clean_title = strip_html_tags(paper.title)
+            clean_abstract = strip_html_tags(paper.abstract)
+            clean_author = strip_html_tags(paper.author)
+            clean_keyword = strip_html_tags(paper.keyword)
+            clean_pages = strip_html_tags(paper.pages) if paper.pages else None
+            clean_doi = strip_html_tags(paper.doi) if paper.doi else None
+
+            if clean_abstract and len(clean_abstract) > 300:
+                clean_abstract = clean_abstract[:300] + "..."
+
+            papers_list.append(
+                {
+                    "id": paper.id,
+                    "title": clean_title,
+                    "author": clean_author,
+                    "abstract": clean_abstract,
+                    "pages": clean_pages,
+                    "doi": clean_doi,
+                    "doi_url": f"https://doi.org/{clean_doi}" if clean_doi else None,
+                    "access_type": paper.access_type,
+                    "keyword": clean_keyword,
+                    "date": paper.date.isoformat() if paper.date else None,
+                }
+            )
+
+        return Response(
+            {
+                "journal_id": journal_id,
+                "journal_name": journal.fld_journal_name,
+                "volume_no": volume_no,
+                "year": volume.year if volume else None,
+                "issue_no": issue_no,
+                "month": issue.month if issue else None,
+                "total_papers": len(papers_list),
+                "papers": papers_list,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class JournalRecommendationView(APIView):
+    """
+    POST /api/v1/journals/recommend/
+    
+    Get journal recommendations based on paper content using NLP matching.
+    
+    Request body:
+    {
+        "research_area": "Computer Science",
+        "keywords": ["machine learning", "deep learning", "neural networks", ...],
+        "abstract": "This paper presents..."
+    }
+    
+    Recommendations are based on:
+    - TF-IDF cosine similarity between abstract and journal scope/description
+    - Keyword overlap between paper keywords and journal text
+    - Research area matching
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        research_area = request.data.get("research_area", "")
+        keywords = request.data.get("keywords", [])
+        abstract = request.data.get("abstract", "")
+
+        # Validate keywords
+        if not keywords or len(keywords) < 5:
+            return Response(
+                {"error": "At least 5 keywords are required for accurate recommendations"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Ensure keywords is a list
+        if isinstance(keywords, str):
+            keywords = [k.strip() for k in keywords.split(",") if k.strip()]
+
+        try:
+            from .services.journal_recommendation_service import JournalRecommendationService
+            service = JournalRecommendationService()
+            recommendations = service.get_recommendations(
+                research_area=research_area,
+                keywords=keywords,
+                abstract=abstract
+            )
+            
+            return Response({
+                "recommendations": recommendations,
+                "total": len(recommendations),
+                "research_area": research_area,
+                "keywords_count": len(keywords)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Journal recommendation failed: {e}")
+            return Response(
+                {"error": "Failed to generate recommendations", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+

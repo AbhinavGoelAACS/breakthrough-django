@@ -1,0 +1,334 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #ddd;
+  background: #0D4715;
+  color: white;
+  flex-shrink: 0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.closeBtn:hover {
+  opacity: 1;
+}
+
+.modalBody {
+  padding: 24px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.recipientInfo {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.recipientField {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.recipientField:last-child {
+  margin-bottom: 0;
+}
+
+.recipientField label {
+  font-weight: 600;
+  color: #64748b;
+  min-width: 50px;
+}
+
+.recipientField span {
+  color: #334155;
+}
+
+.paperTitle {
+  font-weight: 500;
+  color: #1e293b !important;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.formGroup input[type="text"],
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: white;
+}
+
+.formGroup input[type="text"]:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #0D4715;
+  box-shadow: 0 0 0 3px rgba(13, 71, 21, 0.15);
+}
+
+.formGroup select {
+  cursor: pointer;
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.placeholdersSection {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.placeholdersSection h4 {
+  margin: 0 0 16px 0;
+  font-size: 0.95rem;
+  color: #0D4715;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.placeholdersSection h4::before {
+  content: "✏️";
+}
+
+.placeholderFields {
+  display: grid;
+  gap: 12px;
+}
+
+.placeholderFields .formGroup {
+  margin-bottom: 0;
+}
+
+.placeholderFields input,
+.placeholderFields textarea {
+  background: white;
+  font-size: 0.9rem;
+}
+
+.sendOption {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+  position: relative;
+  padding-left: 32px;
+}
+
+.checkbox input[type="checkbox"] {
+  position: absolute;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.checkmark {
+  position: absolute;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.checkbox input[type="checkbox"]:checked + .checkmark {
+  background: #0D4715;
+  border-color: #0D4715;
+}
+
+.checkbox input[type="checkbox"]:checked + .checkmark::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.sendOption small {
+  display: block;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-left: 32px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.cancelBtn,
+.sendBtn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelBtn {
+  background: white;
+  color: #64748b;
+  border: 1px solid #d1d5db;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.sendBtn {
+  background: #0D4715;
+  color: white;
+  border: none;
+}
+
+.sendBtn:hover:not(:disabled) {
+  background: #41644A;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(13, 71, 21, 0.3);
+}
+
+.sendBtn:disabled,
+.cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .modalOverlay {
+    padding: 10px;
+  }
+  
+  .modal {
+    max-height: 95vh;
+  }
+  
+  .modalHeader {
+    padding: 16px 20px;
+  }
+  
+  .modalBody {
+    padding: 20px;
+  }
+  
+  .recipientField {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .recipientField label {
+    min-width: auto;
+  }
+  
+  .modalFooter {
+    flex-direction: column;
+  }
+  
+  .cancelBtn,
+  .sendBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

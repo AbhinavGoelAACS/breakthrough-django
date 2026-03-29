@@ -1,0 +1,1356 @@
+.journal-detail-page {
+  background-color: #f8faf8;
+  min-height: calc(100vh - 200px);
+  padding: 2rem;
+  color: #333333;
+}
+
+/* Header Banner */
+.journal-detail-header {
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  color: white;
+  margin-bottom: 32px;
+  padding: 32px 40px;
+  border-radius: 16px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 4px 24px rgba(13, 71, 21, 0.15);
+}
+
+.journal-detail-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.journal-detail-title-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.journal-detail-title-section h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  color: white;
+}
+
+.journal-short-form {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Header Actions for Admin/Editor */
+.journal-header-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn .material-symbols-rounded {
+  font-size: 20px;
+}
+
+.edit-btn {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0D4715;
+}
+
+.edit-btn:hover {
+  background: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Form Section Styles */
+.form-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0D4715;
+  margin: 32px 0 8px 0;
+  padding-top: 20px;
+  border-top: 2px solid #e2e8f0;
+  font-family: 'Crimson Pro', Georgia, serif;
+}
+
+.form-section-hint {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 20px 0;
+  font-style: italic;
+}
+
+
+/* Main Container */
+.journal-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 40px 0;
+  gap: 24px;
+}
+
+.journal-detail-main {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+}
+
+/* Sections */
+.journal-detail-section {
+  margin-bottom: 32px;
+}
+
+.journal-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.journal-detail-section h2 {
+  font-size: 22px;
+  color: #0D4715;
+  margin: 0 0 20px 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-weight: 700;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0fdf4;
+}
+
+.journal-detail-description {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #475569;
+  font-family: 'Inter', sans-serif;
+}
+
+.journal-detail-description p {
+  margin: 0;
+}
+
+/* Info Grid */
+.journal-detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.info-card {
+  background: #f8faf8;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.info-card:hover {
+  border-color: #0D4715;
+  background: #f0fdf4;
+}
+
+.info-card label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  font-family: 'Inter', sans-serif;
+}
+
+.info-card p {
+  font-size: 15px;
+  color: #333333;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+/* Guidelines */
+.journal-detail-guidelines {
+  background: #f0fdf4;
+  padding: 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #475569;
+  font-family: 'Inter', sans-serif;
+  border: 1px solid #bbf7d0;
+}
+
+.journal-detail-guidelines p {
+  margin: 0;
+}
+
+/* Sidebar */
+.journal-detail-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+
+/* Loading State */
+.journal-detail-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f0fdf4;
+  border-top-color: #0D4715;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.journal-detail-loading p,
+.journal-detail-error p,
+.journal-detail-empty p {
+  font-size: 16px;
+  color: #333333;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Error State */
+.journal-detail-error,
+.journal-detail-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  margin: 20px auto;
+  max-width: 600px;
+  border: 1px solid #e2e8f0;
+}
+
+.journal-detail-error .btn-back,
+.journal-detail-empty .btn-back {
+  background: #0D4715;
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.journal-detail-error .btn-back:hover,
+.journal-detail-empty .btn-back:hover {
+  background: #41644A;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(13, 71, 21, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .journal-detail-header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .journal-detail-title-section h1 {
+    font-size: 26px;
+  }
+
+  .journal-detail-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .info-card {
+    border-left: none;
+    border-top: 3px solid #0D4715;
+  }
+}
+
+@media (max-width: 768px) {
+  .journal-detail-page {
+    padding: 1rem;
+  }
+
+  .journal-detail-header {
+    padding: 24px 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+  }
+
+  .journal-detail-header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .journal-detail-logo {
+    width: 80px;
+    height: 80px;
+  }
+
+  .journal-detail-title-section h1 {
+    font-size: 22px;
+  }
+
+  .journal-detail-main {
+    padding: 20px;
+    margin: 0;
+    border-radius: 12px;
+  }
+
+  .journal-detail-section h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .journal-detail-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-detail-sidebar {
+    margin: 0;
+  }
+
+  .action-buttons,
+  .quick-facts {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .journal-detail-header {
+    padding: 20px 16px;
+    margin-bottom: 16px;
+  }
+
+  .journal-detail-header-content {
+    gap: 10px;
+  }
+
+  .journal-detail-logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .journal-detail-title-section h1 {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .journal-detail-short-form {
+    font-size: 13px;
+  }
+
+  .journal-detail-main {
+    padding: 16px;
+    margin: 0;
+    border-radius: 12px;
+  }
+
+  .journal-detail-section {
+    margin-bottom: 24px;
+  }
+
+  .journal-detail-section h2 {
+    font-size: 17px;
+  }
+
+  .journal-detail-sidebar {
+    margin: 0;
+  }
+
+  .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .quick-facts li {
+    font-size: 12px;
+  }
+}
+
+/* ==========================================
+   EDIT MODE STYLES
+   ========================================== */
+
+.journal-edit-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0;
+  background-color: #f8faf8;
+}
+
+/* Edit Header */
+.edit-header {
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  color: white;
+  padding: 24px 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 4px 24px rgba(13, 71, 21, 0.15);
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.back-btn .material-symbols-rounded {
+  font-size: 20px;
+}
+
+.edit-header-info h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  color: white;
+}
+
+.edit-header-info p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.85;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Edit Form */
+.journal-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Form Sections */
+.form-section {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f0fdf4;
+}
+
+.section-header .material-symbols-rounded {
+  font-size: 24px;
+  color: #0D4715;
+  background: #f0fdf4;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0D4715;
+  font-family: 'Crimson Pro', Georgia, serif;
+}
+
+.section-description {
+  font-size: 13px;
+  color: #64748b;
+  margin: -8px 0 20px 0;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border-left: 3px solid #0D4715;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-grid.single-column {
+  grid-template-columns: 1fr;
+}
+
+/* Form Groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+.label-icon {
+  font-size: 18px !important;
+  color: #41644A;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+  color: #1e293b;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #94a3b8;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #0D4715;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(13, 71, 21, 0.08);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+/* ==========================================
+   SEARCHABLE EDITOR DROPDOWN STYLES
+   ========================================== */
+
+.searchable-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 48px;
+}
+
+.dropdown-trigger:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.searchable-dropdown.open .dropdown-trigger {
+  border-color: #0D4715;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(13, 71, 21, 0.08);
+}
+
+.dropdown-placeholder {
+  color: #94a3b8;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+.dropdown-loading {
+  color: #64748b;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.dropdown-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 8px;
+}
+
+.dropdown-selected span {
+  font-size: 14px;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+}
+
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clear-btn:hover {
+  background: #e2e8f0;
+}
+
+.clear-btn .material-symbols-rounded {
+  font-size: 16px;
+  color: #64748b;
+}
+
+.dropdown-arrow {
+  font-size: 20px !important;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.searchable-dropdown.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+  animation: dropdownSlide 0.2s ease;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+
+.dropdown-search .material-symbols-rounded {
+  font-size: 20px;
+  color: #94a3b8;
+}
+
+.dropdown-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+  outline: none;
+}
+
+.dropdown-search input::placeholder {
+  color: #94a3b8;
+}
+
+.dropdown-options {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.dropdown-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dropdown-option:hover {
+  background-color: #f0fdf4;
+}
+
+.dropdown-option.selected {
+  background-color: #f0fdf4;
+}
+
+.option-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  flex-shrink: 0;
+}
+
+.option-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.option-checkbox .material-symbols-rounded {
+  font-size: 22px;
+  color: #0D4715;
+}
+
+.option-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.option-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-email {
+  font-size: 12px;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-check {
+  font-size: 20px !important;
+  color: #0D4715;
+}
+
+/* Multi-select dropdown styles */
+.dropdown-trigger.multi {
+  flex-wrap: wrap;
+  min-height: 48px;
+  gap: 8px;
+}
+
+.dropdown-selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.selected-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #0D4715;
+  font-family: 'Inter', sans-serif;
+}
+
+.tag-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.15s ease;
+}
+
+.tag-remove:hover {
+  background: rgba(13, 71, 21, 0.1);
+}
+
+.tag-remove .material-symbols-rounded {
+  font-size: 16px;
+  color: #0D4715;
+}
+
+/* ==========================================
+   END SEARCHABLE EDITOR DROPDOWN STYLES
+   ========================================== */
+
+/* Journal Page Section Special Styling */
+.journal-page-section {
+  background: linear-gradient(180deg, #fefffe 0%, #f0fdf4 100%);
+  border: 1px solid #bbf7d0;
+}
+
+.journal-page-section .section-header {
+  border-bottom-color: #bbf7d0;
+}
+
+.journal-page-section .form-group label {
+  font-size: 15px;
+}
+
+.journal-page-section textarea {
+  min-height: 140px;
+  background: white;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px 28px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  position: sticky;
+  bottom: 20px;
+  z-index: 10;
+}
+
+.form-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.form-actions .btn .material-symbols-rounded {
+  font-size: 20px;
+}
+
+.form-actions .btn-primary {
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  color: white;
+}
+
+.form-actions .btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(13, 71, 21, 0.3);
+}
+
+.form-actions .btn-secondary {
+  background-color: #f8fafc;
+  color: #64748b;
+  border: 1.5px solid #e2e8f0;
+}
+
+.form-actions .btn-secondary:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.form-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Edit Mode Responsive */
+@media (max-width: 768px) {
+  .edit-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 24px;
+  }
+
+  .edit-header-info h1 {
+    font-size: 24px;
+  }
+
+  .form-section {
+    padding: 20px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    position: static;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ==========================================
+   END EDIT MODE STYLES
+   ========================================== */
+
+/* Edit and Delete Buttons in Sidebar */
+.action-buttons .btn-edit {
+  background-color: #0D4715;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.action-buttons .btn-edit:hover:not(:disabled) {
+  background-color: #41644A;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 71, 21, 0.25);
+}
+
+.action-buttons .btn-delete {
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.action-buttons .btn-delete:hover:not(:disabled) {
+  background-color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.action-buttons .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Volumes and Issues Styles */
+.volumes-loading,
+.issues-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f0fdf4;
+  border-top-color: #0D4715;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.no-volumes,
+.no-issues {
+  padding: 32px;
+  text-align: center;
+  color: #64748b;
+  background: #f8faf8;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+}
+
+.volumes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.volume-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
+.volume-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  background: #f8faf8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.volume-header:hover {
+  background: #f0fdf4;
+}
+
+.volume-header.expanded {
+  background: #0D4715;
+  color: white;
+  border-bottom: 1px solid #41644A;
+}
+
+.volume-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.volume-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.volume-icon .material-symbols-rounded {
+  font-size: 22px;
+  transition: transform 0.2s ease;
+}
+
+.volume-title {
+  font-weight: 600;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+}
+
+.volume-year {
+  font-size: 13px;
+  opacity: 0.8;
+  font-family: 'Inter', sans-serif;
+}
+
+.volume-issue-count {
+  font-size: 12px;
+  padding: 5px 14px;
+  background: rgba(13, 71, 21, 0.08);
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+.volume-header.expanded .volume-issue-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.issues-container {
+  padding: 20px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+}
+
+.issues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.issue-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  background: #f8faf8;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.issue-card:hover {
+  border-color: #0D4715;
+  box-shadow: 0 4px 16px rgba(13, 71, 21, 0.12);
+  transform: translateY(-2px);
+  background: #f0fdf4;
+}
+
+.issue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.issue-number {
+  font-weight: 600;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.issue-month {
+  font-size: 11px;
+  color: #0D4715;
+  background: #f0fdf4;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.issue-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.issue-papers,
+.issue-pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.issue-papers .material-symbols-rounded,
+.issue-pages .material-symbols-rounded {
+  font-size: 16px;
+  color: #0D4715;
+}
+
+/* Responsive Volumes */
+@media (max-width: 768px) {
+  .volume-header {
+    padding: 14px 16px;
+  }
+
+  .volume-title {
+    font-size: 14px;
+  }
+
+  .volume-year {
+    font-size: 12px;
+  }
+
+  .issues-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .issue-card {
+    padding: 14px;
+  }
+
+  .journal-detail-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .journal-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .volume-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .volume-issue-count {
+    align-self: flex-start;
+  }
+
+  .action-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .action-btn .material-symbols-rounded {
+    font-size: 18px;
+  }
+}
+
+/* File Upload Styles */
+.file-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-upload-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.file-upload-label:hover {
+  border-color: #0066cc;
+  background: #f0f7ff;
+  color: #0066cc;
+}
+
+.file-upload-label .material-symbols-rounded {
+  font-size: 1.25rem;
+}
+
+.image-preview {
+  position: relative;
+  display: inline-block;
+  max-width: 150px;
+}
+
+.image-preview img {
+  width: 100%;
+  height: auto;
+  max-height: 100px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.remove-preview {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.remove-preview:hover {
+  background: #dc2626;
+}
+
+.remove-preview .material-symbols-rounded {
+  font-size: 14px;
+}
+
+.file-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}

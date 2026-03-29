@@ -1,0 +1,25 @@
+.review-submission-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-submission-page > div {
+  width: 100%;
+  max-width: 900px;
+}
+
+@media (max-width: 768px) {
+  .review-submission-page {
+    padding: 20px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .review-submission-page {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+}

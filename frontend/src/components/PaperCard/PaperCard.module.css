@@ -1,0 +1,335 @@
+/* PaperCard Module Styles */
+:root {
+  --header-height: 60px;
+  --sidebar-width: 56px;
+  --primary: #0D4715;
+  --primary-hover: #41644A;
+  --primary-light: #E8F5E9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --bg-white: #ffffff;
+  --bg-light: #f8fafc;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.2s ease;
+}
+
+.paperCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.paperCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cardContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipsGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Meta Information */
+.metaSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.metaLeft {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaItem span.material-symbols-rounded {
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.metaRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* View Button */
+.viewBtn {
+  background: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.viewBtn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #3b82f6;
+}
+
+.viewBtn span.material-symbols-rounded {
+  font-size: 18px;
+}
+
+/* Action Buttons */
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.actionBtn:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.actionBtn span.material-symbols-rounded {
+  font-size: 18px;
+}
+
+/* Variant: Manage Button */
+.manageBtn {
+  background: transparent;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+}
+
+.manageBtn:hover {
+  background: #f0f6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+/* Variant: View Only Button */
+.viewOnlyBtn {
+  background-color: #ffffff;
+  border-radius: 32px;
+  padding: 4px 20px;
+  color: #0D4715;
+  border: 1px solid #0D4715
+}
+
+.viewOnlyBtn:hover {
+  background: #0D4715;
+  color: #ffffff;
+}
+
+/* Variant: Review Button */
+.reviewBtn {
+  background: #ec4899;
+}
+
+.reviewBtn:hover {
+  background: #db2777;
+}
+
+/* Review Status Chip */
+.reviewStatusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 12px;
+  border-radius: 32px;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.reviewStatusChip span.material-symbols-rounded {
+  font-size: 10px;
+}
+
+.review_not_assigned {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.review_pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.review_partial {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.review_reviewed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* Paper Type Chip */
+.paperTypeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 12px;
+  border-radius: 32px;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(139, 92, 246, 0.1);
+  color: #6d28d9;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  text-transform: uppercase;
+}
+
+.paperTypeChip span.material-symbols-rounded {
+  font-size: 10px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .paperCard {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .cardContent {
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .metaSection {
+    gap: 12px;
+  }
+
+  .metaLeft {
+    gap: 12px;
+  }
+
+  .metaItem {
+    font-size: 12px;
+  }
+
+  .actionBtn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .paperCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .chipsGroup {
+    flex-wrap: wrap;
+  }
+
+  .metaSection {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .metaLeft {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .metaRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .actionBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 13px;
+  }
+
+  .metaItem {
+    font-size: 11px;
+  }
+
+  .viewBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .actionBtn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}

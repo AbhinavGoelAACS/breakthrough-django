@@ -1,0 +1,254 @@
+/* StatusFilterBar Module Styles */
+
+.filterBar {
+  background: transparent;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.filterScroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 4px;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.filterBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.filterBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.filterBtn.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.label {
+  font-weight: 500;
+}
+
+.count {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filterBtn.active .count {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* Status-specific colors */
+.filterBtn.submitted {
+  --status-color: #ff9800;
+}
+
+.filterBtn.submitted:hover:not(:disabled) {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+.filterBtn.submitted.active {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+.filterBtn.pending,
+.filterBtn.under_review {
+  --status-color: #2196f3;
+}
+
+.filterBtn.pending:hover:not(:disabled),
+.filterBtn.under_review:hover:not(:disabled) {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1565c0;
+}
+
+.filterBtn.pending.active,
+.filterBtn.under_review.active {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1565c0;
+}
+
+.filterBtn.reviewed {
+  --status-color: #00bcd4;
+}
+
+.filterBtn.reviewed:hover:not(:disabled) {
+  background: #e0f7fa;
+  border-color: #00bcd4;
+  color: #00838f;
+}
+
+.filterBtn.reviewed.active {
+  background: #e0f7fa;
+  border-color: #00bcd4;
+  color: #00838f;
+}
+
+.filterBtn.accepted,
+.filterBtn.published {
+  --status-color: #4caf50;
+}
+
+.filterBtn.accepted:hover:not(:disabled),
+.filterBtn.published:hover:not(:disabled) {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.filterBtn.accepted.active,
+.filterBtn.published.active {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.filterBtn.rejected {
+  --status-color: #f44336;
+}
+
+.filterBtn.rejected:hover:not(:disabled) {
+  background: #ffebee;
+  border-color: #f44336;
+  color: #c62828;
+}
+
+.filterBtn.rejected.active {
+  background: #ffebee;
+  border-color: #f44336;
+  color: #c62828;
+}
+
+.filterBtn.correction {
+  --status-color: #ff9800;
+}
+
+.filterBtn.correction:hover:not(:disabled) {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+.filterBtn.correction.active {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+.filterBtn.under_publication {
+  --status-color: #9c27b0;
+}
+
+.filterBtn.under_publication:hover:not(:disabled) {
+  background: #f3e5f5;
+  border-color: #9c27b0;
+  color: #6a1b9a;
+}
+
+.filterBtn.under_publication.active {
+  background: #f3e5f5;
+  border-color: #9c27b0;
+  color: #6a1b9a;
+}
+
+.filterBtn.resubmitted {
+  --status-color: #ff9800;
+}
+
+.filterBtn.resubmitted:hover:not(:disabled) {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+.filterBtn.resubmitted.active {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+/* Scrollbar for filter scroll */
+.filterScroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.filterScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filterScroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.filterScroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .filterBar {
+    padding: 8px;
+    margin-bottom: 16px;
+  }
+
+  .filterBtn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .count {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .filterBar {
+    padding: 6px;
+  }
+
+  .filterBtn {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+  }
+}

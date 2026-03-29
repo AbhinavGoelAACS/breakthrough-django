@@ -1,0 +1,257 @@
+/* ReviewerCard Module Styles */
+
+.reviewerCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.reviewerCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cardContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Reviewer Header */
+.reviewerHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.basicInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.email {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Reviewer Meta */
+.reviewerMeta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.metaItem span.material-symbols-rounded {
+  font-size: 18px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.label {
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.value {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Action Button */
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.actionBtn:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.actionBtn span.material-symbols-rounded {
+  font-size: 18px;
+}
+
+.actionLabel {
+  font-weight: 600;
+}
+
+/* Action Variants */
+.actionBtn.select {
+  background: #8b5cf6;
+}
+
+.actionBtn.select:hover {
+  background: #7c3aed;
+}
+
+.actionBtn.invite {
+  background: #10b981;
+}
+
+.actionBtn.invite:hover {
+  background: #059669;
+}
+
+.actionBtn.manage {
+  background: #f59e0b;
+}
+
+.actionBtn.manage:hover {
+  background: #d97706;
+}
+
+.actionBtn.view {
+  background: #6366f1;
+}
+
+.actionBtn.view:hover {
+  background: #4f46e5;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .reviewerCard {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .name {
+    font-size: 14px;
+  }
+
+  .email {
+    font-size: 12px;
+  }
+
+  .reviewerMeta {
+    gap: 12px;
+  }
+
+  .metaItem {
+    font-size: 12px;
+  }
+
+  .actionBtn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .reviewerCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .reviewerHeader {
+    width: 100%;
+  }
+
+  .reviewerMeta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .actionBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .reviewerCard {
+    padding: 10px 12px;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .name {
+    font-size: 13px;
+  }
+
+  .email {
+    font-size: 11px;
+  }
+
+  .reviewerMeta {
+    gap: 8px;
+  }
+
+  .metaItem {
+    font-size: 11px;
+  }
+
+  .actionBtn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}

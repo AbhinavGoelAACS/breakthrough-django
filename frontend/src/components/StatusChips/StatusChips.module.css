@@ -1,0 +1,107 @@
+/* StatusChips Module Styles - Redesigned */
+
+.container {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 12px;
+  border-radius: 32px;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.label {
+  text-transform: uppercase;
+}
+
+/* Status Colors - Refined palette matching design */
+.submitted {
+  background: rgba(234, 179, 8, 0.1);
+  color: #a16207;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.pending {
+  background: rgba(59, 130, 246, 0.08);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.underReview {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.reviewed {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.accepted {
+  background: rgba(34, 197, 94, 0.1);
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.rejected {
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.revision {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.publication {
+  background: rgba(139, 92, 246, 0.1);
+  color: #6d28d9;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.published {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.resubmitted {
+  background: rgba(99, 102, 241, 0.1);
+  color: #4338ca;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.unknown {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .chip {
+    font-size: 9px;
+    padding: 3px 8px;
+  }
+
+  .icon {
+    font-size: 13px;
+  }
+
+  .label {
+    font-size: 11px;
+  }
+}

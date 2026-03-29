@@ -1,0 +1,511 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.headerLeft h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0D4715;
+  margin: 0 0 0.25rem 0;
+}
+
+.headerLeft p {
+  color: #64748b;
+  margin: 0;
+  font-size: 14px;
+}
+
+.journalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.journalCard {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #c8e6c9;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.journalCard:hover {
+  border-color: #41644A;
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #E8F5E9 0%, #ffffff 100%);
+  border-bottom: 1px solid #c8e6c9;
+  gap: 1rem;
+}
+
+.journalLogo {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #E8F5E9;
+  flex-shrink: 0;
+}
+
+.logoPlaceholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0D4715, #41644A);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.journalInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.journalName {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0D4715;
+  margin: 0 0 0.25rem 0;
+  overflow: hidden;
+}
+
+.journalMeta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.metaItem .material-symbols-rounded {
+  font-size: 0.5rem;
+}
+
+.editorTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chiefBadge {
+  background: #0D4715;
+  color: white;
+}
+
+.sectionBadge {
+  background: #0D4715;
+  color: white;
+  border-radius: 32px;
+  font-weight: 400;
+}
+
+.cardBody {
+  padding: 1.25rem;
+}
+
+.description {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0 0 1rem 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.statItem {
+  text-align: center;
+  padding: 0.75rem;
+  background: #E8F5E9;
+  border-radius: 8px;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #0D4715;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #c8e6c9;
+  background: #f8fafc;
+}
+
+.actionBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editBtn {
+  background: #0D4715;
+  color: white;
+}
+
+.editBtn:hover {
+  background: #41644A;
+}
+
+.viewBtn {
+  background: white;
+  color: #64748b;
+  border: 1px solid #c8e6c9;
+}
+
+.viewBtn:hover {
+  background: #E8F5E9;
+  color: #0D4715;
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #41644A;
+  background: #E8F5E9;
+  border-radius: 12px;
+  border: 1px dashed #41644A;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  background: #fef2f2;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #E8F5E9;
+  border-radius: 12px;
+  border: 2px dashed #41644A;
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  color: #41644A;
+  margin-bottom: 1rem;
+}
+
+.emptyState h3 {
+  font-size: 1.25rem;
+  color: #0D4715;
+  margin: 0 0 0.5rem 0;
+}
+
+.emptyState p {
+  color: #64748b;
+  margin: 0;
+}
+
+/* Edit Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border-bottom: 1px solid #c8e6c9;
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #ffffff;
+}
+
+.closeBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #ffffff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modalBody {
+  padding: 1.25rem;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0D4715;
+  margin-bottom: 0.375rem;
+}
+
+.formGroup input,
+.formGroup textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #c8e6c9;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #0D4715;
+}
+
+.formGroup textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.formGroup input:disabled,
+.formGroup textarea:disabled {
+  background: #E8F5E9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.restrictedNote {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.formSection {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #c8e6c9;
+}
+
+.formSection h3 {
+  font-size: 0.9rem;
+  color: #41644A;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.modalFooter {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-top: 1px solid #c8e6c9;
+  background: #f8fafc;
+  border-radius: 0 0 12px 12px;
+}
+
+.cancelBtn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #c8e6c9;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover {
+  background: #E8F5E9;
+}
+
+.saveBtn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: #0D4715;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: #41644A;
+}
+
+.saveBtn:disabled {
+  background: #c8e6c9;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerLeft h1 {
+    font-size: 1.5rem;
+  }
+
+  .journalGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .cardActions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 8px;
+  }
+
+  .headerLeft h1 {
+    font-size: 1.25rem;
+  }
+
+  .headerLeft p {
+    font-size: 13px;
+  }
+
+  .journalCard {
+    border-radius: 8px;
+  }
+
+  .cardHeader {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .journalLogo,
+  .logoPlaceholder {
+    width: 56px;
+    height: 56px;
+  }
+
+  .journalInfo h3 {
+    font-size: 1rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .statValue {
+    font-size: 1.125rem;
+  }
+
+  .statLabel {
+    font-size: 11px;
+  }
+
+  .cardActions {
+    padding: 0.75rem;
+  }
+
+  .editBtn,
+  .viewBtn {
+    padding: 0.5rem 0.75rem;
+    font-size: 13px;
+  }
+}

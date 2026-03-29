@@ -1,0 +1,744 @@
+================================================================================
+                    API GAP ANALYSIS: FastAPI vs Django Backend
+                         BreakThrough Journal Management System
+================================================================================
+
+Generated: January 2025
+Purpose: Identify missing endpoints in Django backend compared to FastAPI reference
+
+================================================================================
+                              EXECUTIVE SUMMARY
+================================================================================
+
+Total FastAPI Endpoints: 130
+Total Django Endpoints: 92
+Missing Endpoints: 38 (29.2% gap)
+
+Key Gap Areas:
+- Admin Analytics (6 endpoints)
+- Admin Editor Management (5 endpoints)
+- Admin News Management (4 endpoints)
+- Admin Email Templates (4 endpoints)
+- Admin Correspondence (2 endpoints)
+- Admin Published Papers (2 endpoints)
+- Admin User Creation (1 endpoint)
+- Author Reviews Access (1 endpoint)
+- Reviewer Document Views (3 endpoints)
+- Journal Management (2 endpoints)
+- Article Enhancement (1 endpoint)
+
+================================================================================
+                      SECTION 1: DETAILED ENDPOINT COMPARISON
+================================================================================
+
+--------------------------------------------------------------------------------
+1.1 AUTHENTICATION (api/v1/auth/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] POST /login         - User login with email/password
+  [✓] POST /signup        - User registration
+  [✓] POST /refresh       - Refresh JWT token
+  [✓] GET  /me            - Get current user info
+  [✓] POST /change-password - Change user password
+
+Django Status: COMPLETE (5/5)
+Gap: None
+
+--------------------------------------------------------------------------------
+1.2 JOURNALS (api/v1/journals/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /              - List all journals with pagination
+  [✓] GET  /by-subdomain/{short_form} - Get journal by subdomain
+  [✓] GET  /{journal_id}  - Get journal details
+  [✓] GET  /{journal_id}/details - Get extended journal details
+  [✓] POST /recommend/    - NLP-based journal recommendations
+  [✓] POST /              - Create new journal (admin)
+  [✗] PUT  /{journal_id}  - Update journal (admin)
+  [✗] DELETE /{journal_id} - Delete journal (admin)
+  [✓] GET  /{journal_id}/volumes - Get journal volumes
+  [✓] GET  /{journal_id}/volumes/{vol}/issues - Get volume issues
+  [✓] GET  /{journal_id}/issues - Get all issues
+  [✓] GET  /{journal_id}/issues/{vol}/{issue}/papers - Get issue papers
+
+Django Status: PARTIAL (10/12)
+Gap: 2 endpoints
+  - PUT  /api/v1/journals/{journal_id} (Update journal)
+  - DELETE /api/v1/journals/{journal_id} (Delete journal)
+
+--------------------------------------------------------------------------------
+1.3 ARTICLES (api/v1/articles/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /              - List published articles
+  [✓] GET  /latest        - Get latest articles
+  [✓] GET  /{article_id}  - Get article details
+  [✓] GET  /{article_id}/pdf - Download article PDF
+  [✓] GET  /journal/{journal_id} - Get articles by journal
+  [✓] GET  /news          - Get public news list
+  [✓] GET  /news/{news_id} - Get news detail
+  [✗] GET  /{article_id}/abstract - Get article abstract only
+
+Django Status: PARTIAL (7/8)
+Gap: 1 endpoint
+  - GET /api/v1/articles/{article_id}/abstract (Abstract-only endpoint)
+
+--------------------------------------------------------------------------------
+1.4 AUTHOR (api/v1/author/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /dashboard/stats - Author dashboard statistics
+  [✓] GET  /submissions   - List author's submissions
+  [✓] GET  /submissions/{paper_id} - Get submission detail
+  [✓] GET  /submissions/{paper_id}/correspondence - List correspondence
+  [✓] PUT  /submissions/{paper_id}/correspondence/{id}/read - Mark read
+  [✓] POST /submissions/{paper_id}/contact-editorial - Contact editor
+  [✓] GET  /submissions/{paper_id}/unread-count - Unread message count
+  [✓] POST /submit-paper  - Submit new paper
+  [✓] GET  /submissions/{paper_id}/comments - Get paper comments
+  [✓] GET  /submissions/{paper_id}/reviews - Get paper reviews
+  [✓] GET  /submissions/{paper_id}/decision - Get editorial decision
+  [✓] GET  /submissions/{paper_id}/revisions - Get revision history
+  [✓] POST /submissions/{paper_id}/resubmit - Resubmit revised paper
+  [✓] GET  /submissions/{paper_id}/download - Download submission
+  [✓] GET  /submissions/{paper_id}/reviews/{id}/download-report - Download report
+  [✓] GET  /submissions/{paper_id}/view - View paper inline
+  [✓] GET  /submissions/{paper_id}/view-title-page - View title page
+  [✓] GET  /submissions/{paper_id}/view-blinded-manuscript - View blinded
+  [✓] GET  /submissions/{paper_id}/reviews/{id}/view-report - View report
+  [✓] GET  /profile       - Get author profile
+  [✓] POST /profile       - Update author profile
+  [✓] POST /submissions/{paper_id}/request-reviewers - Suggest reviewers
+
+Django Status: COMPLETE (22/22)
+Gap: None
+
+--------------------------------------------------------------------------------
+1.5 EDITOR (api/v1/editor/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /my-journals   - Get editor's assigned journals
+  [✓] PUT  /journals/{journal_id} - Update journal settings
+  [✓] GET  /dashboard/stats - Editor dashboard statistics
+  [✓] GET  /paper-queue   - Get papers in queue
+  [✓] GET  /papers/{paper_id} - Get paper detail
+  [✓] POST /papers/{paper_id}/invite-reviewer - Invite external reviewer
+  [✓] POST /papers/{paper_id}/assign-reviewer - Assign registered reviewer
+  [✓] POST /papers/{paper_id}/status - Update paper status
+  [✓] POST /papers/{paper_id}/decision - Make editorial decision
+  [✓] GET  /papers/{paper_id}/decision - Get decision details
+  [✓] GET  /papers/{paper_id}/reviews - Get reviews for paper
+  [✓] GET  /reviewers     - List available reviewers (with NLP)
+  [✓] GET  /pending-actions - Get pending actions count
+  [✓] GET  /papers-pending-decision - Papers awaiting decision
+  [✓] POST /papers/{paper_id}/publish - Publish accepted paper
+  [✓] POST /papers/{paper_id}/publish-with-file - Publish with PDF
+  [✓] GET  /papers/{paper_id}/doi-status - Check DOI status
+  [✓] GET  /accepted-papers - List accepted papers
+  [✓] GET  /ready-to-publish - Papers ready for publication
+  [✓] GET  /papers/{paper_id}/view-title-page - View title page
+  [✓] GET  /papers/{paper_id}/view-blinded-manuscript - View blinded
+  [✓] GET  /papers/{paper_id}/view-track-changes - View track changes
+  [✓] GET  /papers/{paper_id}/view-clean-revision - View clean revision
+  [✓] GET  /papers/{paper_id}/view-response-to-reviewer - View response
+
+Django Status: COMPLETE (24/24)
+Gap: None
+
+--------------------------------------------------------------------------------
+1.6 INVITATIONS (api/v1/invitations/) (Public)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /status/{token} - Get invitation status
+  [✓] POST /{token}/accept - Accept invitation
+  [✓] POST /{token}/decline - Decline invitation
+  [✓] POST /{token}/register-accept - Register and accept
+
+Django Status: COMPLETE (4/4)
+Gap: None
+
+--------------------------------------------------------------------------------
+1.7 REVIEWER (api/v1/reviewer/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /dashboard/stats - Reviewer dashboard statistics
+  [✓] GET  /invitations   - List pending invitations
+  [✓] POST /invitations/{id}/accept - Accept invitation (auth)
+  [✓] POST /invitations/{id}/decline - Decline invitation (auth)
+  [✓] GET  /assignments   - List active assignments
+  [✓] GET  /assignments/{review_id} - Get assignment summary
+  [✓] GET  /assignments/{review_id}/detail - Get full assignment detail
+  [✓] GET  /assignments/{review_id}/view-paper - View assigned paper
+  [✗] GET  /assignments/{review_id}/view-track-changes - View track changes
+  [✗] GET  /assignments/{review_id}/view-clean-manuscript - View clean doc
+  [✗] GET  /assignments/{review_id}/view-response-to-reviewer - View response
+  [✓] POST /assignments/{review_id}/save-draft - Save review draft
+  [✓] POST /assignments/{review_id}/submit - Submit complete review
+  [✓] POST /assignments/{review_id}/upload-report - Upload report PDF
+  [✓] GET  /assignments/{review_id}/download-report - Download report
+  [✓] POST /assignments/{review_id}/submit-review - Submit basic review
+  [✓] GET  /history       - Get review history
+  [✓] GET  /profile       - Get reviewer profile
+  [✓] POST /notify-update - Notify reviewer of updates
+  [✓] POST /deadline-reminder - Send deadline reminder
+
+Django Status: PARTIAL (17/20)
+Gap: 3 endpoints
+  - GET /api/v1/reviewer/assignments/{review_id}/view-track-changes
+  - GET /api/v1/reviewer/assignments/{review_id}/view-clean-manuscript
+  - GET /api/v1/reviewer/assignments/{review_id}/view-response-to-reviewer
+
+--------------------------------------------------------------------------------
+1.8 ROLES (api/v1/roles/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /my-roles      - Get current user's roles
+  [✓] POST /request       - Request new role
+  [✓] POST /switch        - Switch active role
+  [✓] GET  /requests      - List role requests (admin)
+  [✓] PATCH /requests/{id} - Process role request (admin)
+  [✓] GET  /users/{user_id}/roles - Get user's roles (admin)
+  [✓] POST /users/{user_id}/roles - Assign role to user (admin)
+  [✓] DELETE /users/{user_id}/roles/{role} - Revoke role (admin)
+
+Django Status: COMPLETE (8/8)
+Gap: None
+
+--------------------------------------------------------------------------------
+1.9 COPYRIGHT (api/v1/copyright/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /pending       - List pending copyright forms
+  [✓] GET  /{paper_id}    - Get copyright form details
+  [✓] POST /{paper_id}/submit - Submit signed copyright form
+
+Django Status: COMPLETE (3/3) - Implemented 2025-03-29
+Gap: None
+
+--------------------------------------------------------------------------------
+1.10 WEBHOOKS (api/v1/webhooks/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] POST /email-delivery - Email delivery webhook
+  [✓] GET  /email-delivery/status/{webhook_id} - Get webhook status
+
+Django Status: COMPLETE (2/2)
+Gap: None
+
+--------------------------------------------------------------------------------
+1.11 ADMIN (api/v1/admin/)
+--------------------------------------------------------------------------------
+
+FastAPI Endpoints:
+  [✓] GET  /dashboard/stats - Admin dashboard statistics
+  [✓] GET  /users         - List all users
+  [✓] POST /users/{user_id}/role - Update user primary role
+  [✓] GET  /users/{user_id}/roles - Get user roles
+  [✓] PUT  /users/{user_id}/roles - Update user roles
+  [✓] DELETE /users/{user_id} - Delete user
+  [✓] GET  /papers        - List all papers
+  [✓] GET  /papers/{paper_id} - Get paper detail
+  [✗] POST /papers/{paper_id}/trigger-copyright-form - Trigger copyright
+  [✓] GET  /journals      - List all journals
+  [✓] GET  /activity      - Get recent activity
+  [✓] GET  /stats/papers-by-status - Papers grouped by status
+  [✓] GET  /papers/{paper_id}/view - View paper file
+  [✓] PATCH /published-papers/{paper_id}/access - Update paper access
+  [✓] PATCH /published-papers/bulk-access - Bulk update access
+  [✗] GET  /published-papers - List published papers
+  [✗] GET  /published-papers/{paper_id} - Get published paper detail
+  [✗] GET  /doi-statistics - DOI registration statistics
+  
+  # Editor Management
+  [✗] GET  /editors       - List all editors
+  [✗] POST /editors       - Create/assign editor
+  [✗] GET  /journals/{journal_id}/editors - Get journal editors
+  [✗] PUT  /editors/{editor_id} - Update editor assignment
+  [✗] DELETE /editors/{editor_id} - Remove editor
+  
+  # User Creation
+  [✗] POST /users/create  - Create new user (admin)
+  
+  # News Management
+  [✗] GET  /news          - List news items
+  [✗] POST /news          - Create news item
+  [✗] PUT  /news/{news_id} - Update news item
+  [✗] DELETE /news/{news_id} - Delete news item
+  
+  # Email Templates
+  [✗] GET  /email-templates - List email templates
+  [✗] GET  /email-templates/{template_id} - Get template
+  [✗] POST /email-templates - Create template
+  [✗] PUT  /email-templates/{template_id} - Update template
+  
+  # Paper Correspondence
+  [✗] GET  /papers/{paper_id}/correspondence - Get correspondence
+  [✗] POST /papers/{paper_id}/correspondence - Send correspondence
+  
+  # Analytics
+  [✗] GET  /analytics/submission-trends - Submission trends over time
+  [✗] GET  /analytics/top-reviewers - Top performing reviewers
+  [✗] GET  /analytics/status-distribution - Paper status distribution
+  [✗] GET  /analytics/journal-stats - Per-journal statistics
+  [✗] GET  /analytics/user-growth - User registration trends
+  [✗] GET  /analytics/review-metrics - Review completion metrics
+
+Django Status: PARTIAL (15/41)
+Gap: 26 endpoints
+
+================================================================================
+                      SECTION 2: MISSING ENDPOINTS SUMMARY
+================================================================================
+
+Total Missing: 38 endpoints
+
+PRIORITY 1 (Critical - Core Functionality):
+--------------------------------------------
+1. Copyright Module (3 endpoints) - ✅ IMPLEMENTED 2025-03-29
+
+2. Admin Editor Management (5 endpoints) - Required for editor assignment
+   - GET  /api/v1/admin/editors
+   - POST /api/v1/admin/editors
+   - GET  /api/v1/admin/journals/{journal_id}/editors
+   - PUT  /api/v1/admin/editors/{editor_id}
+   - DELETE /api/v1/admin/editors/{editor_id}
+
+3. Admin User Creation (1 endpoint)
+   - POST /api/v1/admin/users/create
+
+4. Admin Paper Correspondence (2 endpoints)
+   - GET  /api/v1/admin/papers/{paper_id}/correspondence
+   - POST /api/v1/admin/papers/{paper_id}/correspondence
+
+PRIORITY 2 (Important - Enhanced Features):
+--------------------------------------------
+5. Reviewer Document Views (3 endpoints)
+   - GET  /api/v1/reviewer/assignments/{id}/view-track-changes
+   - GET  /api/v1/reviewer/assignments/{id}/view-clean-manuscript
+   - GET  /api/v1/reviewer/assignments/{id}/view-response-to-reviewer
+
+6. Admin Published Papers (3 endpoints)
+   - GET  /api/v1/admin/published-papers
+   - GET  /api/v1/admin/published-papers/{paper_id}
+   - POST /api/v1/admin/papers/{paper_id}/trigger-copyright-form
+
+7. Admin DOI Statistics (1 endpoint)
+   - GET  /api/v1/admin/doi-statistics
+
+8. Journal Management (2 endpoints)
+   - PUT  /api/v1/journals/{journal_id}
+   - DELETE /api/v1/journals/{journal_id}
+
+PRIORITY 3 (Nice to Have - Admin Tools):
+----------------------------------------
+9. Admin News Management (4 endpoints)
+   - GET  /api/v1/admin/news
+   - POST /api/v1/admin/news
+   - PUT  /api/v1/admin/news/{news_id}
+   - DELETE /api/v1/admin/news/{news_id}
+
+10. Admin Email Templates (4 endpoints)
+    - GET  /api/v1/email-templates
+    - GET  /api/v1/email-templates/{template_id}
+    - POST /api/v1/email-templates
+    - PUT  /api/v1/email-templates/{template_id}
+
+11. Admin Analytics (6 endpoints)
+    - GET  /api/v1/admin/analytics/submission-trends
+    - GET  /api/v1/admin/analytics/top-reviewers
+    - GET  /api/v1/admin/analytics/status-distribution
+    - GET  /api/v1/admin/analytics/journal-stats
+    - GET  /api/v1/admin/analytics/user-growth
+    - GET  /api/v1/admin/analytics/review-metrics
+
+12. Article Abstract (1 endpoint)
+    - GET  /api/v1/articles/{article_id}/abstract
+
+================================================================================
+                      SECTION 3: IMPLEMENTATION PLAN
+================================================================================
+
+--------------------------------------------------------------------------------
+PHASE 1: Core Copyright Module (Week 1)
+--------------------------------------------------------------------------------
+
+Files to Create:
+  - api/views_copyright.py
+
+Endpoints to Implement:
+  1. GET  /api/v1/copyright/pending
+     - List all pending copyright forms for current user
+     - Filter by paper status = accepted
+     - Return paper_id, title, journal, submitted_date
+     
+  2. GET  /api/v1/copyright/{paper_id}
+     - Get copyright form details for specific paper
+     - Return form fields, terms, signature fields
+     - Check user is author of paper
+     
+  3. POST /api/v1/copyright/{paper_id}/submit
+     - Submit signed copyright form
+     - Validate signature, date, agreement
+     - Update paper status to copyright_submitted
+     - Send confirmation email
+
+Database Changes:
+  - May need CopyrightForm model or fields in Paper model
+
+URL Registration:
+  Add to api/urls.py:
+  - path("api/v1/copyright/pending", ...)
+  - path("api/v1/copyright/<int:paper_id>", ...)
+  - path("api/v1/copyright/<int:paper_id>/submit", ...)
+
+--------------------------------------------------------------------------------
+PHASE 2: Admin Editor Management (Week 1-2)
+--------------------------------------------------------------------------------
+
+Files to Modify:
+  - api/views_admin.py
+
+Endpoints to Implement:
+  1. GET  /api/v1/admin/editors
+     - List all editor assignments
+     - Include journal info, user info, role type
+     - Support pagination and filtering
+     
+  2. POST /api/v1/admin/editors
+     - Create new editor assignment
+     - Body: {user_id, journal_id, role: "editor"|"associate_editor"}
+     - Validate user exists and journal exists
+     - Create JournalEditor record
+     
+  3. GET  /api/v1/admin/journals/{journal_id}/editors
+     - Get editors for specific journal
+     - Return list with user details
+     
+  4. PUT  /api/v1/admin/editors/{editor_id}
+     - Update editor assignment
+     - Change role, status, permissions
+     
+  5. DELETE /api/v1/admin/editors/{editor_id}
+     - Remove editor from journal
+     - Soft delete or hard delete based on config
+
+URL Registration:
+  Add to api/urls.py (admin section)
+
+--------------------------------------------------------------------------------
+PHASE 3: Reviewer Document Views (Week 2)
+--------------------------------------------------------------------------------
+
+Files to Modify:
+  - api/views_reviewer.py
+
+Endpoints to Implement:
+  1. GET  /api/v1/reviewer/assignments/{review_id}/view-track-changes
+     - Serve track changes file for revision
+     - Verify reviewer is assigned
+     - Return file with proper MIME type
+     
+  2. GET  /api/v1/reviewer/assignments/{review_id}/view-clean-manuscript
+     - Serve clean revision file
+     - Verify reviewer is assigned
+     - Return file with proper MIME type
+     
+  3. GET  /api/v1/reviewer/assignments/{review_id}/view-response-to-reviewer
+     - Serve author's response to reviewer document
+     - Verify reviewer is assigned
+     - Return file with proper MIME type
+
+URL Registration:
+  Add to api/urls.py (reviewer section)
+
+--------------------------------------------------------------------------------
+PHASE 4: Admin User & Correspondence (Week 2)
+--------------------------------------------------------------------------------
+
+Files to Modify:
+  - api/views_admin.py
+
+Endpoints to Implement:
+  1. POST /api/v1/admin/users/create
+     - Create new user account (admin only)
+     - Body: {email, name, password, roles[]}
+     - Send welcome email
+     - Return created user info
+     
+  2. GET  /api/v1/admin/papers/{paper_id}/correspondence
+     - Get all correspondence for paper
+     - Include messages from authors, editors
+     - Return with sender info, timestamps
+     
+  3. POST /api/v1/admin/papers/{paper_id}/correspondence
+     - Send message on behalf of journal
+     - Body: {subject, message, recipient_type}
+     - Log in correspondence table
+     - Send email notification
+
+--------------------------------------------------------------------------------
+PHASE 5: Admin Published Papers & DOI (Week 3)
+--------------------------------------------------------------------------------
+
+Files to Modify:
+  - api/views_admin.py
+
+Endpoints to Implement:
+  1. GET  /api/v1/admin/published-papers
+     - List all published papers
+     - Include DOI status, access type, downloads
+     - Support pagination, filtering, sorting
+     
+  2. GET  /api/v1/admin/published-papers/{paper_id}
+     - Get published paper details
+     - Include full metadata, DOI info, access settings
+     
+  3. POST /api/v1/admin/papers/{paper_id}/trigger-copyright-form
+     - Trigger copyright form email to author
+     - Paper must be in 'accepted' status
+     - Create pending copyright record
+     
+  4. GET  /api/v1/admin/doi-statistics
+     - DOI registration statistics
+     - Count by status: pending, registered, failed
+     - Recent registrations list
+
+--------------------------------------------------------------------------------
+PHASE 6: Journal Management (Week 3)
+--------------------------------------------------------------------------------
+
+Files to Modify:
+  - api/views_journals.py
+
+Endpoints to Implement:
+  1. PUT  /api/v1/journals/{journal_id}
+     - Update journal details (admin only)
+     - Body: {name, description, issn, cover_image, etc.}
+     - Validate ISSN format
+     
+  2. DELETE /api/v1/journals/{journal_id}
+     - Delete/deactivate journal (admin only)
+     - Soft delete - set is_active=False
+     - Check no active papers before deletion
+
+--------------------------------------------------------------------------------
+PHASE 7: Admin News Management (Week 4)
+--------------------------------------------------------------------------------
+
+Files to Create:
+  - api/views_news.py (or add to views_admin.py)
+
+Endpoints to Implement:
+  1. GET  /api/v1/admin/news
+     - List all news items (admin view)
+     - Include drafts and scheduled
+     
+  2. POST /api/v1/admin/news
+     - Create news item
+     - Body: {title, content, publish_date, is_featured}
+     
+  3. PUT  /api/v1/admin/news/{news_id}
+     - Update news item
+     
+  4. DELETE /api/v1/admin/news/{news_id}
+     - Delete news item
+
+--------------------------------------------------------------------------------
+PHASE 8: Email Templates (Week 4)
+--------------------------------------------------------------------------------
+
+Files to Create:
+  - api/views_templates.py (or add to views_admin.py)
+
+Models Needed:
+  - EmailTemplate model (if not exists)
+
+Endpoints to Implement:
+  1. GET  /api/v1/admin/email-templates
+     - List all email templates
+     - Include: invitation, decision, reminder, etc.
+     
+  2. GET  /api/v1/admin/email-templates/{template_id}
+     - Get template with variables
+     
+  3. POST /api/v1/admin/email-templates
+     - Create new template
+     - Body: {name, subject, body, variables[]}
+     
+  4. PUT  /api/v1/admin/email-templates/{template_id}
+     - Update template content
+
+--------------------------------------------------------------------------------
+PHASE 9: Admin Analytics (Week 5)
+--------------------------------------------------------------------------------
+
+Files to Create:
+  - api/views_analytics.py
+
+Endpoints to Implement:
+  1. GET  /api/v1/admin/analytics/submission-trends
+     - Monthly submission counts
+     - Response: {months: [], submissions: [], accepted: []}
+     
+  2. GET  /api/v1/admin/analytics/top-reviewers
+     - Reviewers ranked by completions
+     - Include: avg_rating, avg_turnaround_days
+     
+  3. GET  /api/v1/admin/analytics/status-distribution
+     - Papers by status
+     - Response: {submitted: X, review: Y, accepted: Z, ...}
+     
+  4. GET  /api/v1/admin/analytics/journal-stats
+     - Per-journal metrics
+     - Submissions, acceptance_rate, avg_review_time
+     
+  5. GET  /api/v1/admin/analytics/user-growth
+     - User registration trends
+     - Grouped by month and role
+     
+  6. GET  /api/v1/admin/analytics/review-metrics
+     - Review completion rates
+     - Avg review time, overdue count
+
+--------------------------------------------------------------------------------
+PHASE 10: Article Abstract (Week 5)
+--------------------------------------------------------------------------------
+
+Files to Modify:
+  - api/views_articles.py
+
+Endpoints to Implement:
+  1. GET  /api/v1/articles/{article_id}/abstract
+     - Return abstract text only
+     - Lighter response for list views
+
+================================================================================
+                      SECTION 4: IMPLEMENTATION CHECKLIST
+================================================================================
+
+[x] Phase 1: Copyright Module
+    [x] Create views_copyright.py
+    [x] Implement CopyrightPendingView
+    [x] Implement CopyrightDetailView
+    [x] Implement CopyrightSubmitView
+    [x] Add URL patterns
+    [ ] Write tests
+
+[x] Phase 2: Admin Editor Management
+    [x] Implement AdminEditorsListView (GET list + POST create)
+    [x] Implement AdminJournalEditorsView (GET editors by journal)
+    [x] Implement AdminEditorDetailView (PUT update + DELETE remove)
+    [x] Add URL patterns
+    [ ] Write tests
+
+[ ] Phase 3: Reviewer Document Views
+[x] Phase 3: Reviewer Document Views
+    [x] Implement ReviewerViewTrackChangesView
+    [x] Implement ReviewerViewCleanManuscriptView
+    [x] Implement ReviewerViewResponseToReviewerView
+    [x] Add URL patterns
+    [ ] Write tests
+
+[x] Phase 4: Admin User & Correspondence
+    [x] Implement AdminUserCreateView
+    [x] Implement AdminPaperCorrespondenceView (GET + POST)
+    [x] Add URL patterns
+    [ ] Write tests
+
+[x] Phase 5: Admin Published Papers & DOI
+    [x] Implement AdminPublishedPapersListView
+    [x] Implement AdminPublishedPaperDetailView
+    [x] Implement AdminTriggerCopyrightView
+    [x] Implement AdminDOIStatisticsView
+    [x] Add URL patterns
+    [ ] Write tests
+
+[x] Phase 6: Journal Management (Already existed)
+    [x] Implement JournalUpdateView (PUT) - existed in JournalDetailView
+    [x] Implement JournalDeleteView (DELETE) - existed in JournalDetailView
+    [x] URL patterns exist
+    [ ] Write tests
+
+[x] Phase 7: Admin News Management
+    [x] Implement AdminNewsListCreateView (GET + POST)
+    [x] Implement AdminNewsDetailView (GET + PUT + DELETE)
+    [x] Add URL patterns
+    [ ] Write tests
+
+[x] Phase 8: Email Templates
+    [x] EmailTemplate model exists
+    [x] Implement AdminEmailTemplateListCreateView (GET + POST)
+    [x] Implement AdminEmailTemplateDetailView (GET + PUT)
+    [x] Add URL patterns
+    [ ] Write tests
+
+[x] Phase 9: Admin Analytics
+    [x] Implement AdminSubmissionTrendsView
+    [x] Implement AdminTopReviewersView
+    [x] Implement AdminStatusDistributionView
+    [x] Implement AdminJournalStatsView
+    [x] Implement AdminUserGrowthView
+    [x] Implement AdminReviewMetricsView
+    [x] Add URL patterns
+    [ ] Write tests
+
+[x] Phase 10: Article Abstract
+    [x] Implement ArticleAbstractView
+    [x] Add URL pattern
+    [ ] Write tests
+
+================================================================================
+                      SECTION 5: ESTIMATED EFFORT
+================================================================================
+
+Phase 1: Copyright Module          - 8 hours
+Phase 2: Admin Editor Management   - 8 hours
+Phase 3: Reviewer Document Views   - 4 hours
+Phase 4: Admin User & Correspondence - 6 hours
+Phase 5: Admin Published Papers    - 6 hours
+Phase 6: Journal Management        - 3 hours
+Phase 7: Admin News Management     - 4 hours
+Phase 8: Email Templates           - 6 hours
+Phase 9: Admin Analytics           - 10 hours
+Phase 10: Article Abstract         - 1 hour
+
+TOTAL ESTIMATED: ~56 hours (7 working days)
+
+================================================================================
+                      SECTION 6: DEPENDENCIES & NOTES
+================================================================================
+
+1. Database Models:
+   - Check if CopyrightForm, EmailTemplate models exist
+   - May need migration for new fields
+
+2. External Services:
+   - Email service integration for correspondence
+   - DOI registration API for statistics
+
+3. Testing:
+   - Each phase should include unit tests
+   - Integration tests for critical workflows
+
+4. Security:
+   - All admin endpoints require admin role
+   - Reviewer endpoints require review assignment
+   - CORS and rate limiting considerations
+
+5. Documentation:
+   - Update API documentation after each phase
+   - Add OpenAPI/Swagger specs
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================

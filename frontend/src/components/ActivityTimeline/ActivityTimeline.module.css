@@ -1,0 +1,134 @@
+/* ActivityTimeline Component Styles */
+
+.container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.3);
+}
+
+.title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #1e293b;
+  margin: 0;
+}
+
+.timeline {
+  padding: 32px 24px;
+}
+
+.event {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 32px;
+}
+
+.event:last-child {
+  padding-bottom: 0;
+}
+
+.connector {
+  position: absolute;
+  left: 11px;
+  top: 28px;
+  bottom: 0;
+  width: 1px;
+  background: #e2e8f0;
+}
+
+.iconWrapper {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.iconWrapper span {
+  font-size: 14px;
+}
+
+/* Color variants */
+.iconWrapper.blue {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #2563eb;
+}
+
+.iconWrapper.slate {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+}
+
+.iconWrapper.green {
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  color: #16a34a;
+}
+
+.iconWrapper.amber {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  color: #d97706;
+}
+
+.iconWrapper.red {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.content {
+  flex: 1;
+  padding-top: 2px;
+}
+
+.eventTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.eventTime {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  color: #94a3b8;
+}
+
+.empty span {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.empty p {
+  font-size: 13px;
+  margin: 0;
+}

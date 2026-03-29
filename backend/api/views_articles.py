@@ -1,0 +1,293 @@
+import html
+import os
+import re
+from pathlib import Path
+
+from django.http import FileResponse, Http404
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import News, PaperPublished, Journal
+from .serializers import ArticleDetailSerializer, ArticleListSerializer, NewsSerializer
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+PUBLISHED_PAPERS_DIR = BASE_DIR.parent / "uploads" / "published"
+
+
+def strip_html_tags(text: str) -> str:
+    if not text:
+        return text
+    clean = re.sub(r"<[^>]+>", "", text)
+    clean = re.sub(r"\s+", " ", clean)
+    return clean.strip()
+
+
+def decode_references(text: str) -> str:
+    if not text:
+        return text
+    decoded = html.unescape(text)
+    decoded = re.sub(r"</div>\s*", "\n", decoded, flags=re.IGNORECASE)
+    decoded = re.sub(r"<[^>]+>", "", decoded)
+    lines = [line.strip() for line in decoded.split("\n")]
+    return "\n".join(line for line in lines if line)
+
+
+class ArticleListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 10))
+        qs = PaperPublished.objects.order_by("-date").all()
+        articles = qs[skip : skip + limit]
+
+        data = []
+        for article in articles:
+            data.append(
+                {
+                    "id": article.id,
+                    "title": strip_html_tags(article.title) or "Untitled",
+                    "abstract": strip_html_tags(article.abstract),
+                    "author": strip_html_tags(article.author),
+                    "date": article.date.isoformat() if article.date else None,
+                    "journal": article.journal,
+                    "journal_id": article.journal_id,
+                    "volume": article.volume,
+                    "issue": article.issue,
+                }
+            )
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class LatestArticlesView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        limit = int(request.query_params.get("limit", 5))
+        limit = max(1, min(limit, 50))
+        articles = PaperPublished.objects.order_by("-date")[:limit]
+
+        data = []
+        for article in articles:
+            data.append(
+                {
+                    "id": article.id,
+                    "title": strip_html_tags(article.title) or "Untitled",
+                    "abstract": strip_html_tags(article.abstract),
+                    "author": strip_html_tags(article.author),
+                    "date": article.date.isoformat() if article.date else None,
+                    "journal": article.journal,
+                    "journal_id": article.journal_id,
+                    "volume": article.volume,
+                    "issue": article.issue,
+                }
+            )
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ArticleDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, article_id: int):
+        try:
+            article = PaperPublished.objects.get(id=article_id)
+        except PaperPublished.DoesNotExist:
+            return Response(
+                {"detail": f"Article with ID {article_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        data = {
+            "id": article.id,
+            "title": strip_html_tags(article.title) or "Untitled",
+            "abstract": strip_html_tags(article.abstract),
+            "p_reference": decode_references(article.p_reference),
+            "author": strip_html_tags(article.author),
+            "date": article.date.isoformat() if article.date else None,
+            "journal": article.journal,
+            "journal_id": article.journal_id,
+            "volume": article.volume,
+            "issue": article.issue,
+            "pages": strip_html_tags(article.pages),
+            "keyword": strip_html_tags(article.keyword),
+            "language": article.language,
+            "paper": article.paper,
+            "access_type": article.access_type,
+            "email": article.email,
+            "affiliation": strip_html_tags(article.affiliation),
+            "doi": strip_html_tags(article.doi),
+            "co_authors_json": article.co_authors_json,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ArticlePDFView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, article_id: int):
+        try:
+            article = PaperPublished.objects.get(id=article_id)
+        except PaperPublished.DoesNotExist:
+            return Response(
+                {"detail": f"Article with ID {article_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not article.paper:
+            return Response(
+                {"detail": "No PDF file available for this article"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if article.access_type != "open":
+            return Response(
+                {"detail": "This article requires a subscription to access"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        possible_paths = [
+            PUBLISHED_PAPERS_DIR / article.paper,
+            PUBLISHED_PAPERS_DIR / str(article.journal_id) / article.paper,
+            (PUBLISHED_PAPERS_DIR.parent / "papers" / article.paper),
+            Path(article.paper) if os.path.isabs(article.paper) else None,
+        ]
+
+        file_path = None
+        for path in possible_paths:
+            if path and path.exists():
+                file_path = path
+                break
+
+        if not file_path:
+            return Response(
+                {
+                    "detail": "PDF file not found on server. Please contact support.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        response = FileResponse(
+            open(file_path, "rb"),
+            content_type="application/pdf",
+        )
+        response["Content-Disposition"] = f'inline; filename="{article.paper}"'
+        return response
+
+
+class ArticlesByJournalView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, journal_id: int):
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 10))
+
+        qs = PaperPublished.objects.filter(journal_id=journal_id).order_by("-date")
+        articles = qs[skip : skip + limit]
+
+        data = []
+        for article in articles:
+            data.append(
+                {
+                    "id": article.id,
+                    "title": strip_html_tags(article.title) or "Untitled",
+                    "abstract": strip_html_tags(article.abstract),
+                    "author": strip_html_tags(article.author),
+                    "date": article.date.isoformat() if article.date else None,
+                    "journal": article.journal,
+                    "journal_id": article.journal_id,
+                    "volume": article.volume,
+                    "issue": article.issue,
+                }
+            )
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class PublicNewsListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 10))
+        journal_id = request.query_params.get("journal_id")
+
+        qs = News.objects.all()
+        if journal_id:
+            qs = qs.filter(journal_id=int(journal_id))
+
+        news_items = qs.order_by("-added_on")[skip : skip + limit]
+
+        data = []
+        for item in news_items:
+            journal_name = None
+            if item.journal_id:
+                journal = Journal.objects.filter(fld_id=item.journal_id).first()
+                journal_name = journal.fld_journal_name if journal else None
+
+            data.append(
+                {
+                    "id": item.id,
+                    "title": item.title,
+                    "description": item.description,
+                    "added_on": item.added_on.isoformat() if item.added_on else None,
+                    "journal_id": item.journal_id,
+                    "journal_name": journal_name,
+                }
+            )
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class PublicNewsDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, news_id: int):
+        try:
+            news_item = News.objects.get(id=news_id)
+        except News.DoesNotExist:
+            return Response(
+                {"detail": f"News item with ID {news_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        journal_name = None
+        if news_item.journal_id:
+            journal = Journal.objects.filter(fld_id=news_item.journal_id).first()
+            journal_name = journal.fld_journal_name if journal else None
+
+        data = {
+            "id": news_item.id,
+            "title": news_item.title,
+            "description": news_item.description,
+            "added_on": news_item.added_on.isoformat()
+            if news_item.added_on
+            else None,
+            "journal_id": news_item.journal_id,
+            "journal_name": journal_name,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ArticleAbstractView(APIView):
+    """
+    GET /api/v1/articles/{article_id}/abstract
+    Return abstract text only - lighter response for list views.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, article_id: int):
+        try:
+            article = PaperPublished.objects.get(id=article_id)
+        except PaperPublished.DoesNotExist:
+            return Response(
+                {"detail": f"Article with ID {article_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        return Response({
+            "id": article.id,
+            "title": article.title,
+            "abstract": article.abstract,
+            "keyword": article.keyword
+        }, status=status.HTTP_200_OK)
+

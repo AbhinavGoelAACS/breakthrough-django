@@ -1,0 +1,10 @@
+.editor-decision-page {
+  min-height: 100vh;
+  background: #f8faf8;
+}
+
+@media (prefers-color-scheme: dark) {
+  .editor-decision-page {
+    background: #0d0d0d;
+  }
+}

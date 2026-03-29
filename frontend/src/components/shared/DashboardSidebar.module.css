@@ -1,0 +1,191 @@
+/* DashboardSidebar Component Styles */
+.dashboardSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 1100px) {
+  .dashboardSidebar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboardSidebar {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Dashboard Card */
+.dashboardCard {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+
+/* Status Items */
+.statusItems {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statusIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusGreen {
+  background: #10b981;
+}
+
+.statusYellow {
+  background: #eab308;
+}
+
+.statusRed {
+  background: #ef4444;
+}
+
+.statusBlue {
+  background: #2563eb;
+}
+
+.statusAmber {
+  background: #f59e0b;
+}
+
+.statusItem > div {
+  flex: 1;
+}
+
+.statusLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0;
+}
+
+.statusValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* Quick Links */
+.quickLinksGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.quickLink {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  align-items: center;
+  text-align: center;
+}
+
+.quickLink:hover {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.quickLink span:first-child {
+  font-size: 24px;
+}
+
+.quickLinkBlue {
+  color: #2563eb;
+}
+
+.quickLinkEmerald {
+  color: #10b981;
+}
+
+.quickLinkAmber {
+  color: #f59e0b;
+}
+
+.quickLinkPurple {
+  color: #8b5cf6;
+}
+
+.quickLinkRose {
+  color: #e11d48;
+}
+
+.quickLink span:last-child {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .dashboardCard {
+    padding: 20px;
+  }
+
+  .cardTitle {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+
+  .statusItems {
+    gap: 12px;
+  }
+
+  .statusLabel {
+    font-size: 11px;
+  }
+
+  .statusValue {
+    font-size: 16px;
+  }
+
+  .quickLinksGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .quickLink {
+    padding: 12px;
+  }
+
+  .quickLink span:first-child {
+    font-size: 20px;
+  }
+
+  .quickLink span:last-child {
+    font-size: 11px;
+  }
+}

@@ -1,0 +1,159 @@
+/* EditorPendingDecision Module Styles - Green Theme */
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: "Inter", sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0D4715;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.header p {
+  color: #64748b;
+  margin: 4px 0 0 0;
+  font-size: 14px;
+}
+
+/* Stats Bar */
+.statsBar {
+  display: flex;
+  gap: 24px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.statItem span.material-symbols-rounded {
+  font-size: 20px;
+  color: #41644A;
+}
+
+/* Loading, Error, Empty States */
+.loading,
+.error,
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px;
+  background: #E8F5E9;
+  border-radius: 12px;
+  border: 1px dashed #41644A;
+  margin: 24px 0;
+}
+
+.loading span.material-symbols-rounded,
+.error span.material-symbols-rounded,
+.empty span.material-symbols-rounded {
+  font-size: 48px;
+  color: #41644A;
+  margin-bottom: 16px;
+}
+
+.loading p,
+.error p,
+.empty p {
+  color: #41644A;
+  font-size: 15px;
+  margin: 0;
+}
+
+.emptySubtext {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.error span.material-symbols-rounded {
+  color: #fca5a5;
+}
+
+.error p {
+  color: #dc2626;
+}
+
+/* Paper List */
+.paperList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* Pagination Container */
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+  }
+
+  .statsBar {
+    gap: 16px;
+    padding: 12px 16px;
+  }
+
+  .paperList {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 20px;
+  }
+
+  .header p {
+    font-size: 13px;
+  }
+
+  .statsBar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .statItem {
+    font-size: 13px;
+  }
+}

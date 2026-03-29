@@ -1,0 +1,65 @@
+Update Frontend for Journal Management API Changes
+
+The backend API for journal creation/editing has been updated with the following changes:
+
+1. Required Fields (only these are mandatory):
+   - fld_journal_name - Journal name
+   - short_form - Short form/abbreviation
+
+2. All Other Fields Are Now Optional:
+   - freq, issn_ol, issn_prt, cheif_editor, co_editor, password, abs_ind
+   - journal_image, journal_logo (now file uploads, not URLs)
+   - guidelines, copyright, membership, subscription, publication, advertisement, description
+   - chief_editor_id, co_editor_id, section_editor_ids
+   - about_journal, chief_say, aim_objective, criteria, scope, detailed_guidelines, readings
+
+3. Media & Branding Fields Changed from URL to File Upload:
+   These fields now accept IMAGE FILE UPLOADS (not URLs):
+   - journal_image - accepts .jpg, .jpeg, .png, .gif, .webp
+   - journal_logo - accepts .jpg, .jpeg, .png, .gif, .webp
+   
+   The form must use multipart/form-data encoding for file uploads.
+   Send files using FormData with the key names 'journal_image' and 'journal_logo'.
+
+4. Policy/Document Fields Changed from URL to Text:
+   These fields now accept full text content instead of URLs:
+   - guidelines
+   - copyright
+   - membership
+   - subscription
+   - publication
+   - advertisement
+   - description
+
+   Update the form inputs for these fields from URL inputs to textarea/rich-text-editor (plain text only, no HTML).
+
+5. No HTML Allowed:
+   All text fields are sanitized - HTML tags are stripped. Use plain text only.
+
+6. API Response Format:
+   All API responses are now JSON (no HTML). Ensure error handling expects JSON responses.
+
+Update the journal create/edit form to:
+- Mark only journal name and short form as required
+- Change journal_image and journal_logo from URL inputs to FILE UPLOAD inputs (accept image types only)
+- Use multipart/form-data encoding when submitting the form
+- Change policy/document fields from URL inputs to multi-line text areas
+- Remove any HTML formatting options from text inputs
+- Update form validation to match new requirements
+
+Example FormData submission:
+```javascript
+const formData = new FormData();
+formData.append('fld_journal_name', 'Journal Name');
+formData.append('short_form', 'JN');
+formData.append('journal_image', imageFile); // File object
+formData.append('journal_logo', logoFile);   // File object
+formData.append('guidelines', 'Guidelines text...');
+// ... other fields
+
+fetch('/api/v1/journals/', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${token}` },
+  body: formData
+});
+```

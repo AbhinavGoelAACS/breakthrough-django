@@ -1,0 +1,267 @@
+/* ReviewerAssignments Page Styles - Green Theme */
+:root {
+  --primary-green: #0D4715;
+  --secondary-green: #41644A;
+  --accent-green: #41957d;
+  --light-green: #E8F5E9;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.headerContent h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0D4715;
+  margin: 0 0 8px 0;
+}
+
+.headerContent p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Filter Section */
+.filterSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.filterSelect {
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E") no-repeat right 8px center;
+  background-size: 16px;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.filterSelect:hover {
+  border-color: #41644A;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #0D4715;
+  box-shadow: 0 0 0 3px rgba(13, 71, 21, 0.1);
+}
+
+/* Search Bar */
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+}
+
+.searchBar:focus-within {
+  background-color: #f1f5f9;
+  border-color: #0D4715;
+  box-shadow: 0 0 0 3px rgba(13, 71, 21, 0.1);
+}
+
+.searchBar span {
+  font-size: 20px;
+  color: #41644A;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none;
+  padding: 0;
+}
+
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.clearSearchBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.clearSearchBtn:hover {
+  color: #0D4715;
+  background-color: #E8F5E9;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 64px 32px;
+  color: #64748b;
+}
+
+.loading span {
+  font-size: 48px;
+  color: #41644A;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 32px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  color: #dc2626;
+}
+
+.error span {
+  font-size: 40px;
+}
+
+/* Empty State */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 32px;
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  color: #64748b;
+}
+
+.empty span {
+  font-size: 56px;
+  color: #41644A;
+}
+
+.empty h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Assignments List */
+.assignmentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+/* Pagination */
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .filterSection {
+    width: 100%;
+  }
+
+  .filterSelect {
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .headerContent h1 {
+    font-size: 24px;
+  }
+
+  .filterGroup {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+
+  .searchBar {
+    padding: 10px 14px;
+  }
+
+  .searchInput {
+    font-size: 13px;
+  }
+}
+

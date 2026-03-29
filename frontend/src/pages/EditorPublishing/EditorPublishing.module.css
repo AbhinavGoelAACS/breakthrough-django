@@ -1,0 +1,654 @@
+/* EditorPublishing Module Styles - Green Theme */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: "Inter", sans-serif;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.headerContent h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0D4715;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.headerContent h1 span {
+  font-size: 28px;
+  color: #0D4715;
+}
+
+.headerContent p {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
+}
+
+.statsCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  border-radius: 12px;
+  color: #ffffff;
+}
+
+.statsNumber {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.statsLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+/* Loading, Error, Empty States */
+.loading,
+.error,
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+  background: #E8F5E9;
+  border: 1px dashed #41644A;
+  border-radius: 12px;
+}
+
+.loading span,
+.error span,
+.empty span {
+  font-size: 64px;
+  margin-bottom: 16px;
+  color: #41644A;
+}
+
+.error span {
+  color: #ef4444;
+}
+
+.empty span {
+  color: #41644A;
+}
+
+.loading p,
+.error p,
+.empty p {
+  font-size: 15px;
+  color: #41644A;
+  margin: 0;
+}
+
+.empty h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0D4715;
+  margin: 0 0 8px 0;
+}
+
+.retryBtn,
+.linkBtn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #0D4715;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retryBtn:hover,
+.linkBtn:hover {
+  background: #41644A;
+}
+
+/* Papers List */
+.papersList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.paperCard {
+  background: #ffffff;
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.paperCard:hover {
+  border-color: #41644A;
+}
+
+.paperHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.paperMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.paperId {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.paperCode {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: #E8F5E9;
+  color: #0D4715;
+  border-radius: 6px;
+  font-family: "Fira Code", monospace;
+}
+
+.paperTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.paperTitle a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.paperTitle a:hover {
+  color: #0D4715;
+}
+
+.paperInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.infoItem span.material-symbols-rounded {
+  font-size: 18px;
+  color: #41644A;
+}
+
+.paperAbstract {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  padding: 12px;
+  background: #E8F5E9;
+  border-radius: 8px;
+}
+
+.paperActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn span {
+  font-size: 20px;
+}
+
+.btnPrimary {
+  background: #0D4715;
+  color: #ffffff;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #41644A;
+}
+
+.btnSecondary {
+  background: #E8F5E9;
+  color: #0D4715;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: #c8e6c9;
+}
+
+.btnOutline {
+  background: transparent;
+  color: #0D4715;
+  border: 1px solid #0D4715;
+}
+
+.btnOutline:hover:not(:disabled) {
+  background: #E8F5E9;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Pagination */
+.paginationContainer {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #c8e6c9;
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  border-radius: 16px 16px 0 0;
+}
+
+.modalHeader h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modalHeader h2 span {
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.closeBtn span {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.paperSummary {
+  padding: 16px;
+  background: #E8F5E9;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+
+.paperSummary h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0D4715;
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+}
+
+.paperSummary p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label,
+.formGroupFull label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0D4715;
+}
+
+.formGroup input,
+.formGroupFull input {
+  padding: 10px 14px;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.formGroup input:focus,
+.formGroupFull input:focus {
+  outline: none;
+  border-color: #0D4715;
+}
+
+.formGroup input:disabled,
+.formGroupFull input:disabled {
+  background: #E8F5E9;
+  cursor: not-allowed;
+}
+
+.hint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #c8e6c9;
+  background: #f8fafc;
+  border-radius: 0 0 16px 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .statsCard {
+    align-self: flex-start;
+  }
+
+  .headerContent h1 {
+    font-size: 24px;
+  }
+
+  .headerContent h1 span {
+    font-size: 24px;
+  }
+
+  .paperCard {
+    padding: 16px;
+  }
+
+  .paperTitle {
+    font-size: 16px;
+  }
+
+  .paperInfo {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .paperActions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    margin: 10px;
+  }
+
+  .modalFooter {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContent h1 {
+    font-size: 20px;
+  }
+
+  .headerContent h1 span {
+    font-size: 20px;
+  }
+
+  .headerContent p {
+    font-size: 13px;
+  }
+
+  .statsNumber {
+    font-size: 28px;
+  }
+
+  .statsLabel {
+    font-size: 11px;
+  }
+
+  .paperTitle {
+    font-size: 15px;
+  }
+
+  .btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}
+
+/* File Upload Section */
+.fileUploadSection {
+  margin-bottom: 24px;
+}
+
+.fileUploadLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0D4715;
+  margin-bottom: 8px;
+}
+
+.fileUploadLabel span {
+  font-size: 20px;
+}
+
+.fileUploadArea {
+  position: relative;
+  border: 2px dashed #41644A;
+  border-radius: 8px;
+  background: #F5F9F6;
+  min-height: 80px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.fileUploadArea:hover {
+  border-color: #0D4715;
+  background: #E8F5E9;
+}
+
+.fileUploadArea input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.uploadPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 8px;
+  cursor: pointer;
+  color: #41644A;
+}
+
+.uploadPlaceholder span:first-child {
+  font-size: 32px;
+}
+
+.uploadPlaceholder span:last-child {
+  font-size: 13px;
+  text-align: center;
+}
+
+.selectedFile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #E8F5E9;
+  border-radius: 6px;
+  margin: 8px;
+  position: relative;
+  z-index: 3;
+}
+
+.selectedFile span:first-child {
+  font-size: 24px;
+  color: #0D4715;
+}
+
+.selectedFile span:nth-child(2) {
+  flex: 1;
+  font-size: 14px;
+  color: #0D4715;
+  word-break: break-all;
+}
+
+.removeFileBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: #dc2626;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.removeFileBtn:hover {
+  background: #b91c1c;
+}
+
+.removeFileBtn span {
+  font-size: 16px;
+  color: white;
+}
+
+.fileHint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 8px 0 0 0;
+}

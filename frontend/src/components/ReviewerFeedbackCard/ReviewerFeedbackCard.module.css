@@ -1,0 +1,113 @@
+.card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.recommendation {
+  flex: 1;
+}
+
+.recommendationBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.submittedDate {
+  color: #999;
+  font-size: 12px;
+}
+
+.ratings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ratingItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ratingLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  font-size: 18px;
+  cursor: default;
+}
+
+.ratingValue {
+  font-size: 12px;
+  color: #999;
+}
+
+.comments {
+  background: #fafafa;
+  border-left: 4px solid #1976d2;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.commentsTitle {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.commentText {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 16px;
+  }
+
+  .ratings {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

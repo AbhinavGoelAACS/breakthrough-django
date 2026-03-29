@@ -1,0 +1,404 @@
+/* ReviewerDashboard Styles - Modern Design */
+
+:root {
+  --primary: #0D4715;
+  --primary-hover: #41644A;
+  --primary-light: #E8F5E9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --bg-white: #ffffff;
+  --bg-light: #f8fafc;
+}
+
+.reviewerDashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Loading & Error States */
+.dashboardLoading,
+.dashboardError {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  min-height: 400px;
+  font-size: 16px;
+  color: #64748b;
+}
+
+.loadingIcon {
+  font-size: 32px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.dashboardError {
+  color: #ef4444;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.statCard {
+  min-width: 245px !important;
+  background: white;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  min-width: 0;
+}
+
+.statTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.statIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #41957d;
+  color: #ffffff;
+}
+
+.statIcon span {
+  font-size: 20px;
+}
+
+.statIconBlue {
+  background: #0D4715;
+  color: #ffffff;
+}
+
+.statIconEmerald {
+  background: #059669;
+  color: #ffffff;
+}
+
+.statIconAmber {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.statTrend {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+
+.statTrendUp {
+  color: #41957d;
+  background: #b1d7b6;
+}
+
+.statTrendDown {
+  color: #d97706;
+  background: #fef3c7;
+}
+
+.statLabel {
+  font-size: 14px;
+  font-weight: 400;
+  color: #94a3b8;
+  margin: 0 0 8px 0;
+}
+
+.statNumber {
+  font-size: 48px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1;
+}
+
+/* Section Header */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  margin-top: 32px;
+}
+
+.sectionTitle {
+  font-size: 32px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* Dashboard Card */
+.dashboardCard {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.viewAllLink {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0D4715;
+  text-decoration: none;
+  border: 1px solid #0D4715;
+  padding: 8px 24px;
+  border-radius: 32px;
+  transition: all 0.2s ease;
+}
+
+.viewAllLink:hover {
+  background: #0D4715;
+  color: white;
+}
+
+/* Assignments Table */
+.tableWrapper {
+  overflow-x: auto;
+  min-height: 200px;
+}
+
+.assignmentsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assignmentsTable thead {
+  background: #F5F5F5;
+}
+
+.assignmentsTable th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #41644A;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.assignmentsTable td {
+  padding: 16px;
+  font-size: 14px;
+  color: #333333;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.assignmentsTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.assignmentsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.titleCell {
+  max-width: 300px;
+}
+
+.paperTitle {
+  font-weight: 500;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+  display: block;
+}
+
+.dateCell {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 12px;
+}
+
+.statusBadgeBlue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.statusBadgeAmber {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.statusBadgeEmerald {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.statusBadgeRose {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.statusBadgeSlate {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.versionTag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #ede9fe;
+  color: #7c3aed;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.resubmitBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #d97706;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.reviewBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #0D4715;
+}
+
+.reviewBtn:hover {
+  background: #0D4715;
+  border-color: #0D4715;
+  color: white;
+}
+
+.noData {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: #94a3b8;
+}
+
+.noData span {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.noData p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .statsGrid {
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .statsGrid {
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .statCard {
+    padding: 20px;
+  }
+
+  .statTop {
+    margin-bottom: 16px;
+  }
+
+  .statNumber {
+    font-size: 32px;
+  }
+
+  .statLabel {
+    font-size: 13px;
+  }
+
+  .sectionTitle {
+    font-size: 24px;
+  }
+
+  .assignmentsTable th,
+  .assignmentsTable td {
+    padding: 12px 10px;
+    font-size: 12px;
+  }
+
+  .paperTitle {
+    max-width: 150px;
+    font-size: 13px;
+  }
+
+  .statusBadge {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .statCard {
+    padding: 20px;
+  }
+}

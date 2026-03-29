@@ -1,0 +1,1388 @@
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.db.models import Count, Q
+
+from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor
+
+
+def check_editor_role(user):
+    if user.role == "editor" or user.role == "admin":
+        return True
+    if UserRole.objects.filter(user=user, role="editor", status="approved").exists():
+        return True
+    return False
+
+def get_editor_journal_ids(user):
+    if user.role == "admin":
+        return list(Journal.objects.values_list('fld_id', flat=True))
+    return list(UserRole.objects.filter(
+        user=user, 
+        role="editor", 
+        status="approved", 
+        journal_id__isnull=False
+    ).values_list('journal_id', flat=True).distinct())
+
+def get_editor_journal_info(user):
+    if user.role == "admin":
+        journals = Journal.objects.all()
+        return [
+            {
+                "journal_id": j.fld_id,
+                "journal_name": j.fld_journal_name,
+                "short_form": j.short_form,
+                "editor_type": "chief_editor",
+                "description": j.description,
+                "issn_online": j.issn_ol,
+                "issn_print": j.issn_prt,
+                "chief_editor": j.cheif_editor,
+                "journal_logo": j.journal_logo
+            } for j in journals
+        ]
+        
+    user_roles = UserRole.objects.filter(
+        user=user,
+        role="editor",
+        status="approved",
+        journal_id__isnull=False
+    )
+    
+    seen_ids = set()
+    journals_info = []
+    
+    for ur in user_roles:
+        jid = ur.journal_id
+        if jid in seen_ids:
+            continue
+        seen_ids.add(jid)
+        
+        j = Journal.objects.filter(fld_id=jid).first()
+        if j:
+            journals_info.append({
+                "journal_id": j.fld_id,
+                "journal_name": j.fld_journal_name,
+                "short_form": j.short_form,
+                "editor_type": ur.editor_type or "section_editor",
+                "user_role_id": ur.id,
+                "description": j.description,
+                "issn_online": j.issn_ol,
+                "issn_print": j.issn_prt,
+                "chief_editor": j.cheif_editor,
+                "journal_logo": j.journal_logo
+            })
+    return journals_info
+
+class MyJournalsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        journals = get_editor_journal_info(request.user)
+        
+        if not journals:
+            return Response({"message": "No journals assigned to this editor", "journals": []})
+            
+        for journal in journals:
+            journal_id = journal["journal_id"]
+            total_papers = Paper.objects.filter(journal=journal_id).count()
+            pending_papers = Paper.objects.filter(journal=journal_id, status="submitted").count()
+            under_review = Paper.objects.filter(journal=journal_id, status="under_review").count()
+            
+            journal["paper_stats"] = {
+                "total": total_papers,
+                "pending": pending_papers,
+                "under_review": under_review
+            }
+            
+        return Response({
+            "total": len(journals),
+            "journals": journals
+        }, status=status.HTTP_200_OK)
+
+
+class EditorJournalDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, journal_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        if journal_id not in allowed_journals:
+            return Response({"detail": "You don't have access to edit this journal"}, status=status.HTTP_403_FORBIDDEN)
+            
+        ur = UserRole.objects.filter(user=request.user, journal_id=journal_id, role="editor", status="approved").first()
+        is_chief_editor = ur and ur.editor_type == "chief_editor"
+        if request.user.role == "admin":
+            is_chief_editor = True
+            
+        journal = Journal.objects.filter(fld_id=journal_id).first()
+        if not journal:
+            return Response({"detail": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        data = request.data
+        if "description" in data:
+            journal.description = data["description"]
+        if "co_editor" in data:
+            journal.co_editor = data["co_editor"]
+        if "journal_logo" in data:
+            journal.journal_logo = data["journal_logo"]
+        if "guidelines" in data:
+            journal.guidelines = data["guidelines"]
+            
+        if is_chief_editor:
+            if "fld_journal_name" in data:
+                journal.fld_journal_name = data["fld_journal_name"]
+            if "freq" in data:
+                journal.freq = data["freq"]
+            if "issn_ol" in data:
+                journal.issn_ol = data["issn_ol"]
+            if "issn_prt" in data:
+                journal.issn_prt = data["issn_prt"]
+            if "cheif_editor" in data:
+                journal.cheif_editor = data["cheif_editor"]
+        else:
+            restricted_keys = ["fld_journal_name", "freq", "issn_ol", "issn_prt", "cheif_editor"]
+            if any(k in data for k in restricted_keys):
+                return Response({
+                    "detail": "Section editors cannot update journal name, frequency, ISSN, or chief editor fields"
+                }, status=status.HTTP_403_FORBIDDEN)
+                
+        journal.save()
+        
+        return Response({
+            "id": journal.fld_id,
+            "name": journal.fld_journal_name,
+            "description": journal.description,
+            "co_editor": journal.co_editor,
+            "journal_logo": journal.journal_logo,
+            "guidelines": journal.guidelines,
+            "frequency": journal.freq,
+            "issn_online": journal.issn_ol,
+            "issn_print": journal.issn_prt,
+            "chief_editor": journal.cheif_editor,
+            "short_form": journal.short_form,
+            "editor_type": ur.editor_type if ur else "chief_editor",
+            "message": "Journal updated successfully"
+        }, status=status.HTTP_200_OK)
+
+
+class EditorDashboardStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        
+        if not allowed_journals:
+            return Response({
+                "total_papers": 0,
+                "pending_review": 0,
+                "under_review": 0,
+                "ready_publish": 0,
+                "journals_access": []
+            }, status=status.HTTP_200_OK)
+            
+        base_query = Paper.objects.filter(journal__in=allowed_journals)
+        
+        total_papers = base_query.count()
+        pending_review = base_query.filter(status="submitted").count()
+        under_review = base_query.filter(status="under_review").count()
+        ready_publish = base_query.filter(status="accepted").count()
+        
+        return Response({
+            "total_papers": total_papers,
+            "pending_review": pending_review,
+            "under_review": under_review,
+            "ready_publish": ready_publish,
+            "journals_access": allowed_journals
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPendingActionsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        base_query = Paper.objects.filter(journal__in=allowed_journals) if allowed_journals else Paper.objects.none()
+        
+        pending_assignments = base_query.filter(status="submitted").count()
+        
+        # Papers under review
+        overdue_reviews = base_query.filter(status="under_review").count() 
+        ready_for_publication = base_query.filter(status="accepted").count()
+        
+        return Response({
+            "pending_assignments": pending_assignments,
+            "assigned_reviews": overdue_reviews,
+            "ready_for_publication": ready_for_publication
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPaperQueueView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not allowed_journals:
+            return Response({"total": 0, "skip": 0, "limit": 20, "papers": []}, status=status.HTTP_200_OK)
+            
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 20))
+        status_filter = request.query_params.get("status_filter")
+        journal_id = request.query_params.get("journal_id")
+        
+        if journal_id:
+            journal_id = int(journal_id)
+            if request.user.role != "admin" and journal_id not in allowed_journals:
+                return Response({"detail": f"You don't have access to journal {journal_id}"}, status=status.HTTP_403_FORBIDDEN)
+                
+        base_query = Paper.objects.all()
+        if journal_id:
+            base_query = base_query.filter(journal=journal_id)
+        elif request.user.role != "admin":
+            base_query = base_query.filter(journal__in=allowed_journals)
+            
+        if status_filter:
+            base_query = base_query.filter(status=status_filter)
+            
+        total = base_query.count()
+        papers = base_query.order_by("-added_on")[skip:skip+limit]
+        
+        papers_list = []
+        for paper in papers:
+            journal_name = Journal.objects.filter(fld_id=paper.journal).values_list('fld_journal_name', flat=True).first() if paper.journal else "Unknown"
+            
+            author_name = paper.author or "Unknown"
+            author_email = None
+            if paper.added_by and paper.added_by.isdigit():
+                author = User.objects.filter(id=int(paper.added_by)).first()
+                if author:
+                    author_name = f"{author.fname} {author.lname or ''}".strip()
+                    author_email = author.email
+                    
+            # Review stats
+            total_invitations = ReviewerInvitation.objects.filter(paper_id=paper.id).count()
+            accepted_invitations = ReviewerInvitation.objects.filter(paper_id=paper.id, status="accepted").count()
+            legacy_assignments = OnlineReview.objects.filter(paper_id=str(paper.id)).count()
+            completed_reviews = ReviewSubmission.objects.filter(paper_id=paper.id, status="submitted").count()
+            
+            if total_invitations == 0 and legacy_assignments == 0:
+                review_status = "not_assigned"
+            elif accepted_invitations == 0 and legacy_assignments == 0:
+                review_status = "invited"
+            elif completed_reviews == 0:
+                review_status = "pending"
+            elif completed_reviews < accepted_invitations or completed_reviews < legacy_assignments:
+                review_status = "partial"
+            else:
+                review_status = "reviewed"
+                
+            papers_list.append({
+                "id": paper.id,
+                "paper_code": paper.paper_code,
+                "title": paper.title,
+                "abstract": paper.abstract,
+                "keywords": paper.keyword,
+                "author": author_name,
+                "author_email": author_email,
+                "journal": journal_name,
+                "journal_id": paper.journal,
+                "submitted_date": paper.added_on.isoformat() if paper.added_on else None,
+                "status": paper.status,
+                "file": paper.file,
+                "review_status": review_status,
+                "total_invitations": total_invitations,
+                "accepted_invitations": accepted_invitations,
+                "total_reviewers": max(total_invitations, legacy_assignments),
+                "completed_reviews": completed_reviews,
+                "version_number": paper.version_number,
+                "revision_count": paper.revision_count,
+                "research_area": paper.research_area
+            })
+            
+        return Response({
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "papers": papers_list
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPapersPendingDecisionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not allowed_journals:
+            return Response({"papers": [], "total": 0, "skip": 0, "limit": 20}, status=status.HTTP_200_OK)
+            
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 20))
+        
+        base_query = Paper.objects.filter(
+            status__in=["under_review", "correction", "resubmitted"],
+            journal__in=allowed_journals
+        )
+        
+        total = base_query.count()
+        papers = base_query.order_by("-added_on")[skip:skip+limit]
+        
+        papers_with_reviews = []
+        for paper in papers:
+            journal_name = Journal.objects.filter(fld_id=paper.journal).values_list('fld_journal_name', flat=True).first() if paper.journal else "Unknown"
+            
+            author_name = paper.author or "Unknown"
+            if paper.added_by and paper.added_by.isdigit():
+                author = User.objects.filter(id=int(paper.added_by)).first()
+                if author:
+                    author_name = f"{author.fname} {author.lname or ''}".strip()
+                    
+            papers_with_reviews.append({
+                "id": paper.id,
+                "title": paper.title,
+                "author": author_name,
+                "journal": journal_name,
+                "status": paper.status,
+                "submitted_date": paper.added_on.isoformat() if paper.added_on else None,
+                "added_by": paper.added_by
+            })
+            
+        return Response({
+            "papers": papers_with_reviews,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPaperDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        if request.user.role != "admin" and (not allowed_journals or paper.journal not in allowed_journals):
+            return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+            
+        journal = Journal.objects.filter(fld_id=paper.journal).first() if paper.journal else None
+        
+        author = None
+        if paper.added_by and paper.added_by.isdigit():
+            author = User.objects.filter(id=int(paper.added_by)).first()
+            
+        # Simplified review stats for detail view
+        assignments = OnlineReview.objects.filter(paper_id=str(paper.id))
+        completed_reviews = ReviewSubmission.objects.filter(paper_id=paper.id, status="submitted").count()
+        total_assignments = assignments.count()
+        
+        if total_assignments == 0:
+            review_status = "not_assigned"
+        elif completed_reviews == 0:
+            review_status = "pending"
+        elif completed_reviews < total_assignments:
+            review_status = "partial"
+        else:
+            review_status = "reviewed"
+            
+        # Optional: Load co_authors if models.PaperCoAuthor exists (FastAPI uses PaperCoAuthor)
+        # Assuming minimal detail return suitable for editors
+        
+        return Response({
+            "id": paper.id,
+            "paper_code": paper.paper_code,
+            "title": paper.title,
+            "abstract": paper.abstract,
+            "keywords": paper.keyword.split(",") if paper.keyword else [],
+            "file": paper.file,
+            "status": paper.status,
+            "submitted_date": paper.added_on.isoformat() if paper.added_on else None,
+            "author": {
+                "id": author.id if author else None,
+                "name": f"{author.fname} {author.lname or ''}".strip() if author else (paper.author or "Unknown"),
+                "email": author.email if author else None,
+                "affiliation": author.affiliation if author else None
+            },
+            "journal": {
+                "id": journal.fld_id if journal else None,
+                "name": journal.fld_journal_name if journal else "Unknown"
+            },
+            "review_status": review_status,
+            "total_reviewers": total_assignments,
+            "completed_reviews": completed_reviews,
+            "version_number": paper.version_number,
+            "revision_count": paper.revision_count,
+            "revision_deadline": paper.revision_deadline.isoformat() if paper.revision_deadline else None,
+            "revision_notes": paper.revision_notes,
+            "editor_comments": paper.editor_comments,
+            "research_area": paper.research_area
+        }, status=status.HTTP_200_OK)
+
+
+class EditorInviteReviewerView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Check journal access
+        allowed_journals = get_editor_journal_ids(request.user)
+        if request.user.role != "admin" and (not allowed_journals or paper.journal not in allowed_journals):
+            return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+            
+        if paper.added_by == str(request.user.id):
+            return Response({"detail": "You cannot invite reviewers to papers you submitted"}, status=status.HTTP_403_FORBIDDEN)
+            
+        reviewer_email = request.data.get("reviewer_email")
+        if not reviewer_email:
+            return Response({"detail": "reviewer_email is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        reviewer = User.objects.filter(email=reviewer_email).first()
+        if not reviewer:
+            return Response({"detail": "No user found with this email"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if reviewer.id == request.user.id or str(reviewer.id) == paper.added_by:
+            return Response({"detail": "Cannot invite the author or yourself as a reviewer"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_id=reviewer.id).first()
+        if existing:
+            return Response({
+                "detail": f"This reviewer has already been invited. Status: {existing.status}"
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        import uuid
+        from datetime import datetime, timedelta
+        
+        token = str(uuid.uuid4())
+        due_days = int(request.data.get("due_days", 14))
+        expires_at = datetime.now() + timedelta(days=7) # give them 7 days to accept
+        
+        invitation = ReviewerInvitation.objects.create(
+            paper_id=paper.id,
+            reviewer_id=reviewer.id,
+            invited_by=request.user.id,
+            token=token,
+            status="pending",
+            due_days=due_days,
+            expires_at=expires_at
+        )
+        
+        # In a real app, send email here via background task.
+        
+        return Response({
+            "success": True,
+            "message": f"Invitation sent to {reviewer_email}",
+            "invitation_id": invitation.id
+        }, status=status.HTTP_200_OK)
+
+
+class EditorAssignReviewerView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if paper.added_by == str(request.user.id):
+            return Response({"detail": "You cannot assign reviewers to papers you submitted"}, status=status.HTTP_403_FORBIDDEN)
+            
+        reviewer_id = request.data.get("reviewer_id")
+        if not reviewer_id:
+            return Response({"detail": "reviewer_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        reviewer = User.objects.filter(id=reviewer_id).first()
+        if not reviewer:
+            return Response({"detail": "Reviewer not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        has_reviewer_role = False
+        if "reviewer" in (reviewer.role or "").lower():
+            has_reviewer_role = True
+        elif UserRole.objects.filter(user=reviewer, role="reviewer", status="approved").exists():
+            has_reviewer_role = True
+            
+        if not has_reviewer_role:
+            return Response({"detail": "User does not have reviewer role"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        existing_assignment = OnlineReview.objects.filter(paper_id=str(paper.id), reviewer_id=str(reviewer.id)).first()
+        if existing_assignment:
+            return Response({"detail": "Reviewer is already assigned to this paper"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Create assignment
+        new_review = OnlineReview.objects.create(
+            paper_id=str(paper.id),
+            reviewer_id=str(reviewer.id),
+            review_status="pending"
+        )
+        
+        paper.status = "under_review"
+        paper.save()
+        
+        return Response({
+            "message": "Reviewer assigned successfully",
+            "review_id": new_review.id,
+            "paper_id": paper.id,
+            "reviewer_id": reviewer.id
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPaperReviewsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        author_name = paper.author or "Unknown"
+        if paper.added_by and paper.added_by.isdigit():
+            author_user = User.objects.filter(id=int(paper.added_by)).first()
+            if author_user:
+                author_name = f"{author_user.fname} {author_user.lname or ''}".strip()
+                
+        review_submissions = ReviewSubmission.objects.filter(paper_id=paper.id)
+        
+        reviews_list = []
+        total_rating = 0
+        rating_count = 0
+        accept_count = 0
+        minor_count = 0
+        major_count = 0
+        reject_count = 0
+        
+        for review in review_submissions:
+            reviewer = User.objects.filter(id=review.reviewer_id).first()
+            reviewer_name = "Anonymous Reviewer"
+            reviewer_email = None
+            if reviewer:
+                reviewer_name = f"{reviewer.fname} {reviewer.lname or ''}".strip() or reviewer.email
+                reviewer_email = reviewer.email
+                
+            rating = review.overall_rating or 0
+            if rating:
+                total_rating += rating
+                rating_count += 1
+                
+            recommendation = review.recommendation or ""
+            if recommendation == "accept":
+                accept_count += 1
+            elif recommendation == "minor_revision":
+                minor_count += 1
+            elif recommendation == "major_revision":
+                major_count += 1
+            elif recommendation == "reject":
+                reject_count += 1
+                
+            reviews_list.append({
+                "review_id": review.id,
+                "reviewer_id": review.reviewer_id,
+                "reviewer_name": reviewer_name,
+                "reviewer_email": reviewer_email,
+                "rating": rating,
+                "recommendation": recommendation,
+                "author_comments": review.author_comments,
+                "editor_comments": review.confidential_comments,
+                "submitted_date": review.submitted_at.isoformat() if review.submitted_at else None
+            })
+            
+        statistics = {
+            "total_reviews": len(reviews_list),
+            "average_rating": total_rating / rating_count if rating_count > 0 else 0,
+            "accept_count": accept_count,
+            "minor_revisions_count": minor_count,
+            "major_revisions_count": major_count,
+            "reject_count": reject_count
+        }
+        
+        return Response({
+            "paper_id": paper.id,
+            "paper_name": paper.title,
+            "paper_code": paper.paper_code,
+            "author": author_name,
+            "abstract": paper.abstract,
+            "keywords": paper.keyword,
+            "status": paper.status,
+            "submitted_date": paper.added_on.isoformat() if paper.added_on else None,
+            "reviews": reviews_list,
+            "statistics": statistics
+        }, status=status.HTTP_200_OK)
+
+
+class ListAvailableReviewersView(APIView):
+    """
+    GET /api/v1/editor/reviewers/?paper_id=X&search=...&skip=0&limit=50
+    
+    Returns list of reviewers with NLP-based recommendation scores when paper_id is provided.
+    Recommendations are based on:
+    - Profile matching: Paper content vs reviewer specialization
+    - History matching: Paper content vs reviewer's past reviewed papers
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 50))
+        search = request.query_params.get("search")
+        paper_id = request.query_params.get("paper_id")
+        
+        # Get users with role containing 'reviewer' or having an approved UserRole 'reviewer'
+        reviewer_user_ids = list(UserRole.objects.filter(role="reviewer", status="approved").values_list('user_id', flat=True))
+        
+        query = User.objects.filter(Q(role__icontains="reviewer") | Q(id__in=reviewer_user_ids))
+        
+        if search:
+            query = query.filter(
+                Q(email__icontains=search) | 
+                Q(fname__icontains=search) | 
+                Q(lname__icontains=search)
+            )
+            
+        total = query.count()
+        reviewers = query.distinct()[skip:skip+limit]
+        
+        reviewers_list = []
+        for reviewer in reviewers:
+            reviewers_list.append({
+                "id": reviewer.id,
+                "name": f"{reviewer.fname} {reviewer.lname or ''}".strip(),
+                "email": reviewer.email,
+                "specialization": getattr(reviewer, 'specialization', None),
+                "affiliation": getattr(reviewer, 'affiliation', None),
+                "is_recommended": False,
+                "recommendation_score": 0.0,
+                "profile_score": 0.0,
+                "history_score": 0.0,
+                "match_reason": ""
+            })
+        
+        # If paper_id provided, enrich with NLP recommendation scores
+        if paper_id:
+            try:
+                from .services.recommendation_service import RecommendationService
+                service = RecommendationService()
+                reviewers_list = service.enrich_reviewers_with_recommendations(int(paper_id), reviewers_list)
+            except Exception as e:
+                # Log but don't fail - return reviewers without recommendations
+                import logging
+                logging.getLogger(__name__).warning(f"Reviewer recommendation failed: {e}")
+            
+        return Response({
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "reviewers": reviewers_list
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPaperStatusUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        status_val = request.data.get("status")
+        comments = request.data.get("comments")
+        revision_deadline = request.data.get("revision_deadline")
+        
+        allowed_statuses = ["accepted", "rejected", "under_review", "pending", "correction", "published"]
+        if status_val not in allowed_statuses:
+            return Response({"detail": f"Invalid status. Allowed: {allowed_statuses}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        old_status = paper.status
+        paper.status = status_val
+        
+        from datetime import datetime
+        if revision_deadline and status_val == "correction":
+            try:
+                # Basic parsing string to aware datetime
+                from django.utils.dateparse import parse_datetime, parse_date
+                parsed_dt = parse_datetime(revision_deadline)
+                if not parsed_dt:
+                    parsed_d = parse_date(revision_deadline)
+                    if parsed_d:
+                        from django.utils.timezone import make_aware
+                        parsed_dt = make_aware(datetime.combine(parsed_d, datetime.min.time()))
+                
+                if parsed_dt:
+                    paper.revision_deadline = parsed_dt
+                    from django.utils import timezone
+                    paper.revision_requested_date = timezone.now()
+                    paper.revision_notes = comments
+            except Exception:
+                pass
+                
+        paper.save()
+        
+        return Response({
+            "id": paper.id,
+            "title": paper.title,
+            "status": paper.status,
+            "previous_status": old_status,
+            "email_notification_queued": False # Background task mock
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPaperDecisionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        author = None
+        if paper.added_by and paper.added_by.isdigit():
+            author = User.objects.filter(id=int(paper.added_by)).first()
+            
+        return Response({
+            "paper_id": paper.id,
+            "title": paper.title,
+            "status": paper.status,
+            "editor_comments": getattr(paper, 'editor_comments', None),
+            "revision_type": getattr(paper, 'revision_type', None),
+            "revision_notes": getattr(paper, 'revision_notes', None),
+            "revision_deadline": paper.revision_deadline.isoformat() if getattr(paper, 'revision_deadline', None) else None,
+            "revision_requested_date": paper.revision_requested_date.isoformat() if getattr(paper, 'revision_requested_date', None) else None,
+            "author": {
+                "id": author.id if author else None,
+                "name": f"{author.fname} {author.lname or ''}".strip() if author else None,
+                "email": author.email if author else None
+            } if author else None
+        }, status=status.HTTP_200_OK)
+        
+    def post(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        decision = request.data.get("decision")
+        editor_comments = request.data.get("editor_comments")
+        revision_type = request.data.get("revision_type")
+        
+        allowed_decisions = ["accepted", "correction", "rejected"]
+        if decision not in allowed_decisions:
+            return Response({"detail": f"Invalid decision. Allowed: {allowed_decisions}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if not editor_comments or len(editor_comments.strip()) < 50:
+            return Response({"detail": "Editor comments must be at least 50 characters"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if decision == "correction" and revision_type and revision_type not in ["minor", "major"]:
+            return Response({"detail": "Invalid revision type. Allowed: minor, major"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        old_status = paper.status
+        paper.status = decision
+        paper.editor_comments = editor_comments.strip()
+        
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        if decision == "correction":
+            paper.revision_requested_date = timezone.now()
+            if revision_type == "major":
+                paper.revision_deadline = timezone.now() + timedelta(days=30)
+            else:
+                paper.revision_deadline = timezone.now() + timedelta(days=14)
+            paper.revision_notes = editor_comments.strip()
+            paper.revision_type = revision_type or "minor"
+            
+        paper.save()
+        
+        return Response({
+            "success": True,
+            "paper_id": paper.id,
+            "title": paper.title,
+            "decision": decision,
+            "previous_status": old_status,
+            "editor_comments": paper.editor_comments,
+            "revision_type": revision_type if decision == "correction" else None,
+            "revision_deadline": paper.revision_deadline.isoformat() if getattr(paper, 'revision_deadline', None) else None,
+            "email_notification_queued": False
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPublishPaperView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if request.user.role == "editor":
+            allowed_journals = get_editor_journal_ids(request.user)
+            if allowed_journals and paper.journal and int(paper.journal) not in allowed_journals:
+                return Response({"detail": "You don't have access to publish papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+                
+        if paper.status != "accepted":
+            return Response({"detail": f"Only accepted papers can be published. Current status: {paper.status}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        existing_published = PaperPublished.objects.filter(paper_submission_id=paper.id).first()
+        if existing_published:
+            return Response({"detail": f"Paper already published with ID {existing_published.id}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        journal = Journal.objects.filter(fld_id=paper.journal).first() if paper.journal else None
+        if not journal:
+            return Response({"detail": "Journal not found for this paper"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        volume = request.data.get("volume")
+        issue = request.data.get("issue")
+        publication_date = request.data.get("publication_date")
+        
+        if not volume or not issue:
+            return Response({"detail": "volume and issue are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.utils import timezone
+        try:
+            from django.utils.dateparse import parse_date
+            pub_date = parse_date(publication_date) if publication_date else timezone.now().date()
+            if not pub_date:
+                pub_date = timezone.now().date()
+        except:
+            pub_date = timezone.now().date()
+            
+        existing_count = PaperPublished.objects.filter(
+            journal_id=journal.fld_id,
+            volume=volume,
+            issue=issue
+        ).count()
+        paper_num = existing_count + 1
+        
+        # Simple DOI generation logic matching FastAPI version
+        doi = f"10.58517/{journal.short_form}.{pub_date.year}.{volume}{issue}{paper_num}"
+        
+        # Publish Paper
+        published = PaperPublished.objects.create(
+            paper_submission_id=paper.id,
+            journal_id=journal.fld_id,
+            volume=str(volume),
+            issue=str(issue),
+            published_date=pub_date,
+            access_type="subscription",
+            doi=doi
+        )
+        
+        paper.status = "published"
+        paper.save()
+        
+        return Response({
+            "success": True,
+            "message": "Paper published successfully",
+            "published_paper": {
+                "id": published.id,
+                "title": paper.title,
+                "doi": published.doi
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class EditorAcceptedPapersView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not allowed_journals and request.user.role != "admin":
+            return Response({"papers": []}, status=status.HTTP_200_OK)
+            
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 20))
+        journal_id = request.query_params.get("journal_id")
+        
+        query = Paper.objects.filter(status="accepted")
+        
+        if journal_id:
+            journal_id = int(journal_id)
+            if request.user.role != "admin" and journal_id not in allowed_journals:
+                return Response({"detail": f"You don't have access to journal {journal_id}"}, status=status.HTTP_403_FORBIDDEN)
+            query = query.filter(journal=journal_id)
+        elif request.user.role != "admin":
+            query = query.filter(journal__in=allowed_journals)
+            
+        total = query.count()
+        papers = query.order_by("-updated_at")[skip:skip+limit]
+        
+        papers_list = []
+        for paper in papers:
+            journal_name = Journal.objects.filter(fld_id=paper.journal).values_list('fld_journal_name', flat=True).first() if paper.journal else "Unknown"
+            author_name = paper.author or "Unknown"
+            if paper.added_by and paper.added_by.isdigit():
+                author = User.objects.filter(id=int(paper.added_by)).first()
+                if author:
+                    author_name = f"{author.fname} {author.lname or ''}".strip()
+                    
+            papers_list.append({
+                "id": paper.id,
+                "paper_code": paper.paper_code,
+                "title": paper.title,
+                "author": author_name,
+                "journal": journal_name,
+                "journal_id": paper.journal,
+                "accepted_date": paper.updated_at.isoformat() if paper.updated_at else None,
+            })
+            
+        return Response({
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "papers": papers_list
+        }, status=status.HTTP_200_OK)
+
+
+class EditorReadyToPublishView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Functionally similar to accepted-papers but might have additional checks in the future
+        # Currently tracking FastAPI's `ready-to-publish` endpoint logic
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not allowed_journals and request.user.role != "admin":
+            return Response({"papers": []}, status=status.HTTP_200_OK)
+            
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 20))
+        journal_id = request.query_params.get("journal_id")
+        
+        query = Paper.objects.filter(status="accepted")
+        
+        if journal_id:
+            journal_id = int(journal_id)
+            if request.user.role != "admin" and journal_id not in allowed_journals:
+                return Response({"detail": f"You don't have access to journal {journal_id}"}, status=status.HTTP_403_FORBIDDEN)
+            query = query.filter(journal=journal_id)
+        elif request.user.role != "admin":
+            query = query.filter(journal__in=allowed_journals)
+            
+        total = query.count()
+        papers = query.order_by("-updated_at")[skip:skip+limit]
+        
+        papers_list = []
+        for paper in papers:
+            journal_name = Journal.objects.filter(fld_id=paper.journal).values_list('fld_journal_name', flat=True).first() if paper.journal else "Unknown"
+            author_name = paper.author or "Unknown"
+            if paper.added_by and paper.added_by.isdigit():
+                author = User.objects.filter(id=int(paper.added_by)).first()
+                if author:
+                    author_name = f"{author.fname} {author.lname or ''}".strip()
+                    
+            papers_list.append({
+                "id": paper.id,
+                "paper_code": paper.paper_code,
+                "title": paper.title,
+                "author": author_name,
+                "journal": journal_name,
+                "journal_id": paper.journal,
+                "accepted_date": paper.updated_at.isoformat() if paper.updated_at else None,
+            })
+            
+        return Response({
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "papers": papers_list
+        }, status=status.HTTP_200_OK)
+
+
+# --- Document View Endpoints ---
+def _get_editor_paper_file(request, paper_id: int, file_field: str):
+    """Helper method to handle file viewing checks and responses"""
+    if not check_editor_role(request.user):
+        return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+    paper = Paper.objects.filter(id=paper_id).first()
+    if not paper:
+        return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    allowed_journals = get_editor_journal_ids(request.user)
+    if request.user.role != "admin" and (not allowed_journals or paper.journal not in allowed_journals):
+        return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+
+    file_path = getattr(paper, file_field, None)
+    if not file_path:
+        return Response({"detail": f"No {file_field.replace('_', ' ')} uploaded for this paper"}, status=status.HTTP_404_NOT_FOUND)
+
+    from django.conf import settings
+    import os
+    from django.http import FileResponse
+    full_path = os.path.join(settings.BASE_DIR, file_path)
+    if not os.path.exists(full_path):
+        return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
+
+    return FileResponse(open(full_path, 'rb'), as_attachment=False, filename=os.path.basename(full_path))
+
+
+class EditorPaperViewTitlePage(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        return _get_editor_paper_file(request, paper_id, "title_page")
+
+
+class EditorPaperViewBlindedManuscript(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        return _get_editor_paper_file(request, paper_id, "blinded_manuscript")
+
+
+class EditorPaperViewTrackChanges(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        return _get_editor_paper_file(request, paper_id, "revised_track_changes")
+
+
+class EditorPaperViewCleanRevision(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        return _get_editor_paper_file(request, paper_id, "revised_clean")
+
+
+class EditorPaperViewResponseToReviewer(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        return _get_editor_paper_file(request, paper_id, "response_to_reviewer")
+
+
+# --- New Publishing Endpoints ---
+class EditorPublishPaperWithFileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, paper_id: int):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if request.user.role == "editor":
+            allowed_journals = get_editor_journal_ids(request.user)
+            if allowed_journals and paper.journal and int(paper.journal) not in allowed_journals:
+                return Response({"detail": "You don't have access to publish papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+                
+        if paper.status != "accepted":
+            return Response({"detail": f"Only accepted papers can be published. Current status: {paper.status}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        existing_published = PaperPublished.objects.filter(paper_submission_id=paper.id).first()
+        if existing_published:
+            return Response({"detail": f"Paper already published with ID {existing_published.id}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        journal = Journal.objects.filter(fld_id=paper.journal).first() if paper.journal else None
+        if not journal:
+            return Response({"detail": "Journal not found for this paper"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # In a real Django view handling file uploads, we'd use request.FILES
+        # For this translation, mimicking the required fields
+        if 'final_paper' not in request.FILES:
+             return Response({"detail": "Final paper file is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        volume = request.data.get("volume")
+        issue = request.data.get("issue")
+        publication_date = request.data.get("publication_date")
+        
+        if not volume or not issue:
+            return Response({"detail": "volume and issue are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.utils import timezone
+        try:
+            from django.utils.dateparse import parse_date
+            pub_date = parse_date(publication_date) if publication_date else timezone.now().date()
+            if not pub_date:
+                pub_date = timezone.now().date()
+        except:
+            pub_date = timezone.now().date()
+            
+        existing_count = PaperPublished.objects.filter(
+            journal_id=journal.fld_id,
+            volume=volume,
+            issue=issue
+        ).count()
+        paper_num = existing_count + 1
+        
+        doi = f"10.58517/{journal.short_form}.{pub_date.year}.{volume}{issue}{paper_num}"
+
+        final_paper = request.FILES['final_paper']
+        # Very basic file saving mock for brevity. Real implementation should use Django storage
+        import os
+        from django.conf import settings
+        from datetime import datetime
+        
+        publish_dir = os.path.join(settings.MEDIA_ROOT, 'published', str(journal.fld_id))
+        os.makedirs(publish_dir, exist_ok=True)
+        filename = f"paper_{paper.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        file_path = os.path.join(publish_dir, filename)
+        
+        with open(file_path, 'wb+') as destination:
+            for chunk in final_paper.chunks():
+                destination.write(chunk)
+                
+        relative_path = f"published/{journal.fld_id}/{filename}"
+        
+        published = PaperPublished.objects.create(
+            paper_submission_id=paper.id,
+            journal_id=journal.fld_id,
+            volume=str(volume),
+            issue=str(issue),
+            published_date=pub_date,
+            access_type="subscription",
+            doi=doi,
+            paper=relative_path, # store relative path
+            title=paper.title,
+            author=paper.author
+        )
+        
+        paper.status = "published"
+        paper.save()
+        
+        return Response({
+            "success": True,
+            "message": "Paper published successfully with file",
+            "published_paper": {
+                "id": published.id,
+                "title": paper.title,
+                "doi": published.doi,
+                "paper_file": published.paper
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class EditorCheckDOIStatusView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+            
+        published = PaperPublished.objects.filter(paper_submission_id=paper_id).first()
+        if not published:
+            return Response({"detail": "Published paper not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Mocking Crossref check
+        status_result = {
+            "status": "completed",
+            "message": "Mock Crossref DOI Status"
+        }
+        
+        return Response({
+            "paper_id": paper_id,
+            "published_id": published.id,
+            "doi": published.doi,
+            "doi_url": f"https://doi.org/{published.doi}" if published.doi else None,
+            "doi_status": published.doi_status,
+            "batch_id": published.crossref_batch_id,
+            "registered_at": published.doi_registered_at.isoformat() if published.doi_registered_at else None,
+            "crossref_check": status_result
+        }, status=status.HTTP_200_OK)
+
+
+# --- Invitation Endpoints ---
+class InvitationStatusView(APIView):
+    permission_classes = [] # Public endpoint
+    
+    def get(self, request, token: str):
+        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        if not invitation:
+            return Response({"detail": "Invitation not found. The token may be invalid."}, status=status.HTTP_404_NOT_FOUND)
+            
+        from django.utils import timezone
+        is_expired = invitation.expires_at < timezone.now() if invitation.expires_at else False
+        
+        paper = Paper.objects.filter(id=invitation.paper_id).first()
+        paper_title = paper.title if paper else "Unknown Paper"
+        
+        return Response({
+            "id": invitation.id,
+            "paper_id": invitation.paper_id,
+            "paper_title": paper_title,
+            "status": invitation.status,
+            "is_expired": is_expired,
+        }, status=status.HTTP_200_OK)
+
+
+class AcceptInvitationView(APIView):
+    permission_classes = [] # Handled mostly by token
+
+    def post(self, request, token: str):
+        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        if not invitation:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        if invitation.status != "pending":
+            return Response({"detail": f"Invitation has already been {invitation.status}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.utils import timezone
+        if invitation.expires_at and invitation.expires_at < timezone.now():
+            invitation.status = "expired"
+            invitation.save()
+            return Response({"detail": "Invitation has expired."}, status=status.HTTP_410_GONE)
+            
+        user = None
+        if request.user.is_authenticated:
+             user = request.user
+        elif invitation.reviewer_id:
+             user = User.objects.filter(id=invitation.reviewer_id).first()
+             
+        if not user:
+            return Response({
+                "status": "registration_required",
+                "message": "Please log in or register to accept",
+                "requires_registration": True
+            }, status=status.HTTP_200_OK)
+            
+        existing_review = OnlineReview.objects.filter(
+            paper_id=str(invitation.paper_id),
+            reviewer_id=str(user.id)
+        ).first()
+        
+        if existing_review:
+            return Response({"detail": "You are already assigned as a reviewer."}, status=status.HTTP_409_CONFLICT)
+            
+        invitation.status = "accepted"
+        invitation.reviewer_id = user.id
+        invitation.save()
+        
+        from datetime import date
+        online_review = OnlineReview.objects.create(
+            paper_id=str(invitation.paper_id),
+            reviewer_id=str(user.id),
+            review_status="pending" # Mocking structure
+        )
+        
+        return Response({
+            "status": "accepted",
+            "message": "You have been assigned as a reviewer",
+            "invitation_id": invitation.id,
+            "review_id": online_review.id
+        }, status=status.HTTP_200_OK)
+
+
+class DeclineInvitationView(APIView):
+    permission_classes = []
+
+    def post(self, request, token: str):
+        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        if not invitation:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        if invitation.status != "pending":
+             return Response({"detail": f"Invitation already {invitation.status}"}, status=status.HTTP_400_BAD_REQUEST)
+             
+        reason = request.data.get("reason", "")
+        invitation.status = "declined"
+        invitation.save()
+        
+        return Response({
+            "status": "declined",
+            "message": "You have declined this review invitation",
+            "invitation_id": invitation.id
+        }, status=status.HTTP_200_OK)
+
+
+class RegisterAcceptInvitationView(APIView):
+    permission_classes = []
+
+    def post(self, request, token: str):
+        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        if not invitation:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if invitation.status != "pending":
+            return Response({"detail": f"Invitation already {invitation.status}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        fname = request.data.get("fname")
+        lname = request.data.get("lname", "")
+        password = request.data.get("password")
+        email = request.data.get("email") # Needs email if ReviewerInvitation model doesn't store it tightly
+        
+        if not fname or not password or not email:
+            return Response({"detail": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        existing_user = User.objects.filter(email=email).first()
+        if existing_user:
+            return Response({"detail": "Account. Please login."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.contrib.auth.hashers import make_password
+        new_user = User.objects.create(
+            fname=fname,
+            lname=lname,
+            email=email,
+            password=make_password(password),
+            role="reviewer",
+            status="active"
+        )
+        
+        UserRole.objects.create(
+            user=new_user,
+            role="reviewer",
+            status="approved"
+        )
+        
+        invitation.status = "accepted"
+        invitation.reviewer_id = new_user.id
+        invitation.save()
+        
+        online_review = OnlineReview.objects.create(
+            paper_id=str(invitation.paper_id),
+            reviewer_id=str(new_user.id),
+            review_status="pending"
+        )
+        
+        return Response({
+            "status": "registered_and_accepted",
+            "user_id": new_user.id,
+            "invitation_id": invitation.id,
+        }, status=status.HTTP_200_OK)

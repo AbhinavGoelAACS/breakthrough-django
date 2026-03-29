@@ -1,0 +1,357 @@
+.issue-papers-page {
+  background-color: #ffffff;
+  min-height: calc(100vh - 200px);
+  padding: 1.5rem 2rem;
+  color: #000000;
+}
+
+/* Header */
+.issue-papers-header {
+  background: transparent;
+  margin-bottom: 10px;
+}
+
+.issue-papers-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.issue-papers-header-content h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  font-family: 'Open Sans', sans-serif;
+  color: #0f172a;
+}
+
+.issue-info {
+  display: flex;
+  gap: 12px;
+}
+
+.volume-badge,
+.issue-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.volume-badge {
+  background: #0d4016;
+  color: white;
+}
+
+.issue-badge {
+  background: #0f172a;
+  color: white;
+}
+
+/* Main Container */
+.issue-papers-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.issue-papers-main {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.papers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.papers-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: #0f172a;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.papers-count {
+  font-size: 14px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* No Papers */
+.no-papers {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.no-papers .material-symbols-rounded {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.no-papers p {
+  font-size: 16px;
+  margin: 0;
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Papers List */
+.papers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.paper-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+  background: #f9fafb;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.paper-card:hover {
+  border-color: #0d4016;
+  box-shadow: 0 4px 12px rgba(118, 159, 205, 0.15);
+  transform: translateY(-2px);
+}
+
+.paper-number {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d4016;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.paper-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.paper-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: #0f172a;
+  line-height: 1.4;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.paper-card:hover .paper-title {
+  color: #0d4016;
+}
+
+.paper-authors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 12px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.paper-authors .material-symbols-rounded {
+  font-size: 18px;
+  color: #94a3b8;
+}
+
+.paper-abstract {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0 0 14px 0;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.paper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.paper-pages,
+.paper-doi,
+.paper-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.paper-meta .material-symbols-rounded {
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+.paper-arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  transition: color 0.2s ease;
+}
+
+.paper-card:hover .paper-arrow {
+  color: #0d4016;
+}
+
+.paper-arrow .material-symbols-rounded {
+  font-size: 28px;
+}
+
+/* Loading & Error States */
+.issue-papers-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ffffff;
+  border-top-color: #0d4016;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.issue-papers-loading p {
+  font-size: 16px;
+  color: #64748b;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.issue-papers-error {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  margin: 20px;
+}
+
+.issue-papers-error p {
+  font-size: 16px;
+  color: #ef4444;
+  margin-bottom: 20px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.btn-back {
+  background: #0d4016;
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.btn-back:hover {
+  background: #0A144A;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(13, 26, 99, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .issue-papers-page {
+    padding: 1rem;
+  }
+
+  .issue-papers-header-content {
+    padding: 1.5rem 15px;
+  }
+
+  .issue-papers-header-content h1 {
+    font-size: 24px;
+  }
+
+  .issue-info {
+    flex-wrap: wrap;
+  }
+
+  .issue-papers-main {
+    padding: 20px;
+  }
+
+  .papers-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .paper-card {
+    padding: 16px;
+  }
+
+  .paper-number {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+
+  .paper-title {
+    font-size: 15px;
+  }
+
+  .paper-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .paper-card {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .paper-number {
+    align-self: flex-start;
+  }
+
+  .paper-arrow {
+    display: none;
+  }
+}

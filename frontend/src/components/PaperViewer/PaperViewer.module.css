@@ -1,0 +1,321 @@
+/* PaperViewer Component Styles */
+
+.paperViewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.noContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  min-height: 200px;
+  color: #64748b;
+  padding: 24px;
+}
+
+.noContent span,
+.noContent .material-symbols-rounded {
+  font-size: 48px;
+}
+
+.noContent p {
+  margin: 0;
+  font-size: 16px;
+  text-align: center;
+}
+
+/* Paper Header */
+.paperHeader {
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
+/* Metadata */
+.metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.metaItem {
+  display: flex;
+  gap: 12px;
+}
+
+.metaItem span {
+  font-size: 20px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.metaItem > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.metaLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.metaValue {
+  font-size: 14px;
+  color: #475569;
+  margin: 4px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Download Button */
+.downloadBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: #166534;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.downloadBtn:hover {
+  background: #15803d;
+}
+
+.downloadBtn span {
+  font-size: 18px;
+}
+
+/* Document Actions Container */
+.documentActions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Revision Files Section */
+.revisionFiles {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.revisionFilesTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.revisionFilesTitle span {
+  font-size: 18px;
+}
+
+.revisionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.revisionBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.revisionBtn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.revisionBtn span {
+  font-size: 16px;
+}
+
+/* Paper Content */
+.paperContent {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  min-height: 0; /* Critical for flex scroll */
+}
+
+.paperContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.paperContent::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.paperContent::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.paperContent::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.section {
+  margin-bottom: 28px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.sectionContent {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Keywords */
+.keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keyword {
+  display: inline-block;
+  padding: 5px 14px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .paperHeader {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .metadata {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .metaValue {
+    font-size: 13px;
+  }
+
+  .downloadBtn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .downloadBtn span {
+    font-size: 16px;
+  }
+
+  .paperContent {
+    padding: 16px;
+  }
+
+  .sectionContent {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .paperHeader {
+    padding: 12px;
+  }
+
+  .title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .metadata {
+    gap: 8px;
+  }
+
+  .metaLabel {
+    font-size: 10px;
+  }
+
+  .metaValue {
+    font-size: 12px;
+  }
+
+  .paperContent {
+    padding: 12px;
+  }
+
+  .section {
+    margin-bottom: 20px;
+  }
+
+  .sectionTitle {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .sectionContent {
+    font-size: 12px;
+  }
+}

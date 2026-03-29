@@ -1,0 +1,13 @@
+.submit-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #f5f7fa;
+  padding: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .submit-page {
+    padding: 10px 0;
+  }
+}

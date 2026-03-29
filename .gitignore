@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (user-generated content)
+uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+backend-fastapi/

@@ -1,0 +1,420 @@
+/* Dashboard Page - Breakthrough Publishers Homepage Design */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Open+Sans:wght@400;600;700&display=swap');
+
+/* Base Styles */
+.dashboardPageWrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.dashboardContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero Section */
+.heroSection {
+  position: relative;
+  height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.heroGradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(255, 255, 255, 0)),
+    url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&q=80&w=2000');
+  background-size: cover;
+  background-position: center;
+}
+
+.heroCard {
+  position: relative;
+  z-index: 10;
+  max-width: 896px;
+  min-width: auto;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.heroTitle {
+  font-family: 'Crimson Pro', serif;
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  line-height: 1.2;
+  color: #0d4016;
+}
+
+@media (min-width: 768px) {
+  .heroTitle {
+    font-size: 4.5rem;
+  }
+}
+
+.heroDescription {
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #475569;
+  font-style: italic;
+}
+
+/* Journals Section */
+.journalsSection {
+  padding: 46px 14px;
+  background-color: #0d4016;
+  color: #ffffff;
+}
+
+.journalsContainer {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.journalsHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.journalsTitle {
+  font-family: 'Crimson Pro', serif;
+  font-size: 4rem;
+  font-weight: 500;
+}
+
+/* .journalsUnderline {
+  width: 96px;
+  height: 4px;
+  background-color: #4ade80;
+  border-radius: 9999px;
+} */
+
+.journalsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 768px) {
+  .journalsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.journalCard {
+  background: #ffffff;
+  color: #1e293b;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.journalCard:hover {
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.3);
+  transform: translateY(-8px);
+}
+
+.journalCardTitle {
+  font-family: 'Crimson Pro', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #0d4016;
+}
+
+.journalCardDescription {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  color: #64748b;
+  margin-bottom: 32px;
+  line-height: 1.75;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.journalCardBtn {
+  background-color: #0d4016;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin-top: auto;
+}
+
+.journalCardBtn:hover {
+  color: #4ade80;
+  text-decoration: none;
+  background-color: #166534;
+  transform: translateY(-2px);
+}
+
+/* CTA Section */
+.ctaSection {
+  padding: 96px 24px;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+.ctaContainer {
+  max-width: 1024px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.ctaBlur1 {
+  position: absolute;
+  top: -48px;
+  left: -48px;
+  width: 192px;
+  height: 192px;
+  background: rgba(13, 64, 22, 0.05);
+  border-radius: 9999px;
+  filter: blur(48px);
+}
+
+.ctaBlur2 {
+  position: absolute;
+  bottom: -48px;
+  right: -48px;
+  width: 192px;
+  height: 192px;
+  background: rgba(13, 64, 22, 0.05);
+  border-radius: 9999px;
+  filter: blur(48px);
+}
+
+.ctaContent {
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ctaTitle {
+  font-family: 'Crimson Pro', serif;
+  font-size: 4rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ctaDescription {
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  font-style: italic;
+  color: #64748b;
+  max-width: 672px;
+  margin: 0 auto;
+}
+
+.ctaButtons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+@media (min-width: 640px) {
+  .ctaButtons {
+    flex-direction: row;
+  }
+}
+
+.ctaBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #0d4016;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.ctaBtnPrimary:hover {
+  color: #4ade80;
+  text-decoration: none;
+  box-shadow: 0 15px 40px -5px rgba(13, 64, 22, 0.3);
+}
+
+.ctaBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid #0d4016;
+  color: #0d4016;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.ctaBtnSecondary:hover {
+  color: #4ade80;
+  text-decoration: none;
+  background-color: #0d4016;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .heroSection {
+    height: auto;
+    min-height: 400px;
+    padding: 40px 16px;
+  }
+
+  .heroCard {
+    padding: 32px 24px;
+  }
+
+  .heroTitle {
+    font-size: 2rem;
+  }
+
+  .heroDescription {
+    font-size: 1rem;
+  }
+
+  .journalsSection {
+    padding: 64px 16px;
+  }
+
+  .journalsTitle {
+    font-size: 2.25rem;
+  }
+
+  .ctaSection {
+    padding: 64px 16px;
+  }
+
+  .ctaTitle {
+    font-size: 2rem;
+  }
+
+  .ctaDescription {
+    font-size: 1rem;
+  }
+}
+
+/* Small screen adjustments */
+@media (max-width: 480px) {
+  .heroSection {
+    min-height: 320px;
+    padding: 24px 12px;
+  }
+
+  .heroCard {
+    padding: 20px 16px;
+  }
+
+  .heroTitle {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+
+  .heroDescription {
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .journalsSection {
+    padding: 40px 12px;
+  }
+
+  .journalsTitle {
+    font-size: 1.75rem;
+    margin-bottom: 16px;
+  }
+
+  .journalsGrid {
+    gap: 16px;
+  }
+
+  .journalCard {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .journalCardTitle {
+    font-size: 1.25rem;
+    margin-bottom: 12px;
+  }
+
+  .journalCardDescription {
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .journalCardBtn {
+    padding: 8px 14px;
+    font-size: 13px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .ctaSection {
+    padding: 40px 12px;
+  }
+
+  .ctaTitle {
+    font-size: 1.5rem;
+  }
+
+  .ctaDescription {
+    font-size: 0.875rem;
+  }
+
+  .ctaButtons {
+    gap: 12px;
+    padding-top: 12px;
+  }
+
+  .ctaBtnPrimary,
+  .ctaBtnSecondary {
+    padding: 10px 16px;
+    font-size: 13px;
+    width: 100%;
+    justify-content: center;
+  }
+}

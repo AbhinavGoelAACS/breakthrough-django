@@ -1,0 +1,196 @@
+/**
+ * JournalAboutPage Styles
+ */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Open+Sans:wght@400;600;700&display=swap');
+
+.journal-about-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.journal-about-loading,
+.journal-about-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+}
+
+/* Page Header */
+.about-page-header {
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  color: #fff;
+  padding: 3rem 1.5rem;
+}
+
+.about-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.about-page-header h1 {
+  font-family: 'Crimson Pro', serif;
+  font-size: 2.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.about-page-header p {
+  font-size: 1.25rem;
+  opacity: 0.9;
+}
+
+/* Content Container */
+.about-content-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+}
+
+/* Sidebar */
+.journal-info-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.info-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.info-card h3 {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.info-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.info-list dt {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.info-list dd {
+  font-size: 1rem;
+  color: #333333;
+  font-weight: 500;
+  margin-left: 0;
+  margin-bottom: 0.5rem;
+}
+
+.indexing-text {
+  font-size: 1rem;
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+/* Main Content */
+.about-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.about-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.about-section h2 {
+  font-family: 'Crimson Pro', serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section-content {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: #4a5568;
+}
+
+.section-content p {
+  margin-bottom: 1rem;
+}
+
+.section-content ul,
+.section-content ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-content li {
+  margin-bottom: 0.5rem;
+}
+
+.section-content h3,
+.section-content h4 {
+  color: #333333;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.chief-say {
+  font-style: italic;
+  border-left: 4px solid #0D4715;
+  padding-left: 1.5rem;
+}
+
+.chief-signature {
+  margin-top: 1rem;
+  font-weight: 600;
+  color: #333333;
+  font-style: normal;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .about-content-container {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-info-sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .about-page-header {
+    padding: 2rem 1rem;
+  }
+
+  .about-page-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .about-section {
+    padding: 1.5rem;
+  }
+
+  .about-section h2 {
+    font-size: 1.25rem;
+  }
+}

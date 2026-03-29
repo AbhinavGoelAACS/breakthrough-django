@@ -1,0 +1,126 @@
+/* ============================================
+   GLOBAL STYLES - Root CSS File
+   ============================================ */
+
+/* Global Font Family */
+* {
+  font-family: 'Open Sans', sans-serif;
+}
+
+body,
+html {
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Material Symbols Icon Font - Ensure icons render correctly */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded' !important;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'liga';
+}
+
+/* Root Variables */
+:root {
+  --primary-color: #FFFFFF;
+  --primary-dark: #F5F5F5;
+  --secondary-color: #0D4715;
+  --tertiary-color: #41644A;
+  --accent-color: #0D4715;
+  --green-color: #0D4715;
+  --text-light: #f1f1f1;
+  --text-dark: #333333;
+  --bg-light: #fff;
+  --bg-dark: #242424;
+  --border-color: #ddd;
+  --grey-color: #B3C8CF;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --border-radius: 5px;
+  
+  /* Layout */
+  --max-width: 1200px;
+  --container-padding: 20px;
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 20px;
+  --spacing-lg: 30px;
+  --spacing-xl: 50px;
+  
+  /* Font */
+  --font-family: 'Open Sans', sans-serif;
+  --font-family-heading: 'Open Sans', sans-serif;
+  --font-size-base: 16px;
+  --font-size-sm: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+}
+
+/* ============================================
+   RESET & BASE STYLES
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  min-height: 100vh;
+}
+
+
+.full-width {
+  width: 100%;
+}
+
+/* ============================================
+   APP LAYOUT STYLES
+   ============================================ */
+
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  margin-top: 60px; /* Space for fixed Navbar header on public pages */
+  min-height: calc(100vh - 60px);
+}
+
+.app-main.portal-main {
+  margin-top: 0; /* Portal layouts handle their own spacing */
+}
+
+/* ============================================
+   PORTAL CONTENT SPACING
+   ============================================ */
+.portal-content {
+  padding: 1.5rem 2rem;
+}
+
+@media (max-width: 768px) {
+  .portal-content {
+    padding: 1rem;
+  }
+}
+

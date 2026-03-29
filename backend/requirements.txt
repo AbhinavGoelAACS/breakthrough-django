@@ -1,0 +1,28 @@
+# Core
+Django>=4.2,<5.0
+djangorestframework>=3.14.0
+
+# Database Access (MySQL)
+PyMySQL>=1.1.0
+
+# Security & Authentication (JWT and password hashing)
+python-jose[cryptography]>=3.3.0
+bcrypt>=4.1.0
+
+# Static & utilities
+django-cors-headers>=4.3.0
+python-dotenv>=1.0.0
+whitenoise>=6.6.0
+
+# API Documentation
+drf-spectacular>=0.27.1
+
+# Production Server
+gunicorn>=21.2.0
+
+#phpmyadmin
+mysqlclient>=2.2.4
+
+# NLP / Machine Learning (for recommendation systems)
+scikit-learn>=1.0
+numpy>=1.21
