@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from .models import (
     User, Paper, Journal, PaperPublished, UserRole, PaperCorrespondence,
-    CopyrightForm, News, EmailTemplate, OnlineReview, ReviewSubmission
+    CopyrightForm, News, EmailTemplate, OnlineReview, ReviewSubmission, Editor
 )
 
 
@@ -592,32 +592,32 @@ class AdminEditorsListView(APIView):
         editor_type = request.query_params.get("editor_type")
         search = request.query_params.get("search")
         
-        # Query user_role for editor roles
-        query = UserRole.objects.filter(
+        # ---- Source 1: user_role table (multi-role system) ----
+        ur_query = UserRole.objects.filter(
             role="editor",
             status="approved"
         ).select_related('user')
         
         if journal_id:
-            query = query.filter(journal_id=journal_id)
-        
+            ur_query = ur_query.filter(journal_id=journal_id)
         if editor_type:
-            query = query.filter(editor_type=editor_type)
-        
+            ur_query = ur_query.filter(editor_type=editor_type)
         if search:
-            query = query.filter(
+            ur_query = ur_query.filter(
                 Q(user__fname__icontains=search) |
                 Q(user__lname__icontains=search) |
                 Q(user__email__icontains=search)
             )
         
-        total = query.count()
-        results = query.order_by('-requested_at')[skip:skip + limit]
-        
-        # Build editor list
+        # Build editor list from user_role
         editor_list = []
-        for user_role in results:
+        seen_emails = set()
+        
+        for user_role in ur_query.order_by('-requested_at'):
             user = user_role.user
+            email_lower = (user.email or '').lower()
+            seen_emails.add(email_lower)
+            
             editor_dict = {
                 "id": user_role.id,
                 "user_id": user.id,
@@ -630,7 +630,8 @@ class AdminEditorsListView(APIView):
                 "editor_department": user.department,
                 "editor_college": user.organisation,
                 "editor_contact": user.contact,
-                "added_on": user_role.requested_at.isoformat() if user_role.requested_at else None
+                "added_on": user_role.requested_at.isoformat() if user_role.requested_at else None,
+                "source": "user_role",
             }
             
             # Enrich with journal information
@@ -644,11 +645,61 @@ class AdminEditorsListView(APIView):
             
             editor_list.append(editor_dict)
         
+        # ---- Source 2: legacy editor table ----
+        legacy_query = Editor.objects.all()
+        
+        if journal_id:
+            legacy_query = legacy_query.filter(journal_id=journal_id)
+        if editor_type:
+            legacy_query = legacy_query.filter(editor_type=editor_type)
+        if search:
+            legacy_query = legacy_query.filter(
+                Q(editor_name__icontains=search) |
+                Q(editor_email__icontains=search)
+            )
+        
+        for editor in legacy_query.order_by('-added_on'):
+            email_lower = (editor.editor_email or '').lower()
+            # Skip if already included from user_role (avoid duplicates)
+            if email_lower and email_lower in seen_emails:
+                continue
+            seen_emails.add(email_lower)
+            
+            editor_dict = {
+                "id": f"legacy_{editor.id}",
+                "user_id": None,
+                "editor_name": editor.editor_name or editor.editor_email or "",
+                "editor_email": editor.editor_email,
+                "journal_id": editor.journal_id,
+                "role": editor.role or "Editor",
+                "editor_type": editor.editor_type or "section_editor",
+                "editor_affiliation": editor.editor_affiliation,
+                "editor_department": editor.editor_department,
+                "editor_college": editor.editor_college,
+                "editor_contact": editor.editor_contact,
+                "added_on": editor.added_on.isoformat() if editor.added_on else None,
+                "source": "legacy",
+            }
+            
+            if editor.journal_id:
+                try:
+                    journal = Journal.objects.get(fld_id=editor.journal_id)
+                    editor_dict["journal_name"] = journal.fld_journal_name
+                    editor_dict["journal_short_form"] = journal.short_form
+                except Journal.DoesNotExist:
+                    pass
+            
+            editor_list.append(editor_dict)
+        
+        # ---- Paginate the merged list ----
+        total = len(editor_list)
+        paginated = editor_list[skip:skip + limit]
+        
         return Response({
             "total": total,
             "skip": skip,
             "limit": limit,
-            "editors": editor_list
+            "editors": paginated
         }, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -801,9 +852,11 @@ class AdminJournalEditorsView(APIView):
         chief_editor = None
         co_editor = None
         section_editors = []
+        seen_emails = set()
         
         for user_role in results:
             user = user_role.user
+            seen_emails.add((user.email or '').lower())
             editor_dict = {
                 "id": user_role.id,
                 "user_id": user.id,
@@ -816,7 +869,8 @@ class AdminJournalEditorsView(APIView):
                 "editor_department": user.department,
                 "editor_college": user.organisation,
                 "editor_contact": user.contact,
-                "added_on": user_role.requested_at.isoformat() if user_role.requested_at else None
+                "added_on": user_role.requested_at.isoformat() if user_role.requested_at else None,
+                "source": "user_role",
             }
             
             if user_role.editor_type == "chief_editor":
@@ -826,13 +880,52 @@ class AdminJournalEditorsView(APIView):
             else:
                 section_editors.append(editor_dict)
         
+        # Also include editors from legacy editor table for this journal
+        legacy_editors = Editor.objects.filter(journal_id=journal_id).order_by('-editor_type', 'editor_name')
+        for editor in legacy_editors:
+            email_lower = (editor.editor_email or '').lower()
+            if email_lower and email_lower in seen_emails:
+                continue
+            seen_emails.add(email_lower)
+            
+            editor_dict = {
+                "id": f"legacy_{editor.id}",
+                "user_id": None,
+                "editor_name": editor.editor_name or editor.editor_email or "",
+                "editor_email": editor.editor_email,
+                "journal_id": editor.journal_id,
+                "role": editor.role or "Editor",
+                "editor_type": editor.editor_type or "section_editor",
+                "editor_affiliation": editor.editor_affiliation,
+                "editor_department": editor.editor_department,
+                "editor_college": editor.editor_college,
+                "editor_contact": editor.editor_contact,
+                "added_on": editor.added_on.isoformat() if editor.added_on else None,
+                "source": "legacy",
+            }
+            
+            if editor.editor_type == "chief_editor":
+                if not chief_editor:
+                    chief_editor = editor_dict
+                else:
+                    section_editors.append(editor_dict)
+            elif editor.editor_type == "co_editor":
+                if not co_editor:
+                    co_editor = editor_dict
+                else:
+                    section_editors.append(editor_dict)
+            else:
+                section_editors.append(editor_dict)
+        
+        total_editors = (1 if chief_editor else 0) + (1 if co_editor else 0) + len(section_editors)
+        
         return Response({
             "journal_id": journal_id,
             "journal_name": journal.fld_journal_name,
             "chief_editor": chief_editor,
             "co_editor": co_editor,
             "section_editors": section_editors,
-            "total_editors": results.count()
+            "total_editors": total_editors
         }, status=status.HTTP_200_OK)
 
 
