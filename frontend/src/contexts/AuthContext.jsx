@@ -145,6 +145,10 @@ export const AuthProvider = ({ children }) => {
       authService.storeUser(userData);
       setUser(userData);
       setIsAuthenticated(true);
+      setActiveRole(userData.role?.toLowerCase() || null);
+      
+      // Fetch user's roles after signup
+      await fetchUserRoles();
 
       return userData;
     } catch (err) {
@@ -154,7 +158,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchUserRoles]);
 
   // Logout function
   const logout = useCallback(() => {
