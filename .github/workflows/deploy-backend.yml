@@ -52,29 +52,26 @@ jobs:
           echo "Files to deploy:"
           ls -la ../deploy_package
           
-      - name: Deploy to cPanel via FTPS (lftp)
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -u "${{ secrets.BACKEND_FTP_USERNAME }},${{ secrets.BACKEND_FTP_PASSWORD }}" \
-            -e "
-              set ftp:ssl-force true;
-              set ssl:verify-certificate no;
-              set ftp:ssl-protect-data true;
-              set mirror:use-pget-n 5;
-              mirror --reverse --delete --verbose \
-                --exclude ^\.git/ \
-                --exclude ^venv/ \
-                --exclude ^__pycache__/ \
-                --exclude \.pyc$ \
-                --exclude \.pyo$ \
-                --exclude ^\.env$ \
-                --exclude ^db\.sqlite3$ \
-                --exclude \.log$ \
-                --exclude \.DS_Store$ \
-                ./deploy_package/ ./;
-              quit;
-            " \
-            "ftps://${{ secrets.BACKEND_FTP_HOST }}"
+      - name: Deploy to cPanel via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.BACKEND_FTP_HOST }}
+          username: ${{ secrets.BACKEND_FTP_USERNAME }}
+          password: ${{ secrets.BACKEND_FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./deploy_package/
+          server-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/venv/**
+            **/__pycache__/**
+            **/*.pyc
+            **/*.pyo
+            **/.env
+            **/db.sqlite3
+            **/*.log
+            **/.DS_Store
             
       - name: Trigger cPanel Python App Restart (via SSH)
         if: ${{ env.HAS_SSH_KEY == 'true' }}

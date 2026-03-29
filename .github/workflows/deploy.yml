@@ -57,23 +57,20 @@ jobs:
             --exclude 'tests/' \
             --exclude '*.sqlite3'
             
-      - name: Deploy Backend via FTPS (lftp)
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -u "${{ secrets.BACKEND_FTP_USERNAME }},${{ secrets.BACKEND_FTP_PASSWORD }}" \
-            -e "
-              set ftp:ssl-force true;
-              set ssl:verify-certificate no;
-              set ftp:ssl-protect-data true;
-              mirror --reverse --delete --verbose \
-                --exclude ^\.git/ \
-                --exclude ^venv/ \
-                --exclude ^__pycache__/ \
-                --exclude \.pyc$ \
-                ./deploy_backend/ ./;
-              quit;
-            " \
-            "ftps://${{ secrets.BACKEND_FTP_HOST }}"
+      - name: Deploy Backend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.BACKEND_FTP_HOST }}
+          username: ${{ secrets.BACKEND_FTP_USERNAME }}
+          password: ${{ secrets.BACKEND_FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./deploy_backend/
+          server-dir: ./
+          exclude: |
+            **/.git*/**
+            **/venv/**
+            **/__pycache__/**
+            **/*.pyc
             
       - name: Post-deployment setup via SSH
         if: ${{ env.HAS_SSH_KEY == 'true' }}
@@ -186,21 +183,18 @@ jobs:
           </IfModule>
           HTACCESS
           
-      - name: Deploy Frontend via FTPS (lftp)
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -u "${{ secrets.FRONTEND_FTP_USERNAME }},${{ secrets.FRONTEND_FTP_PASSWORD }}" \
-            -e "
-              set ftp:ssl-force true;
-              set ssl:verify-certificate no;
-              set ftp:ssl-protect-data true;
-              mirror --reverse --delete --verbose \
-                --exclude ^\.git/ \
-                --exclude ^node_modules/ \
-                ./frontend/dist/ ./;
-              quit;
-            " \
-            "ftps://${{ secrets.FRONTEND_FTP_HOST }}"
+      - name: Deploy Frontend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FRONTEND_FTP_HOST }}
+          username: ${{ secrets.FRONTEND_FTP_USERNAME }}
+          password: ${{ secrets.FRONTEND_FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./frontend/dist/
+          server-dir: ./
+          exclude: |
+            **/.git*/**
+            **/node_modules/**
             
   # ============================================
   # DEPLOYMENT SUMMARY
