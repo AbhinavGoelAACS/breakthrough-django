@@ -58,8 +58,9 @@ jobs:
           server: ${{ secrets.BACKEND_FTP_HOST }}
           username: ${{ secrets.BACKEND_FTP_USERNAME }}
           password: ${{ secrets.BACKEND_FTP_PASSWORD }}
+          protocol: ftps
           local-dir: ./deploy_package/
-          server-dir: /home2/aacsjour/BreakThrough/
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**

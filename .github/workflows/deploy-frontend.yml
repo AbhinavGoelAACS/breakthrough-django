@@ -111,8 +111,9 @@ jobs:
           server: ${{ secrets.FRONTEND_FTP_HOST }}
           username: ${{ secrets.FRONTEND_FTP_USERNAME }}
           password: ${{ secrets.FRONTEND_FTP_PASSWORD }}
+          protocol: ftps
           local-dir: ./frontend/dist/
-          server-dir: /home2/aacsjour/testbreakthroughpublishers/
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**

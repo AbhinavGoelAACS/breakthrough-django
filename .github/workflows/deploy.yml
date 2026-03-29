@@ -63,8 +63,9 @@ jobs:
           server: ${{ secrets.BACKEND_FTP_HOST }}
           username: ${{ secrets.BACKEND_FTP_USERNAME }}
           password: ${{ secrets.BACKEND_FTP_PASSWORD }}
+          protocol: ftps
           local-dir: ./deploy_backend/
-          server-dir: /home2/aacsjour/BreakThrough/
+          server-dir: ./
           exclude: |
             **/.git*/**
             **/venv/**
@@ -188,8 +189,9 @@ jobs:
           server: ${{ secrets.FRONTEND_FTP_HOST }}
           username: ${{ secrets.FRONTEND_FTP_USERNAME }}
           password: ${{ secrets.FRONTEND_FTP_PASSWORD }}
+          protocol: ftps
           local-dir: ./frontend/dist/
-          server-dir: /home2/aacsjour/testbreakthroughpublishers/
+          server-dir: ./
           exclude: |
             **/.git*/**
             **/node_modules/**
