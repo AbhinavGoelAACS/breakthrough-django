@@ -73,7 +73,9 @@ jobs:
             **/.DS_Store
             
       - name: Trigger cPanel Python App Restart (via SSH)
-        if: ${{ secrets.SSH_PRIVATE_KEY != '' }}
+        if: ${{ env.HAS_SSH_KEY == 'true' }}
+        env:
+          HAS_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
