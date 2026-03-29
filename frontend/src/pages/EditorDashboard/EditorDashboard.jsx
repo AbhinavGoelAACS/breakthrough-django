@@ -122,9 +122,6 @@ export const EditorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
               <span className="material-symbols-rounded">description</span>
             </div>
-            <span className={`${styles.statTrend} ${stats.total_papers > 0 ? styles.statTrendUp : styles.statTrendStable}`}>
-              {stats.total_papers > 0 ? '↑ New' : 'Stable'}
-            </span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Total Papers</p>
@@ -137,7 +134,6 @@ export const EditorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconEmerald}`}>
               <span className="material-symbols-rounded">rate_review</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ Pending</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Pending Review</p>
@@ -150,7 +146,6 @@ export const EditorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconAmber}`}>
               <span className="material-symbols-rounded">search</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendDown}`}>↓ Reviewing</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Under Review</p>
@@ -163,7 +158,6 @@ export const EditorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconPurple}`}>
               <span className="material-symbols-rounded">check_circle</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ Ready</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Ready to Publish</p>

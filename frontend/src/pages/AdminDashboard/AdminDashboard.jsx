@@ -100,7 +100,6 @@ export const AdminDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
               <span className="material-symbols-rounded">description</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ 12%</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Total Submissions</p>
@@ -113,7 +112,6 @@ export const AdminDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconEmerald}`}>
               <span className="material-symbols-rounded">book</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ 4%</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Active Journals</p>
@@ -126,7 +124,6 @@ export const AdminDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconAmber}`}>
               <span className="material-symbols-rounded">rate_review</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendDown}`}>↓ 2%</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Pending Reviews</p>
@@ -139,7 +136,6 @@ export const AdminDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconPurple}`}>
               <span className="material-symbols-rounded">group</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendStable}`}>Stable</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Total Registered Users</p>

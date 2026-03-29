@@ -167,7 +167,6 @@ export const AuthorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
               <span className="material-symbols-rounded">description</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ 8%</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Total Submissions</p>
@@ -180,7 +179,6 @@ export const AuthorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconEmerald}`}>
               <span className="material-symbols-rounded">check_circle</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ 3%</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Accepted Papers</p>
@@ -193,7 +191,6 @@ export const AuthorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconAmber}`}>
               <span className="material-symbols-rounded">history_edu</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ 5%</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Under Review</p>
@@ -206,7 +203,6 @@ export const AuthorDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconRose}`}>
               <span className="material-symbols-rounded">cancel</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendDown}`}>↓ 1%</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Rejected Papers</p>

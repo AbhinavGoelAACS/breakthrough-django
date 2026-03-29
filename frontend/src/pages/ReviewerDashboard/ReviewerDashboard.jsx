@@ -91,7 +91,6 @@ export const ReviewerDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
               <span className="material-symbols-rounded">assignment</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ Active</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Total Assignments</p>
@@ -104,7 +103,6 @@ export const ReviewerDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconAmber}`}>
               <span className="material-symbols-rounded">rate_review</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendDown}`}>Action Required</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Pending Reviews</p>
@@ -117,7 +115,6 @@ export const ReviewerDashboard = () => {
             <div className={`${styles.statIcon} ${styles.statIconEmerald}`}>
               <span className="material-symbols-rounded">check_circle</span>
             </div>
-            <span className={`${styles.statTrend} ${styles.statTrendUp}`}>↑ Great</span>
           </div>
           <div className={styles.statBottom}>
             <p className={styles.statLabel}>Completed Reviews</p>
