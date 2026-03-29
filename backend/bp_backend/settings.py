@@ -49,6 +49,7 @@ ALLOWED_HOSTS = [
     ".vercel.app",
     "api.breakthroughpublishers.com",
     "breakthroughpublishers.com",
+    "dev.breakthroughpublishers.com",
 ]
 
 
@@ -202,5 +203,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "https://api.breakthroughpublishers.com",
     "https://breakthroughpublishers.com",
+    "https://dev.breakthroughpublishers.com",
 ]
 CORS_ALLOW_ALL_ORIGINS = True  # Set to False in production
