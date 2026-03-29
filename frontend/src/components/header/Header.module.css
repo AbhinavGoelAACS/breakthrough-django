@@ -29,11 +29,14 @@
   text-decoration: none;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .logo {
   height: 40px;
-  width: auto;
+  width: 40px;
+  border-radius: 50%;
+  object-fit: cover;
   display: block;
 }
 

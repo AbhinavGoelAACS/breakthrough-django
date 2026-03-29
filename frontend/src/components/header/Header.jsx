@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleSwitcher } from '../RoleSwitcher';
+import logo from '../../assets/logo.png';
 import styles from './Header.module.css';
 
 const Header = () => {
@@ -46,6 +47,7 @@ const Header = () => {
     <nav className={styles.navbar}>
       <div className={styles.container}>
         <Link className={styles.brand} to="/">
+          <img src={logo} alt="Breakthrough Publishers India" className={styles.logo} />
           <span className={styles.logoText}>Breakthrough Publishers India</span>
         </Link>
         

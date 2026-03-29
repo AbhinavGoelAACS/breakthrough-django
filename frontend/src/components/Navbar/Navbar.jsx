@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleSwitcher } from '../RoleSwitcher';
+import logo from '../../assets/logo.png';
 import styles from './Navbar.module.css';
 
 /**
@@ -64,6 +65,7 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
           {/* Left: Logo */}
           <div className={styles.headerLeft}>
             <Link className={styles.brand} to="/">
+              <img src={logo} alt="Breakthrough Publishers India" className={styles.logo} />
               <span className={styles.logoText}>Breakthrough Publishers India</span>
               <span className={styles.logoTextShort}>BPI</span>
             </Link>

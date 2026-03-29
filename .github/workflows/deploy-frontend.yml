@@ -33,7 +33,8 @@ jobs:
       - name: Create production environment file
         run: |
           cd frontend
-          echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" > .env.production
+          echo "VITE_API_URL=${{ secrets.VITE_API_BASE_URL }}" > .env.production
+          echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" >> .env.production
           echo "VITE_APP_NAME=BreakThrough" >> .env.production
           
       - name: Build for production
