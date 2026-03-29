@@ -45,6 +45,10 @@ export const formatApiError = (error) => {
         generalError = 'Server error. Please try again later.';
         break;
 
+      case 503: // Service Unavailable (e.g. database down)
+        generalError = data.detail || 'Service temporarily unavailable. Please try again later.';
+        break;
+
       default:
         generalError = data.detail || 'An error occurred. Please try again.';
     }

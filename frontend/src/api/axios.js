@@ -162,4 +162,22 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Helper to extract a user-friendly error message from an axios error
+export function getErrorMessage(error) {
+  if (!error.response) {
+    // Network error / server unreachable
+    return 'Unable to connect to the server. Please check your internet connection and try again.';
+  }
+  const status = error.response.status;
+  const detail = error.response.data?.detail;
+  if (status === 503) {
+    return detail || 'Service temporarily unavailable. Please try again later.';
+  }
+  if (status >= 500) {
+    return detail || 'An unexpected error occurred. Please try again later.';
+  }
+  // For 4xx, return the server message as-is (it's intentional)
+  return detail || error.response.data?.message || error.message || 'Something went wrong.';
+}
+
 export default apiClient;
