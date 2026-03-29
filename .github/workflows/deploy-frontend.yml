@@ -105,22 +105,22 @@ jobs:
           </IfModule>
           EOF
           
-      - name: Deploy to cPanel via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FRONTEND_FTP_HOST }}
-          username: ${{ secrets.FRONTEND_FTP_USERNAME }}
-          password: ${{ secrets.FRONTEND_FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./frontend/dist/
-          server-dir: ./
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.env
-            **/.env.*
-            !**/.htaccess
+      - name: Deploy to cPanel via FTPS (lftp)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -u "${{ secrets.FRONTEND_FTP_USERNAME }},${{ secrets.FRONTEND_FTP_PASSWORD }}" \
+            -e "
+              set ftp:ssl-force true;
+              set ssl:verify-certificate no;
+              set ftp:ssl-protect-data true;
+              mirror --reverse --delete --verbose \
+                --exclude ^\.git/ \
+                --exclude ^node_modules/ \
+                --exclude ^\.env \
+                ./frontend/dist/ ./;
+              quit;
+            " \
+            "ftps://${{ secrets.FRONTEND_FTP_HOST }}"
             
       - name: Deployment Summary
         run: |
