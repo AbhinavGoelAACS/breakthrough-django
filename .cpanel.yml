@@ -1,0 +1,53 @@
+# cPanel Git Deployment Configuration
+# This file is used when deploying via cPanel's Git Version Control feature
+# Documentation: https://docs.cpanel.net/knowledge-base/web-services/guide-to-git-deployment/
+
+---
+deployment:
+  tasks:
+    # ============================================
+    # BACKEND DEPLOYMENT TASKS
+    # ============================================
+    - export DEPLOYPATH=/home/$USER/public_html/backend
+    
+    # Copy backend files
+    - /bin/cp -R backend/* $DEPLOYPATH/
+    
+    # Navigate to backend directory
+    - cd $DEPLOYPATH
+    
+    # Create virtual environment if not exists
+    - |
+      if [ ! -d "venv" ]; then
+        /usr/bin/python3 -m venv venv
+      fi
+    
+    # Activate venv and install dependencies
+    - source venv/bin/activate && pip install --upgrade pip
+    - source venv/bin/activate && pip install -r requirements.txt
+    
+    # Run Django migrations
+    - source venv/bin/activate && python manage.py migrate --no-input
+    
+    # Collect static files
+    - source venv/bin/activate && python manage.py collectstatic --no-input --clear
+    
+    # Set correct permissions
+    - chmod 755 $DEPLOYPATH
+    - chmod 644 $DEPLOYPATH/*.py
+    - chmod -R 755 $DEPLOYPATH/api
+    - chmod -R 755 $DEPLOYPATH/bp_backend
+    
+    # Restart the application
+    - touch $DEPLOYPATH/tmp/restart.txt
+    
+    # ============================================
+    # FRONTEND DEPLOYMENT TASKS  
+    # ============================================
+    # Note: For frontend, you need to build locally and push dist/
+    # Or use GitHub Actions workflow instead
+    
+    - export FRONTENDPATH=/home/$USER/public_html
+    
+    # Copy frontend build files (if dist/ is committed)
+    # - /bin/cp -R frontend/dist/* $FRONTENDPATH/

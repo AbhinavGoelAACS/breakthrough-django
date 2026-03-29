@@ -1,0 +1,218 @@
+name: Deploy Full Application to cPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: 'Deploy Backend'
+        required: true
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: 'Deploy Frontend'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.10'
+  NODE_VERSION: '18'
+
+jobs:
+  # ============================================
+  # BACKEND DEPLOYMENT
+  # ============================================
+  deploy-backend:
+    name: Deploy Django Backend
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || inputs.deploy_backend }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Create backend deployment package
+        run: |
+          mkdir -p deploy_backend
+          rsync -av --progress backend/ deploy_backend/ \
+            --exclude 'venv' \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            --exclude '*.pyo' \
+            --exclude '.env' \
+            --exclude '.git' \
+            --exclude 'db.sqlite3' \
+            --exclude '*.log' \
+            --exclude '.DS_Store' \
+            --exclude 'media/uploads/*' \
+            --exclude 'staticfiles/*' \
+            --exclude 'tests/' \
+            --exclude '*.sqlite3'
+            
+      - name: Deploy Backend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy_backend/
+          server-dir: ${{ secrets.BACKEND_SERVER_DIR }}
+          exclude: |
+            **/.git*/**
+            **/venv/**
+            **/__pycache__/**
+            **/*.pyc
+            
+      - name: Post-deployment setup via SSH
+        if: ${{ secrets.SSH_PRIVATE_KEY != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.BACKEND_PATH }}
+            
+            # Create virtualenv if not exists
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+            
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            
+            # Run migrations
+            python manage.py migrate --no-input
+            
+            # Collect static files
+            python manage.py collectstatic --no-input --clear
+            
+            # Restart application
+            touch tmp/restart.txt
+            
+            echo "✅ Backend deployment complete!"
+            
+  # ============================================
+  # FRONTEND DEPLOYMENT
+  # ============================================
+  deploy-frontend:
+    name: Build and Deploy React Frontend
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || inputs.deploy_frontend }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+        
+      - name: Create .env.production
+        working-directory: frontend
+        run: |
+          cat > .env.production << EOF
+          VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+          VITE_APP_NAME=BreakThrough
+          VITE_APP_VERSION=${{ github.sha }}
+          EOF
+          
+      - name: Build application
+        working-directory: frontend
+        run: npm run build
+        
+      - name: Create .htaccess for SPA
+        run: |
+          cat > frontend/dist/.htaccess << 'HTACCESS'
+          RewriteEngine On
+          RewriteBase /
+          
+          # Force HTTPS (uncomment in production)
+          # RewriteCond %{HTTPS} !=on
+          # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+          
+          # SPA Routing - serve index.html for all non-file requests
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteCond %{REQUEST_FILENAME} !-d
+          RewriteRule ^ index.html [L]
+          
+          # Security Headers
+          <IfModule mod_headers.c>
+            Header set X-Content-Type-Options "nosniff"
+            Header set X-Frame-Options "SAMEORIGIN"
+            Header set X-XSS-Protection "1; mode=block"
+          </IfModule>
+          
+          # Compression
+          <IfModule mod_deflate.c>
+            AddOutputFilterByType DEFLATE text/html text/plain text/css application/json
+            AddOutputFilterByType DEFLATE application/javascript text/xml application/xml
+          </IfModule>
+          
+          # Caching
+          <IfModule mod_expires.c>
+            ExpiresActive On
+            ExpiresByType image/png "access plus 1 year"
+            ExpiresByType image/jpg "access plus 1 year"
+            ExpiresByType image/jpeg "access plus 1 year"
+            ExpiresByType image/gif "access plus 1 year"
+            ExpiresByType image/svg+xml "access plus 1 year"
+            ExpiresByType text/css "access plus 1 month"
+            ExpiresByType application/javascript "access plus 1 month"
+            ExpiresByType font/woff2 "access plus 1 year"
+          </IfModule>
+          HTACCESS
+          
+      - name: Deploy Frontend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./frontend/dist/
+          server-dir: ${{ secrets.FRONTEND_SERVER_DIR }}
+          exclude: |
+            **/.git*/**
+            **/node_modules/**
+            
+  # ============================================
+  # DEPLOYMENT SUMMARY
+  # ============================================
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
+    
+    steps:
+      - name: Check deployment status
+        run: |
+          echo "========================================"
+          echo "       DEPLOYMENT SUMMARY"
+          echo "========================================"
+          echo ""
+          echo "Backend Status: ${{ needs.deploy-backend.result }}"
+          echo "Frontend Status: ${{ needs.deploy-frontend.result }}"
+          echo ""
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo ""
+          echo "========================================"
