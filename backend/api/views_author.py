@@ -83,9 +83,9 @@ class AuthorPaperResubmitView(APIView):
             return Response({"detail": "Paper is not in a status that allows resubmission"}, status=status.HTTP_400_BAD_REQUEST)
 
         change_summary = request.data.get("change_summary", "")
-        clean_revision_file = request.FILES.get("clean_revision")
-        track_changes_file = request.FILES.get("track_changes")
-        response_to_reviewer_file = request.FILES.get("response_to_reviewer")
+        clean_revision_file = request.FILES.get("clean_revision") or request.FILES.get("clean_file")
+        track_changes_file = request.FILES.get("track_changes") or request.FILES.get("track_changes_file")
+        response_to_reviewer_file = request.FILES.get("response_to_reviewer") or request.FILES.get("response_file")
         title_page_file = request.FILES.get("title_page")
 
         if not clean_revision_file:
@@ -765,7 +765,9 @@ class AuthorPaperDownloadView(APIView):
 
         from django.conf import settings
         import os
-        full_path = os.path.join(settings.BASE_DIR, file_path)
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+        full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -773,7 +775,8 @@ class AuthorPaperDownloadView(APIView):
 
 
 class AuthorPaperView(APIView):
-    authentication_classes = [JWTAuthentication]
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -791,7 +794,9 @@ class AuthorPaperView(APIView):
 
         from django.conf import settings
         import os
-        full_path = os.path.join(settings.BASE_DIR, file_path)
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+        full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -799,7 +804,8 @@ class AuthorPaperView(APIView):
 
 
 class AuthorPaperTitlePageView(APIView):
-    authentication_classes = [JWTAuthentication]
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -817,7 +823,9 @@ class AuthorPaperTitlePageView(APIView):
 
         from django.conf import settings
         import os
-        full_path = os.path.join(settings.BASE_DIR, file_path)
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+        full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -825,7 +833,8 @@ class AuthorPaperTitlePageView(APIView):
 
 
 class AuthorPaperBlindedManuscriptView(APIView):
-    authentication_classes = [JWTAuthentication]
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -843,7 +852,9 @@ class AuthorPaperBlindedManuscriptView(APIView):
 
         from django.conf import settings
         import os
-        full_path = os.path.join(settings.BASE_DIR, file_path)
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+        full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -851,7 +862,8 @@ class AuthorPaperBlindedManuscriptView(APIView):
 
 
 class AuthorReviewReportView(APIView):
-    authentication_classes = [JWTAuthentication]
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int, review_id: int):
@@ -874,7 +886,9 @@ class AuthorReviewReportView(APIView):
 
         from django.conf import settings
         import os
-        full_path = os.path.join(settings.BASE_DIR, file_path)
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+        full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 

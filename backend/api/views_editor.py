@@ -6,15 +6,21 @@ from django.db.models import Count, Q
 from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor
 
 
+def _is_admin(user):
+    return (getattr(user, 'role', '') or '').lower() == 'admin'
+
+
 def check_editor_role(user):
-    if user.role == "editor" or user.role == "admin":
+    if _is_admin(user):
+        return True
+    if (user.role or '').lower() == 'editor':
         return True
     if UserRole.objects.filter(user=user, role="editor", status="approved").exists():
         return True
     return False
 
 def get_editor_journal_ids(user):
-    if user.role == "admin":
+    if _is_admin(user):
         return list(Journal.objects.values_list('fld_id', flat=True))
     return list(UserRole.objects.filter(
         user=user, 
@@ -24,7 +30,7 @@ def get_editor_journal_ids(user):
     ).values_list('journal_id', flat=True).distinct())
 
 def get_editor_journal_info(user):
-    if user.role == "admin":
+    if _is_admin(user):
         journals = Journal.objects.all()
         return [
             {
@@ -115,7 +121,7 @@ class EditorJournalDetailView(APIView):
             
         ur = UserRole.objects.filter(user=request.user, journal_id=journal_id, role="editor", status="approved").first()
         is_chief_editor = ur and ur.editor_type == "chief_editor"
-        if request.user.role == "admin":
+        if _is_admin(request.user):
             is_chief_editor = True
             
         journal = Journal.objects.filter(fld_id=journal_id).first()
@@ -244,13 +250,13 @@ class EditorPaperQueueView(APIView):
         
         if journal_id:
             journal_id = int(journal_id)
-            if request.user.role != "admin" and journal_id not in allowed_journals:
+            if not _is_admin(request.user) and journal_id not in allowed_journals:
                 return Response({"detail": f"You don't have access to journal {journal_id}"}, status=status.HTTP_403_FORBIDDEN)
                 
         base_query = Paper.objects.all()
         if journal_id:
             base_query = base_query.filter(journal=journal_id)
-        elif request.user.role != "admin":
+        elif not _is_admin(request.user):
             base_query = base_query.filter(journal__in=allowed_journals)
             
         if status_filter:
@@ -381,7 +387,7 @@ class EditorPaperDetailView(APIView):
             return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
             
         allowed_journals = get_editor_journal_ids(request.user)
-        if request.user.role != "admin" and (not allowed_journals or paper.journal not in allowed_journals):
+        if not _is_admin(request.user) and (not allowed_journals or paper.journal not in allowed_journals):
             return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
             
         journal = Journal.objects.filter(fld_id=paper.journal).first() if paper.journal else None
@@ -451,13 +457,13 @@ class EditorInviteReviewerView(APIView):
             
         # Check journal access
         allowed_journals = get_editor_journal_ids(request.user)
-        if request.user.role != "admin" and (not allowed_journals or paper.journal not in allowed_journals):
+        if not _is_admin(request.user) and (not allowed_journals or paper.journal not in allowed_journals):
             return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
             
         if paper.added_by == str(request.user.id):
             return Response({"detail": "You cannot invite reviewers to papers you submitted"}, status=status.HTTP_403_FORBIDDEN)
             
-        reviewer_email = request.data.get("reviewer_email")
+        reviewer_email = request.data.get("reviewer_email") or request.query_params.get("reviewer_email")
         if not reviewer_email:
             return Response({"detail": "reviewer_email is required"}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -478,17 +484,19 @@ class EditorInviteReviewerView(APIView):
         from datetime import datetime, timedelta
         
         token = str(uuid.uuid4())
-        due_days = int(request.data.get("due_days", 14))
-        expires_at = datetime.now() + timedelta(days=7) # give them 7 days to accept
+        due_days = int(request.data.get("due_days", 0) or request.query_params.get("due_days", 14))
+        expires_at = datetime.now() + timedelta(days=7)  # give them 7 days to accept
         
         invitation = ReviewerInvitation.objects.create(
             paper_id=paper.id,
             reviewer_id=reviewer.id,
-            invited_by=request.user.id,
-            token=token,
+            reviewer_email=reviewer_email,
+            reviewer_name=f"{reviewer.fname or ''} {reviewer.lname or ''}".strip() or reviewer_email,
+            journal_id=str(paper.journal) if paper.journal else None,
+            invitation_token=token,
+            token_expiry=expires_at,
             status="pending",
-            due_days=due_days,
-            expires_at=expires_at
+            invited_on=datetime.now(),
         )
         
         # In a real app, send email here via background task.
@@ -855,7 +863,7 @@ class EditorPublishPaperView(APIView):
         if not paper:
             return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
             
-        if request.user.role == "editor":
+        if (request.user.role or "").lower() == "editor":
             allowed_journals = get_editor_journal_ids(request.user)
             if allowed_journals and paper.journal and int(paper.journal) not in allowed_journals:
                 return Response({"detail": "You don't have access to publish papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
@@ -930,7 +938,7 @@ class EditorAcceptedPapersView(APIView):
             return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
             
         allowed_journals = get_editor_journal_ids(request.user)
-        if not allowed_journals and request.user.role != "admin":
+        if not allowed_journals and not _is_admin(request.user):
             return Response({"papers": []}, status=status.HTTP_200_OK)
             
         skip = int(request.query_params.get("skip", 0))
@@ -941,10 +949,10 @@ class EditorAcceptedPapersView(APIView):
         
         if journal_id:
             journal_id = int(journal_id)
-            if request.user.role != "admin" and journal_id not in allowed_journals:
+            if not _is_admin(request.user) and journal_id not in allowed_journals:
                 return Response({"detail": f"You don't have access to journal {journal_id}"}, status=status.HTTP_403_FORBIDDEN)
             query = query.filter(journal=journal_id)
-        elif request.user.role != "admin":
+        elif not _is_admin(request.user):
             query = query.filter(journal__in=allowed_journals)
             
         total = query.count()
@@ -987,7 +995,7 @@ class EditorReadyToPublishView(APIView):
             return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
             
         allowed_journals = get_editor_journal_ids(request.user)
-        if not allowed_journals and request.user.role != "admin":
+        if not allowed_journals and not _is_admin(request.user):
             return Response({"papers": []}, status=status.HTTP_200_OK)
             
         skip = int(request.query_params.get("skip", 0))
@@ -998,10 +1006,10 @@ class EditorReadyToPublishView(APIView):
         
         if journal_id:
             journal_id = int(journal_id)
-            if request.user.role != "admin" and journal_id not in allowed_journals:
+            if not _is_admin(request.user) and journal_id not in allowed_journals:
                 return Response({"detail": f"You don't have access to journal {journal_id}"}, status=status.HTTP_403_FORBIDDEN)
             query = query.filter(journal=journal_id)
-        elif request.user.role != "admin":
+        elif not _is_admin(request.user):
             query = query.filter(journal__in=allowed_journals)
             
         total = query.count()
@@ -1045,7 +1053,7 @@ def _get_editor_paper_file(request, paper_id: int, file_field: str):
         return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
 
     allowed_journals = get_editor_journal_ids(request.user)
-    if request.user.role != "admin" and (not allowed_journals or paper.journal not in allowed_journals):
+    if not _is_admin(request.user) and (not allowed_journals or paper.journal not in allowed_journals):
         return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
 
     file_path = getattr(paper, file_field, None)
@@ -1055,7 +1063,9 @@ def _get_editor_paper_file(request, paper_id: int, file_field: str):
     from django.conf import settings
     import os
     from django.http import FileResponse
-    full_path = os.path.join(settings.BASE_DIR, file_path)
+    if file_path.startswith('/'):
+        file_path = file_path[1:]
+    full_path = os.path.join(settings.BASE_DIR.parent, file_path)
     if not os.path.exists(full_path):
         return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1063,6 +1073,8 @@ def _get_editor_paper_file(request, paper_id: int, file_field: str):
 
 
 class EditorPaperViewTitlePage(APIView):
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -1070,6 +1082,8 @@ class EditorPaperViewTitlePage(APIView):
 
 
 class EditorPaperViewBlindedManuscript(APIView):
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -1077,6 +1091,8 @@ class EditorPaperViewBlindedManuscript(APIView):
 
 
 class EditorPaperViewTrackChanges(APIView):
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -1084,6 +1100,8 @@ class EditorPaperViewTrackChanges(APIView):
 
 
 class EditorPaperViewCleanRevision(APIView):
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -1091,6 +1109,8 @@ class EditorPaperViewCleanRevision(APIView):
 
 
 class EditorPaperViewResponseToReviewer(APIView):
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id: int):
@@ -1109,7 +1129,7 @@ class EditorPublishPaperWithFileView(APIView):
         if not paper:
             return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
             
-        if request.user.role == "editor":
+        if (request.user.role or "").lower() == "editor":
             allowed_journals = get_editor_journal_ids(request.user)
             if allowed_journals and paper.journal and int(paper.journal) not in allowed_journals:
                 return Response({"detail": "You don't have access to publish papers from this journal"}, status=status.HTTP_403_FORBIDDEN)

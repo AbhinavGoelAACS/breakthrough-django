@@ -116,14 +116,14 @@ class ReviewerInvitationsView(APIView):
                 
             invitations_list.append({
                 "id": invitation.id,
-                "invitation_token": invitation.token, # Model field seems to be token usually, will check
+                "invitation_token": invitation.invitation_token,
                 "paper_id": invitation.paper_id,
                 "paper_title": paper.title if paper else "Unknown",
                 "author": f"{author.fname} {author.lname or ''}".strip() if author else "Unknown",
                 "journal": journal.fld_journal_name if journal else "Unknown",
                 "invited_on": invitation.invited_on.isoformat() if invitation.invited_on else None,
-                "token_expiry": invitation.expires_at.isoformat() if getattr(invitation, 'expires_at', None) else None,
-                "invitation_message": invitation.message if hasattr(invitation, 'message') else "",
+                "token_expiry": invitation.token_expiry.isoformat() if invitation.token_expiry else None,
+                "invitation_message": invitation.invitation_message or "",
                 "status": invitation.status
             })
             
@@ -158,7 +158,7 @@ class AcceptInvitationAuthView(APIView):
             return Response({"detail": f"Invitation has already been {invitation.status}"}, status=status.HTTP_400_BAD_REQUEST)
             
         from django.utils import timezone
-        if getattr(invitation, 'expires_at', None) and invitation.expires_at < timezone.now():
+        if invitation.token_expiry and invitation.token_expiry < timezone.now():
             invitation.status = "expired"
             invitation.save()
             return Response({"detail": "Invitation token has expired"}, status=status.HTTP_400_BAD_REQUEST)
@@ -422,6 +422,8 @@ class ReviewerAssignmentViewPaperView(APIView):
     """
     View the blinded manuscript for a review assignment in the browser.
     """
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, review_id: int):
@@ -794,6 +796,8 @@ class ReviewerViewTrackChangesView(APIView):
     
     Serve the track changes file for a resubmission.
     """
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, review_id: int):
@@ -834,6 +838,8 @@ class ReviewerViewCleanManuscriptView(APIView):
     
     Serve the clean revised manuscript for a resubmission.
     """
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, review_id: int):
@@ -874,6 +880,8 @@ class ReviewerViewResponseToReviewerView(APIView):
     
     Serve the author's response to reviewer comments for a resubmission.
     """
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, review_id: int):

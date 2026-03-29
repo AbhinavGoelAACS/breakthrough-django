@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useRole } from '../../hooks/useRole';
 import { useToast } from '../../hooks/useToast';
@@ -39,6 +39,7 @@ const PaperDetailsPage = () => {
   const [externalName, setExternalName] = useState('');
   const [emailError, setEmailError] = useState('');
   // Author resubmission state
+  const resubmitFormRef = useRef(null);
   const [showResubmitForm, setShowResubmitForm] = useState(false);
   const [trackChangesFile, setTrackChangesFile] = useState(null);
   const [cleanFile, setCleanFile] = useState(null);
@@ -46,6 +47,15 @@ const PaperDetailsPage = () => {
   const [revisionReason, setRevisionReason] = useState('');
   const [changeSummary, setChangeSummary] = useState('');
   const [resubmitting, setResubmitting] = useState(false);
+  // Scroll to resubmit form when it becomes visible
+  useEffect(() => {
+    if (showResubmitForm && resubmitFormRef.current) {
+      setTimeout(() => {
+        resubmitFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [showResubmitForm]);
+
   // Correspondence history
   const [correspondence, setCorrespondence] = useState([]);
   const [loadingCorrespondence, setLoadingCorrespondence] = useState(false);
@@ -1029,7 +1039,7 @@ const PaperDetailsPage = () => {
 
           {/* Resubmit Form - kept inline as it's author-specific */}
           {showResubmitForm && isAuthor() && (
-            <section className={styles.section}>
+            <section className={styles.section} ref={resubmitFormRef}>
               <div className={styles.sectionHeader}>
                 <span className="material-symbols-rounded">upload_file</span>
                 <h2 className={styles.sectionTitle}>Resubmit Revised Paper</h2>

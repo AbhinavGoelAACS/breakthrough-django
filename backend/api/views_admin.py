@@ -12,7 +12,7 @@ from .models import (
 
 
 def check_admin_role(user):
-    return user.role == "admin"
+    return (user.role or '').lower() == "admin"
 
 class AdminDashboardStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -110,7 +110,7 @@ class AdminUsersListView(APIView):
             )
             
         if role_filter:
-            query = query.filter(role=role_filter)
+            query = query.filter(role__iexact=role_filter)
             
         total = query.count()
         users = query.order_by("-added_on")[skip:skip+limit]
@@ -484,6 +484,8 @@ class AdminJournalsListView(APIView):
 
 
 class AdminPaperFileView(APIView):
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, paper_id):
@@ -498,7 +500,10 @@ class AdminPaperFileView(APIView):
         from django.conf import settings
         from django.http import FileResponse, Http404
         
-        file_path = os.path.join(settings.MEDIA_ROOT, paper.file)
+        raw_path = paper.file
+        if raw_path.startswith('/'):
+            raw_path = raw_path[1:]
+        file_path = os.path.join(settings.BASE_DIR.parent, raw_path)
         if not os.path.exists(file_path):
             raise Http404("File not found on server")
             
@@ -1922,10 +1927,10 @@ class AdminReviewMetricsView(APIView):
         
         completion_rate = (completed / total_assignments * 100) if total_assignments > 0 else 0
         
-        # Count overdue (deadline passed, not completed)
+        # Count overdue (due_date passed, not completed)
         overdue = OnlineReview.objects.filter(
             review_status__in=["pending", "in_progress"],
-            deadline__lt=datetime.utcnow()
+            due_date__lt=datetime.utcnow()
         ).count()
         
         return Response({
