@@ -55,11 +55,11 @@ jobs:
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: ${{ secrets.BACKEND_FTP_HOST }}
+          username: ${{ secrets.BACKEND_FTP_USERNAME }}
+          password: ${{ secrets.BACKEND_FTP_PASSWORD }}
           local-dir: ./deploy_package/
-          server-dir: ${{ secrets.BACKEND_SERVER_DIR }}  # e.g., /home/username/public_html/backend/
+          server-dir: /home2/aacsjour/BreakThrough/
           exclude: |
             **/.git*
             **/.git*/**
@@ -81,7 +81,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            cd ${{ secrets.BACKEND_PATH }}
+            cd /home2/aacsjour/BreakThrough
             
             # Activate virtual environment if exists
             if [ -d "venv" ]; then

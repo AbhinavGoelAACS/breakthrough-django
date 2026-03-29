@@ -60,11 +60,11 @@ jobs:
       - name: Deploy Backend via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: ${{ secrets.BACKEND_FTP_HOST }}
+          username: ${{ secrets.BACKEND_FTP_USERNAME }}
+          password: ${{ secrets.BACKEND_FTP_PASSWORD }}
           local-dir: ./deploy_backend/
-          server-dir: ${{ secrets.BACKEND_SERVER_DIR }}
+          server-dir: /home2/aacsjour/BreakThrough/
           exclude: |
             **/.git*/**
             **/venv/**
@@ -80,7 +80,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ${{ secrets.BACKEND_PATH }}
+            cd /home2/aacsjour/BreakThrough
             
             # Create virtualenv if not exists
             if [ ! -d "venv" ]; then
@@ -183,11 +183,11 @@ jobs:
       - name: Deploy Frontend via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: ${{ secrets.FRONTEND_FTP_HOST }}
+          username: ${{ secrets.FRONTEND_FTP_USERNAME }}
+          password: ${{ secrets.FRONTEND_FTP_PASSWORD }}
           local-dir: ./frontend/dist/
-          server-dir: ${{ secrets.FRONTEND_SERVER_DIR }}
+          server-dir: /home2/aacsjour/testbreakthroughpublishers/
           exclude: |
             **/.git*/**
             **/node_modules/**
