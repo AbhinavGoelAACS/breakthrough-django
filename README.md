@@ -50,19 +50,184 @@ BreakThrough is a full-featured academic journal management system that handles 
 
 ## Architecture
 
+### System Overview
+
+```mermaid
+flowchart TB
+    subgraph Client["Frontend (React + Vite)"]
+        UI[User Interface]
+        API_Service[API Service Layer]
+        Auth_Context[Auth Context]
+    end
+    
+    subgraph Backend["Django REST Framework Backend"]
+        subgraph Auth["Authentication"]
+            JWT[JWT Auth Utils]
+            Login[Login/Signup]
+            Refresh[Token Refresh]
+        end
+        
+        subgraph Views["API Views"]
+            AuthV[Auth Views]
+            JournalV[Journal Views]
+            ArticleV[Article Views]
+            AuthorV[Author Views]
+            EditorV[Editor Views]
+            ReviewerV[Reviewer Views]
+            AdminV[Admin Views]
+        end
+        
+        subgraph Services["Business Logic"]
+            NLP[NLP Service]
+            Email[Email Service]
+            DOI[DOI Service]
+        end
+    end
+    
+    subgraph Database["MySQL Database"]
+        Users[(Users)]
+        Journals[(Journals)]
+        Papers[(Papers)]
+        Reviews[(Reviews)]
+    end
+    
+    subgraph External["External Services"]
+        Crossref[Crossref DOI]
+        SMTP[SMTP Server]
+    end
+    
+    UI --> API_Service
+    API_Service --> Auth_Context
+    API_Service -->|HTTP/REST| Views
+    Auth_Context -->|JWT Token| JWT
+    
+    Views --> Services
+    Views --> Database
+    
+    Services --> External
 ```
-┌─────────────────┐     ┌──────────────────────┐     ┌─────────────┐
-│   React + Vite  │────▶│  Django REST Framework│────▶│    MySQL    │
-│    Frontend     │◀────│       Backend        │◀────│   Database  │
-└─────────────────┘     └──────────────────────┘     └─────────────┘
-                                   │
-                                   ▼
-                        ┌──────────────────────┐
-                        │  External Services   │
-                        │  • Crossref DOI      │
-                        │  • SMTP Email        │
-                        └──────────────────────┘
+
+### Database Schema
+
+```mermaid
+erDiagram
+    USER {
+        int id PK
+        string email UK
+        string password
+        string role
+        string fname
+        string lname
+        string affiliation
+    }
+    
+    JOURNAL {
+        int fld_id PK
+        string fld_journal_name
+        string short_form
+        string issn_ol
+        string cheif_editor
+    }
+    
+    PAPER {
+        int id PK
+        string paper_code
+        int journal FK
+        string title
+        text abstract
+        string status
+        int added_by FK
+    }
+    
+    ONLINE_REVIEW {
+        int id PK
+        int paper_id FK
+        int reviewer_id FK
+        string review_status
+    }
+    
+    REVIEW_SUBMISSION {
+        int id PK
+        int paper_id FK
+        int reviewer_id FK
+        string recommendation
+        string status
+    }
+    
+    USER_ROLE {
+        int id PK
+        int user_id FK
+        string role
+        string status
+        int journal_id FK
+    }
+    
+    USER ||--o{ PAPER : submits
+    USER ||--o{ USER_ROLE : has
+    USER ||--o{ ONLINE_REVIEW : reviews
+    JOURNAL ||--o{ PAPER : contains
+    PAPER ||--o{ ONLINE_REVIEW : has
+    PAPER ||--o{ REVIEW_SUBMISSION : receives
 ```
+
+### Paper Submission Workflow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Author
+    participant API as Django API
+    participant DB as Database
+    participant E as Editor
+    participant R as Reviewer
+    
+    A->>API: POST /author/submit-paper
+    API->>DB: Create Paper (status: submitted)
+    API-->>A: Paper ID & Confirmation
+    
+    E->>API: GET /editor/paper-queue
+    API-->>E: Papers list
+    
+    E->>API: POST /editor/papers/{id}/assign-reviewer
+    API->>DB: Create ReviewerInvitation
+    API->>R: Send invitation email
+    
+    R->>API: POST /invitations/{token}/accept
+    API->>DB: Create OnlineReview
+    
+    R->>API: POST /reviewer/assignments/{id}/submit
+    API->>DB: Create ReviewSubmission
+    API-->>E: Notify review complete
+    
+    E->>API: POST /editor/papers/{id}/decision
+    API->>DB: Update paper status
+    API-->>A: Decision notification
+```
+
+### Paper Status State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Submitted: Author submits
+    
+    Submitted --> UnderReview: Editor assigns reviewers
+    Submitted --> Rejected: Desk rejection
+    
+    UnderReview --> RevisionRequired: Needs revision
+    UnderReview --> Accepted: Accept
+    UnderReview --> Rejected: Reject
+    
+    RevisionRequired --> UnderReview: Author resubmits
+    
+    Accepted --> CopyrightPending: Trigger form
+    CopyrightPending --> ReadyToPublish: Form signed
+    ReadyToPublish --> Published: Editor publishes
+    
+    Published --> [*]
+    Rejected --> [*]
+```
+
+### Technology Stack
 
 | Component | Technology |
 |-----------|------------|
@@ -71,6 +236,7 @@ BreakThrough is a full-featured academic journal management system that handles 
 | Database | MySQL 8.0 |
 | Auth | JWT (PyJWT) |
 | DOI | Crossref API |
+
 
 ## Quick Start
 
@@ -172,6 +338,22 @@ BreakThrough/
 
 ## User Roles
 
+```mermaid
+flowchart LR
+    subgraph Roles
+        User["🔓 User<br/>Browse & Search"]
+        Author["📝 Author<br/>Submit & Track"]
+        Reviewer["📋 Reviewer<br/>Review Papers"]
+        Editor["✏️ Editor<br/>Manage & Publish"]
+        Admin["🔑 Admin<br/>Full Control"]
+    end
+    
+    User --> Author
+    User --> Reviewer
+    Author --> Editor
+    Editor --> Admin
+```
+
 | Role | Description |
 |------|-------------|
 | **User** | Basic access, can browse journals and articles |
@@ -182,11 +364,16 @@ BreakThrough/
 
 ## Paper Workflow
 
-```
-Submitted → Under Review → [Decision]
-                              ├── Accepted → Copyright → Published
-                              ├── Revision Required → Resubmitted ↩
-                              └── Rejected
+```mermaid
+flowchart LR
+    A[📄 Submitted] --> B[🔍 Under Review]
+    B --> C{Decision}
+    C -->|Accept| D[✅ Accepted]
+    C -->|Revise| E[🔄 Revision]
+    C -->|Reject| F[❌ Rejected]
+    E --> B
+    D --> G[©️ Copyright]
+    G --> H[📚 Published]
 ```
 
 ## Environment Variables
