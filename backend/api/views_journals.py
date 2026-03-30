@@ -309,6 +309,8 @@ class JournalDetailView(APIView):
                 role="editor",
             ).delete()
 
+
+            from django.utils import timezone
             # Assign chief editor
             if chief_editor_id:
                 if UserModel.objects.filter(id=chief_editor_id).exists():
@@ -318,6 +320,7 @@ class JournalDetailView(APIView):
                         role="editor",
                         editor_type="chief_editor",
                         status="approved",
+                        requested_at=timezone.now(),
                     )
 
             # Assign co-editor
@@ -329,6 +332,7 @@ class JournalDetailView(APIView):
                         role="editor",
                         editor_type="co_editor",
                         status="approved",
+                        requested_at=timezone.now(),
                     )
 
             # Assign section editors
@@ -340,6 +344,7 @@ class JournalDetailView(APIView):
                         role="editor",
                         editor_type="section_editor",
                         status="approved",
+                        requested_at=timezone.now(),
                     )
 
         if any(
