@@ -104,7 +104,7 @@ const JournalHomePage = () => {
           {currentJournal.journal_image && (
             <div className="journal-hero-image">
               <img 
-                src={`https://static.aacsjournals.com/images/${currentJournal.journal_image}`}
+                src={`/media/${currentJournal.journal_image}`}
                 alt={currentJournal.name}
               />
             </div>
