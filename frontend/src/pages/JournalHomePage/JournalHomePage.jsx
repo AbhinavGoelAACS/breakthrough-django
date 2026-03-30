@@ -123,7 +123,7 @@ const JournalHomePage = () => {
                 : stripHtmlTags(currentJournal.description)?.substring(0, 500) + '...'
               }
             </p>
-            <Link to="/about" className="read-more-link">
+            <Link to="about" className="read-more-link">
               Read More <span className="material-symbols-rounded">arrow_forward</span>
             </Link>
           </div>
@@ -137,7 +137,7 @@ const JournalHomePage = () => {
             <h2 className="section-title">Scope &amp; Topics</h2>
             <div className="scope-content">
               <p>{stripHtmlTags(journalDetails.scope).substring(0, 400)}...</p>
-              <Link to="/about#scope" className="read-more-link">
+              <Link to="about#scope" className="read-more-link">
                 View Full Scope <span className="material-symbols-rounded">arrow_forward</span>
               </Link>
             </div>
