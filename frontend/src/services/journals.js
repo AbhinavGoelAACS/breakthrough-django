@@ -141,6 +141,10 @@ export const updateJournal = async (id, journalData) => {
       publication: journalData.publication,
       advertisement: journalData.advertisement,
       description: journalData.description,
+      // Editor assignment fields
+      chief_editor_id: journalData.chief_editor_id,
+      co_editor_id: journalData.co_editor_id,
+      section_editor_ids: journalData.section_editor_ids,
       // Journal details fields
       about_journal: journalData.about_journal,
       chief_say: journalData.chief_say,

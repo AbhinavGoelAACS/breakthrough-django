@@ -296,6 +296,52 @@ class JournalDetailView(APIView):
         journal.description = data.get("description", journal.description)
         journal.save()
 
+        # Handle editor assignments via UserRole
+        chief_editor_id = data.get("chief_editor_id")
+        co_editor_id = data.get("co_editor_id")
+        section_editor_ids = data.get("section_editor_ids") or []
+
+        if chief_editor_id is not None or co_editor_id is not None or section_editor_ids:
+            from .models import User as UserModel
+            # Remove existing editor assignments for this journal
+            UserRole.objects.filter(
+                journal_id=journal_id,
+                role="editor",
+            ).delete()
+
+            # Assign chief editor
+            if chief_editor_id:
+                if UserModel.objects.filter(id=chief_editor_id).exists():
+                    UserRole.objects.create(
+                        user_id=chief_editor_id,
+                        journal_id=journal_id,
+                        role="editor",
+                        editor_type="chief_editor",
+                        status="approved",
+                    )
+
+            # Assign co-editor
+            if co_editor_id:
+                if UserModel.objects.filter(id=co_editor_id).exists():
+                    UserRole.objects.create(
+                        user_id=co_editor_id,
+                        journal_id=journal_id,
+                        role="editor",
+                        editor_type="co_editor",
+                        status="approved",
+                    )
+
+            # Assign section editors
+            for se_id in section_editor_ids:
+                if UserModel.objects.filter(id=se_id).exists():
+                    UserRole.objects.create(
+                        user_id=se_id,
+                        journal_id=journal_id,
+                        role="editor",
+                        editor_type="section_editor",
+                        status="approved",
+                    )
+
         if any(
             [
                 data.get("about_journal"),
