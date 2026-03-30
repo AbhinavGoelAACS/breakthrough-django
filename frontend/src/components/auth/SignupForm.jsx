@@ -6,6 +6,15 @@ import { validateSignupForm } from '../../utils/validation';
 import OrganizationAutocomplete from '../OrganizationAutocomplete';
 import './AuthForms.css';
 
+const SALUTATION_OPTIONS = [
+  { value: '', label: 'Select...' },
+  { value: 'Prof. Dr.', label: 'Prof. Dr.' },
+  { value: 'Prof.', label: 'Prof.' },
+  { value: 'Dr.', label: 'Dr.' },
+  { value: 'Mr.', label: 'Mr.' },
+  { value: 'Ms.', label: 'Ms.' },
+];
+
 export const SignupForm = ({ onSuccess = null }) => {
   const { signup, loading, error, clearError } = useAuth();
   const { success, error: showError } = useToast();
@@ -188,29 +197,33 @@ export const SignupForm = ({ onSuccess = null }) => {
 
         <div className="auth-form-group auth-form-col-2">
           <label htmlFor="title" className="auth-form-label">
-            Title
+            Title *
           </label>
-          <input
+          <select
             id="title"
-            type="text"
             name="title"
-            className="auth-form-input"
-            placeholder="Dr., Prof., etc. (optional)"
+            className={`auth-form-input ${fieldErrors.title ? 'error' : ''}`}
             value={formData.title}
             onChange={handleInputChange}
             disabled={loading || isValidating}
-          />
+            required
+          >
+            {SALUTATION_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {fieldErrors.title && <AuthFieldError error={fieldErrors.title} />}
         </div>
       </div>
 
       <div className="auth-form-group">
         <label htmlFor="affiliation" className="auth-form-label">
-          Affiliation / Organization
+          Affiliation / Organization *
         </label>
         <OrganizationAutocomplete
           id="affiliation"
           name="affiliation"
-          placeholder="Search for your organization (optional)"
+          placeholder="Search for your organization"
           value={formData.affiliation}
           onChange={(value) => {
             setFormData((prev) => ({ ...prev, affiliation: value }));
@@ -220,6 +233,7 @@ export const SignupForm = ({ onSuccess = null }) => {
           }}
           disabled={loading || isValidating}
           className={fieldErrors.affiliation ? 'error' : ''}
+          required
         />
         {fieldErrors.affiliation && (
           <AuthFieldError error={fieldErrors.affiliation} />
@@ -228,18 +242,20 @@ export const SignupForm = ({ onSuccess = null }) => {
 
       <div className="auth-form-group">
         <label htmlFor="specialization" className="auth-form-label">
-          Specialization / Research Area
+          Specialization / Research Area *
         </label>
         <textarea
           id="specialization"
           name="specialization"
-          className="auth-form-input"
-          placeholder="Your research area or specialization (optional)"
+          className={`auth-form-input ${fieldErrors.specialization ? 'error' : ''}`}
+          placeholder="Your research area or specialization"
           value={formData.specialization}
           onChange={handleInputChange}
           disabled={loading || isValidating}
           rows="2"
+          required
         />
+        {fieldErrors.specialization && <AuthFieldError error={fieldErrors.specialization} />}
       </div>
 
       <div className="auth-form-row">

@@ -151,11 +151,24 @@ export const validateSignupForm = (formData) => {
     }
   }
 
-  if (formData.affiliation) {
+  // Affiliation is required
+  if (!formData.affiliation || formData.affiliation.trim() === '') {
+    errors.affiliation = 'Affiliation is required';
+  } else {
     const affiliationValidation = validateAffiliation(formData.affiliation);
     if (!affiliationValidation.isValid) {
       errors.affiliation = affiliationValidation.error;
     }
+  }
+
+  // Title is required
+  if (!formData.title || formData.title.trim() === '') {
+    errors.title = 'Title is required';
+  }
+
+  // Specialization is required
+  if (!formData.specialization || formData.specialization.trim() === '') {
+    errors.specialization = 'Research area is required';
   }
 
   return {
