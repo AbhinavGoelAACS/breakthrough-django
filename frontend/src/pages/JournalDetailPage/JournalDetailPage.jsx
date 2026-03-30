@@ -364,23 +364,27 @@ const JournalDetailPage = () => {
     }
   };
 
-  // Fetch available editors for dropdowns
+  // Fetch available editors for dropdowns (uses same API as add journal modal)
   const fetchAvailableEditors = async () => {
     setLoadingEditors(true);
     try {
-      // Fetch all users with editor role
-      const response = await acsApi.admin.listUsers(0, 500, '', 'editor');
-      setAvailableEditors(response.users || []);
+      const response = await acsApi.admin.listEditors(0, 500);
+      // Map editor data to the format expected by SearchableEditorDropdown
+      const editors = (response.editors || []).map(editor => {
+        const nameParts = (editor.editor_name || '').split(' ');
+        return {
+          id: editor.user_id || editor.id,
+          fname: nameParts[0] || '',
+          lname: nameParts.slice(1).join(' ') || '',
+          email: editor.editor_email || '',
+          editor_name: editor.editor_name,
+          editor_type: editor.editor_type,
+        };
+      });
+      setAvailableEditors(editors);
     } catch (err) {
       console.error('Failed to fetch editors:', err);
-      // Fallback: try to get all users
-      try {
-        const allUsersResponse = await acsApi.admin.listUsers(0, 500);
-        setAvailableEditors(allUsersResponse.users || []);
-      } catch (fallbackErr) {
-        console.error('Fallback also failed:', fallbackErr);
-        setAvailableEditors([]);
-      }
+      setAvailableEditors([]);
     } finally {
       setLoadingEditors(false);
     }
