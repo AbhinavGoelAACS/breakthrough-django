@@ -407,9 +407,10 @@ class JournalExtendedDetailsView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        from django.utils import timezone
         details, _ = JournalDetails.objects.get_or_create(
             journal_id=str(journal_id),
-            defaults={"added_on": date.today()},
+            defaults={"added_on": timezone.now()},
         )
 
         serializer = JournalDetailsSerializer(details)
