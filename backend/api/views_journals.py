@@ -407,13 +407,10 @@ class JournalExtendedDetailsView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        try:
-            details = JournalDetails.objects.get(journal_id=str(journal_id))
-        except JournalDetails.DoesNotExist:
-            return Response(
-                {"detail": f"Details for journal {journal_id} not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        details, _ = JournalDetails.objects.get_or_create(
+            journal_id=str(journal_id),
+            defaults={"added_on": date.today()},
+        )
 
         serializer = JournalDetailsSerializer(details)
         data = serializer.data
