@@ -22,6 +22,24 @@ from .models import (
     PaperVersion,
 )
 from .auth import JWTAuthentication
+from django.db.models import Q
+
+
+def _generate_paper_code(journal_id):
+    """Generate paper code like BAMJ-26-03001 (INITIALS-YY-MMSEQ)."""
+    journal = Journal.objects.filter(fld_id=journal_id).first()
+    initials = (journal.short_form or "PAPER").strip().upper() if journal else "PAPER"
+
+    now = datetime.utcnow()
+    yy = now.strftime("%y")    # e.g. "26"
+    mm = now.strftime("%m")    # e.g. "03"
+
+    # Count existing papers in this journal for the same year+month
+    prefix = f"{initials}-{yy}-{mm}"
+    existing_count = Paper.objects.filter(paper_code__startswith=prefix).count()
+    seq = existing_count + 1
+
+    return f"{prefix}{seq:03d}"
 
 
 def _ensure_author(user) -> None:
@@ -497,6 +515,9 @@ class SubmitPaperView(APIView):
                 terms_accepted=True,
             )
 
+            # Generate paper code: e.g. BAMJ-26-03001
+            paper.paper_code = _generate_paper_code(paper.journal)
+
             title_page_path = _save_file(title_page_file, paper.id, "title_page")
             blinded_path = _save_file(blinded_file, paper.id, "blinded_manuscript")
 
@@ -535,6 +556,7 @@ class SubmitPaperView(APIView):
         return Response(
             {
                 "id": paper.id,
+                "paper_code": paper.paper_code,
                 "title": paper.title,
                 "status": paper.status,
                 "file": paper.file,
