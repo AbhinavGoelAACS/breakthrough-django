@@ -202,3 +202,62 @@ def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=
         plain_body=plain_body,
     )
     return success
+
+
+def notify_editors_new_submission(paper, author, journal):
+    """
+    Notify all editors of a journal that a new paper has been submitted.
+    """
+    from api.models import Editor
+
+    journal_id = paper.journal
+    if not journal_id:
+        return False
+
+    editors = Editor.objects.filter(journal_id=journal_id).exclude(
+        editor_email__isnull=True
+    ).exclude(editor_email="")
+
+    if not editors.exists():
+        return False
+
+    author_name = "Unknown Author"
+    if author:
+        author_name = f"{author.fname or ''} {author.lname or ''}".strip() or author.email
+
+    journal_name = journal.fld_journal_name if journal else "BreakThrough Publishers"
+
+    subject = f"New Submission: {paper.title}"
+
+    any_sent = False
+    for editor in editors:
+        plain_body = (
+            f"Dear {editor.editor_name or 'Editor'},\n\n"
+            f"A new manuscript has been submitted to {journal_name}.\n\n"
+            f"Title: {paper.title}\n"
+            f"Paper ID: {paper.id}\n"
+            f"Author: {author_name}\n"
+        )
+
+        if paper.abstract:
+            abstract_preview = paper.abstract[:300]
+            if len(paper.abstract) > 300:
+                abstract_preview += "..."
+            plain_body += f"\nAbstract:\n{abstract_preview}\n"
+
+        plain_body += (
+            f"\nPlease log in to your editor dashboard to review this submission.\n"
+            f"{FRONTEND_URL}/editor/papers/{paper.id}\n\n"
+            "Best regards,\n"
+            "BreakThrough Publishers"
+        )
+
+        success, _ = send_email(
+            recipient_email=editor.editor_email,
+            subject=subject,
+            plain_body=plain_body,
+        )
+        if success:
+            any_sent = True
+
+    return any_sent

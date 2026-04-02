@@ -524,8 +524,11 @@ class SubmitPaperView(APIView):
         # Send submission confirmation email (best-effort)
         email_sent = False
         try:
-            from .services.email_service import send_submission_confirmation
+            from .services.email_service import send_submission_confirmation, notify_editors_new_submission
             email_sent = send_submission_confirmation(paper, user)
+            # Notify editors of the journal about the new submission
+            journal = Journal.objects.filter(fld_id=paper.journal).first()
+            notify_editors_new_submission(paper, user, journal)
         except Exception:
             pass
 
