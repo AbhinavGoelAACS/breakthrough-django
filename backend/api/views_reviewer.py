@@ -318,6 +318,7 @@ class ReviewerAssignmentDetailView(APIView):
             "review_id": review.id,
             "paper": {
                 "id": paper.id,
+                "paper_code": paper.paper_code,
                 "title": paper.title,
                 "abstract": paper.abstract,
                 "keywords": paper.keyword,
@@ -397,6 +398,7 @@ class ReviewerAssignmentPaperDetailView(APIView):
         return Response({
             "paper": {
                 "id": paper.id,
+                "paper_code": paper.paper_code,
                 "title": paper.title,
                 "abstract": paper.abstract,
                 "keywords": paper.keyword,

@@ -250,7 +250,7 @@ export const AuthorDashboard = () => {
                           {paper.status || 'Unknown'}
                         </span>
                       </td>
-                      <td className={styles.idCell}>#{paper.id}</td>
+                      <td className={styles.idCell}>{paper.paper_code || `#${paper.id}`}</td>
                     </tr>
                   ))}
                 </tbody>

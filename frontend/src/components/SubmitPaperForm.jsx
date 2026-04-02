@@ -576,7 +576,7 @@ export const SubmitPaperForm = () => {
         }))
       });
 
-      success(`Paper submitted successfully! Paper ID: ${response.id}`);
+      success(`Paper submitted successfully! Paper ID: ${response.paper_code || response.id}`);
       setTimeout(() => navigate('/author'), 1500);
     } catch (err) {
       console.error('Submit error:', err);

@@ -231,6 +231,7 @@ class AuthorSubmissionsView(APIView):
             papers_list.append(
                 {
                     "id": paper.id,
+                    "paper_code": paper.paper_code,
                     "title": paper.title,
                     "abstract": paper.abstract,
                     "status": paper.status,
@@ -358,6 +359,7 @@ class AuthorSubmissionDetailView(APIView):
         return Response(
             {
                 "id": paper.id,
+                "paper_code": paper.paper_code,
                 "title": paper.title,
                 "abstract": paper.abstract,
                 "keywords": paper.keyword,
