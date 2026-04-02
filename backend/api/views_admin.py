@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 
 from .models import (
     User, Paper, Journal, PaperPublished, UserRole, PaperCorrespondence,
-    CopyrightForm, News, EmailTemplate, OnlineReview, ReviewSubmission, Editor
+    CopyrightForm, News, EmailTemplate, OnlineReview, ReviewSubmission, Editor,
+    PaperCoAuthor, PaperComment, PaperVersion, ReviewerInvitation
 )
 
 
@@ -443,6 +444,48 @@ class AdminPaperDetailView(APIView):
             "revision_deadline": paper.revision_deadline.isoformat() if getattr(paper, 'revision_deadline', None) else None,
             "revision_notes": getattr(paper, 'revision_notes', None),
             "research_area": getattr(paper, 'research_area', None)
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request, paper_id):
+        if not check_admin_role(request.user):
+            return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        from django.db import transaction
+        import os, shutil
+        from pathlib import Path
+
+        paper_title = paper.title
+        paper_code = paper.paper_code
+
+        with transaction.atomic():
+            # Delete related records
+            ReviewSubmission.objects.filter(
+                assignment_id__in=OnlineReview.objects.filter(paper_id=str(paper.id)).values_list('id', flat=True)
+            ).delete()
+            OnlineReview.objects.filter(paper_id=str(paper.id)).delete()
+            ReviewerInvitation.objects.filter(paper_id=paper.id).delete()
+            PaperCoAuthor.objects.filter(paper_id=paper.id).delete()
+            PaperComment.objects.filter(paper_id=paper.id).delete()
+            PaperCorrespondence.objects.filter(paper_id=paper.id).delete()
+            PaperVersion.objects.filter(paper_id=paper.id).delete()
+            CopyrightForm.objects.filter(paper_id=paper.id).delete()
+
+            # Delete uploaded files
+            backend_root = Path(__file__).resolve().parent.parent
+            if paper.added_by:
+                upload_dir = backend_root.parent / "uploads" / "papers" / f"user_{paper.added_by}"
+                if upload_dir.exists():
+                    for f in upload_dir.glob(f"{paper.id}_*"):
+                        f.unlink(missing_ok=True)
+
+            paper.delete()
+
+        return Response({
+            "detail": f"Paper '{paper_title}' ({paper_code}) deleted successfully"
         }, status=status.HTTP_200_OK)
 
 

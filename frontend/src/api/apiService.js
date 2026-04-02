@@ -127,6 +127,7 @@ export const acsApi = {
     listAllPapers: (skip = 0, limit = 50, status = '') =>
       apiService.get(`/api/v1/admin/papers?skip=${skip}&limit=${limit}${status ? `&status=${status}` : ''}`),
     getPaperDetail: (paperId) => apiService.get(`/api/v1/admin/papers/${paperId}`),
+    deletePaper: (paperId) => apiService.delete(`/api/v1/admin/papers/${paperId}`),
     getRecentActivity: (limit = 20) => apiService.get(`/api/v1/admin/activity?limit=${limit}`),
     getPapersByStatus: () => apiService.get('/api/v1/admin/stats/papers-by-status'),
     // Admin can also invite reviewers using the editor endpoint (which accepts both roles)

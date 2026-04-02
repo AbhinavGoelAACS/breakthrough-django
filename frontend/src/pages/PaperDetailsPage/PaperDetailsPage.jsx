@@ -623,6 +623,29 @@ const PaperDetailsPage = () => {
     }
   };
 
+  // Delete paper (admin only)
+  const handleDeletePaper = async () => {
+    if (!paper?.id) return;
+
+    const confirmed = await confirm({
+      title: 'Delete Paper',
+      message: `Are you sure you want to permanently delete "${paper.title}" (${paper.paperCode || paper.paper_code || '#' + paper.id})? This will remove the paper and all associated reviews, correspondence, and files. This action cannot be undone.`,
+      confirmText: 'Delete Paper',
+      confirmColor: 'danger'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await acsApi.admin.deletePaper(paper.id);
+      success('Paper deleted successfully');
+      navigate('/admin/submissions');
+    } catch (err) {
+      console.error('Error deleting paper:', err);
+      showError(err.response?.data?.detail || 'Failed to delete paper');
+    }
+  };
+
   const handleViewPaper = () => {
     if (paper?.id) {
       // Get token for authentication (stored as 'authToken' in localStorage)
@@ -849,6 +872,13 @@ const PaperDetailsPage = () => {
               }}>
                 <span className="material-symbols-rounded">person_add</span>
                 Assign Reviewer
+              </button>
+            )}
+
+            {isAdmin() && (
+              <button className={`${styles.subNavItem} ${styles.subNavDanger}`} onClick={handleDeletePaper}>
+                <span className="material-symbols-rounded">delete</span>
+                Delete Paper
               </button>
             )}
           </nav>
