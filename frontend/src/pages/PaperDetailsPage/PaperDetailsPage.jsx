@@ -545,17 +545,22 @@ const PaperDetailsPage = () => {
       setAssigningReviewer(true);
       // Use appropriate API based on role, pass reviewer name for external invites
       const nameToUse = inviteMode === 'external' ? externalName.trim() : '';
+      let response;
       if (isAdmin()) {
-        await acsApi.admin.inviteReviewer(paper.id, emailToUse, dueDays, nameToUse);
+        response = await acsApi.admin.inviteReviewer(paper.id, emailToUse, dueDays, nameToUse);
       } else {
-        await acsApi.editor.inviteReviewer(paper.id, emailToUse, dueDays, nameToUse);
+        response = await acsApi.editor.inviteReviewer(paper.id, emailToUse, dueDays, nameToUse);
       }
       
-      // Different success messages based on mode
-      const successMsg = inviteMode === 'external'
-        ? `Invitation sent to ${emailToUse}. They will receive an email to create an account and review this paper.`
-        : `Reviewer invitation sent to ${emailToUse}`;
-      success(successMsg, 5000);
+      // Check if email was actually delivered
+      if (response?.email_sent === false) {
+        showError(response?.message || `Invitation created but email could not be sent to ${emailToUse}`, 6000);
+      } else {
+        const successMsg = inviteMode === 'external'
+          ? `Invitation sent to ${emailToUse}. They will receive an email to create an account and review this paper.`
+          : `Reviewer invitation sent to ${emailToUse}`;
+        success(successMsg, 5000);
+      }
       
       // Reset form state
       setReviewerEmail('');

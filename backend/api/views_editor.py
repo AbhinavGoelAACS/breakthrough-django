@@ -526,9 +526,13 @@ class EditorInviteReviewerView(APIView):
             is_external=is_external,
         )
         
+        message = f"Invitation sent to {reviewer_email}"
+        if not email_sent:
+            message = f"Invitation created for {reviewer_email}, but the notification email could not be sent. Please check SMTP configuration."
+        
         return Response({
             "success": True,
-            "message": f"Invitation sent to {reviewer_email}",
+            "message": message,
             "invitation_id": invitation.id,
             "is_external": is_external,
             "email_sent": email_sent,

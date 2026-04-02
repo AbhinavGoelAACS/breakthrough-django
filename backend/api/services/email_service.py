@@ -196,11 +196,13 @@ def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=
         "BreakThrough Publishers"
     )
 
-    success, _ = send_email(
+    success, error = send_email(
         recipient_email=invitation.reviewer_email,
         subject=subject,
         plain_body=plain_body,
     )
+    if not success:
+        logger.error("Failed to send reviewer invitation email to %s: %s", invitation.reviewer_email, error)
     return success
 
 
