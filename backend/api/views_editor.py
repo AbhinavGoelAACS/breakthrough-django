@@ -1081,7 +1081,7 @@ class EditorAcceptedPapersView(APIView):
             query = query.filter(journal__in=allowed_journals)
             
         total = query.count()
-        papers = query.order_by("-updated_at")[skip:skip+limit]
+        papers = query.order_by("-added_on")[skip:skip+limit]
         
         papers_list = []
         for paper in papers:
@@ -1099,7 +1099,7 @@ class EditorAcceptedPapersView(APIView):
                 "author": author_name,
                 "journal": journal_name,
                 "journal_id": paper.journal,
-                "accepted_date": paper.updated_at.isoformat() if paper.updated_at else None,
+                "accepted_date": paper.added_on.isoformat() if paper.added_on else None,
             })
             
         return Response({
@@ -1138,7 +1138,7 @@ class EditorReadyToPublishView(APIView):
             query = query.filter(journal__in=allowed_journals)
             
         total = query.count()
-        papers = query.order_by("-updated_at")[skip:skip+limit]
+        papers = query.order_by("-added_on")[skip:skip+limit]
         
         papers_list = []
         for paper in papers:
@@ -1156,7 +1156,7 @@ class EditorReadyToPublishView(APIView):
                 "author": author_name,
                 "journal": journal_name,
                 "journal_id": paper.journal,
-                "accepted_date": paper.updated_at.isoformat() if paper.updated_at else None,
+                "accepted_date": paper.added_on.isoformat() if paper.added_on else None,
             })
             
         return Response({
