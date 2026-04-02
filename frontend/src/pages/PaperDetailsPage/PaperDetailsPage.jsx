@@ -544,11 +544,12 @@ const PaperDetailsPage = () => {
 
     try {
       setAssigningReviewer(true);
-      // Use appropriate API based on role
+      // Use appropriate API based on role, pass reviewer name for external invites
+      const nameToUse = inviteMode === 'external' ? externalName.trim() : '';
       if (isAdmin()) {
-        await acsApi.admin.inviteReviewer(paper.id, emailToUse, dueDays);
+        await acsApi.admin.inviteReviewer(paper.id, emailToUse, dueDays, nameToUse);
       } else {
-        await acsApi.editor.inviteReviewer(paper.id, emailToUse, dueDays);
+        await acsApi.editor.inviteReviewer(paper.id, emailToUse, dueDays, nameToUse);
       }
       
       // Different success messages based on mode

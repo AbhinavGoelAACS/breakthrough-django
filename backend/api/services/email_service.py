@@ -1,9 +1,12 @@
 import logging
+import os
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://breakthroughpublishers.com")
 
 
 def send_email(recipient_email, subject, plain_body, html_body=None, from_email=None):
@@ -141,6 +144,60 @@ def send_submission_confirmation(paper, author):
 
     success, _ = send_email(
         recipient_email=author.email,
+        subject=subject,
+        plain_body=plain_body,
+    )
+    return success
+
+
+def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=False):
+    """
+    Send an invitation email to a reviewer (existing or external).
+    """
+    if not invitation.reviewer_email:
+        return False
+
+    reviewer_name = invitation.reviewer_name or "Reviewer"
+    invitation_url = f"{FRONTEND_URL}/invitations/{invitation.invitation_token}"
+
+    subject = f"Invitation to Review: {paper.title}"
+
+    plain_body = (
+        f"Dear {reviewer_name},\n\n"
+        f"You have been invited to review a manuscript for {journal_name}.\n\n"
+        f"Paper Title: {paper.title}\n"
+        f"Paper ID: {paper.id}\n"
+    )
+
+    if paper.abstract:
+        abstract_preview = paper.abstract[:300]
+        if len(paper.abstract) > 300:
+            abstract_preview += "..."
+        plain_body += f"\nAbstract:\n{abstract_preview}\n"
+
+    if invitation.token_expiry:
+        deadline = invitation.token_expiry.strftime("%B %d, %Y")
+        plain_body += f"\nPlease respond by: {deadline}\n"
+
+    plain_body += f"\nTo accept or decline this invitation, please visit:\n{invitation_url}\n\n"
+
+    if is_external:
+        plain_body += (
+            "Since you do not yet have an account with BreakThrough Publishers, "
+            "you will be asked to create one when you accept the invitation.\n\n"
+        )
+
+    plain_body += (
+        "If you are unable to review this manuscript, please decline the invitation "
+        "using the link above so we can find an alternative reviewer.\n\n"
+        "Thank you for your contribution to the peer review process.\n\n"
+        "Best regards,\n"
+        f"{journal_name}\n"
+        "BreakThrough Publishers"
+    )
+
+    success, _ = send_email(
+        recipient_email=invitation.reviewer_email,
         subject=subject,
         plain_body=plain_body,
     )

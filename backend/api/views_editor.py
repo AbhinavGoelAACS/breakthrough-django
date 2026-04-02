@@ -467,44 +467,71 @@ class EditorInviteReviewerView(APIView):
         if not reviewer_email:
             return Response({"detail": "reviewer_email is required"}, status=status.HTTP_400_BAD_REQUEST)
             
-        reviewer = User.objects.filter(email=reviewer_email).first()
-        if not reviewer:
-            return Response({"detail": "No user found with this email"}, status=status.HTTP_404_NOT_FOUND)
-            
-        if reviewer.id == request.user.id or str(reviewer.id) == paper.added_by:
-            return Response({"detail": "Cannot invite the author or yourself as a reviewer"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_id=reviewer.id).first()
-        if existing:
-            return Response({
-                "detail": f"This reviewer has already been invited. Status: {existing.status}"
-            }, status=status.HTTP_400_BAD_REQUEST)
-            
         import uuid
         from datetime import datetime, timedelta
         
+        reviewer = User.objects.filter(email=reviewer_email).first()
+        is_external = reviewer is None
+        
+        if reviewer:
+            if reviewer.id == request.user.id or str(reviewer.id) == paper.added_by:
+                return Response({"detail": "Cannot invite the author or yourself as a reviewer"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_id=reviewer.id, status="pending").first()
+            if existing:
+                return Response({
+                    "detail": f"This reviewer has already been invited. Status: {existing.status}"
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # External reviewer — check by email
+            existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_email=reviewer_email, status="pending").first()
+            if existing:
+                return Response({
+                    "detail": f"An invitation has already been sent to {reviewer_email}. Status: {existing.status}"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        reviewer_name_param = request.data.get("reviewer_name") or request.query_params.get("reviewer_name", "")
+        
         token = str(uuid.uuid4())
         due_days = int(request.data.get("due_days", 0) or request.query_params.get("due_days", 14))
-        expires_at = datetime.now() + timedelta(days=7)  # give them 7 days to accept
+        expires_at = datetime.now() + timedelta(days=7)  # 7 days to accept
+        
+        reviewer_name = ""
+        if reviewer:
+            reviewer_name = f"{reviewer.fname or ''} {reviewer.lname or ''}".strip() or reviewer_email
+        else:
+            reviewer_name = reviewer_name_param or reviewer_email
         
         invitation = ReviewerInvitation.objects.create(
             paper_id=paper.id,
-            reviewer_id=reviewer.id,
+            reviewer_id=reviewer.id if reviewer else None,
             reviewer_email=reviewer_email,
-            reviewer_name=f"{reviewer.fname or ''} {reviewer.lname or ''}".strip() or reviewer_email,
+            reviewer_name=reviewer_name,
             journal_id=str(paper.journal) if paper.journal else None,
             invitation_token=token,
             token_expiry=expires_at,
             status="pending",
             invited_on=datetime.now(),
+            is_external=is_external,
         )
         
-        # In a real app, send email here via background task.
+        # Send invitation email
+        from .services.email_service import send_reviewer_invitation_email
+        journal = Journal.objects.filter(fld_id=paper.journal).first()
+        journal_name = journal.fld_journal_name if journal else "BreakThrough Publishers"
+        email_sent = send_reviewer_invitation_email(
+            invitation=invitation,
+            paper=paper,
+            journal_name=journal_name,
+            is_external=is_external,
+        )
         
         return Response({
             "success": True,
             "message": f"Invitation sent to {reviewer_email}",
-            "invitation_id": invitation.id
+            "invitation_id": invitation.id,
+            "is_external": is_external,
+            "email_sent": email_sent,
         }, status=status.HTTP_200_OK)
 
 
@@ -1285,12 +1312,12 @@ class InvitationStatusView(APIView):
     permission_classes = [] # Public endpoint
     
     def get(self, request, token: str):
-        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        invitation = ReviewerInvitation.objects.filter(invitation_token=token).first()
         if not invitation:
             return Response({"detail": "Invitation not found. The token may be invalid."}, status=status.HTTP_404_NOT_FOUND)
             
         from django.utils import timezone
-        is_expired = invitation.expires_at < timezone.now() if invitation.expires_at else False
+        is_expired = invitation.token_expiry < timezone.now() if invitation.token_expiry else False
         
         paper = Paper.objects.filter(id=invitation.paper_id).first()
         paper_title = paper.title if paper else "Unknown Paper"
@@ -1299,8 +1326,13 @@ class InvitationStatusView(APIView):
             "id": invitation.id,
             "paper_id": invitation.paper_id,
             "paper_title": paper_title,
+            "reviewer_email": invitation.reviewer_email,
+            "reviewer_name": invitation.reviewer_name,
+            "paper_abstract": paper.abstract if paper else None,
             "status": invitation.status,
             "is_expired": is_expired,
+            "token_expiry": invitation.token_expiry.isoformat() if invitation.token_expiry else None,
+            "is_external": invitation.is_external,
         }, status=status.HTTP_200_OK)
 
 
@@ -1308,7 +1340,7 @@ class AcceptInvitationView(APIView):
     permission_classes = [] # Handled mostly by token
 
     def post(self, request, token: str):
-        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        invitation = ReviewerInvitation.objects.filter(invitation_token=token).first()
         if not invitation:
             return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
             
@@ -1316,7 +1348,7 @@ class AcceptInvitationView(APIView):
             return Response({"detail": f"Invitation has already been {invitation.status}"}, status=status.HTTP_400_BAD_REQUEST)
             
         from django.utils import timezone
-        if invitation.expires_at and invitation.expires_at < timezone.now():
+        if invitation.token_expiry and invitation.token_expiry < timezone.now():
             invitation.status = "expired"
             invitation.save()
             return Response({"detail": "Invitation has expired."}, status=status.HTTP_410_GONE)
@@ -1366,7 +1398,7 @@ class DeclineInvitationView(APIView):
     permission_classes = []
 
     def post(self, request, token: str):
-        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        invitation = ReviewerInvitation.objects.filter(invitation_token=token).first()
         if not invitation:
             return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
             
@@ -1388,7 +1420,7 @@ class RegisterAcceptInvitationView(APIView):
     permission_classes = []
 
     def post(self, request, token: str):
-        invitation = ReviewerInvitation.objects.filter(token=token).first()
+        invitation = ReviewerInvitation.objects.filter(invitation_token=token).first()
         if not invitation:
             return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
 
