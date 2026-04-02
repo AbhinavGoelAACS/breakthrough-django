@@ -1834,3 +1834,222 @@
     gap: 4px;
   }
 }
+
+/* =====================================================
+   Reviewer Invitations Section
+   ===================================================== */
+.invitationSummary {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.invitationBadge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.invitationPending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.invitationAccepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.invitationDeclined {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.invitationsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.invitationCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  border-left: 4px solid #94a3b8;
+  transition: box-shadow 0.15s ease;
+}
+
+.invitationCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.invitationCardPending {
+  border-left-color: #f59e0b;
+}
+
+.invitationCardAccepted {
+  border-left-color: #10b981;
+}
+
+.invitationCardDeclined {
+  border-left-color: #ef4444;
+}
+
+.invitationCardExpired {
+  border-left-color: #6b7280;
+  opacity: 0.7;
+}
+
+.invitationCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.invitationAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #f1f5f9;
+}
+
+.invitationCardPending .invitationAvatar {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.invitationCardAccepted .invitationAvatar {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.invitationCardDeclined .invitationAvatar {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.invitationAvatar :global(.material-symbols-rounded) {
+  font-size: 20px;
+}
+
+.invitationInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.invitationName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.externalBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #ede9fe;
+  color: #6d28d9;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.invitationEmail {
+  font-size: 12px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusChip {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.statusChipPending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusChipAccepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusChipDeclined {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusChipExpired {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.invitationCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.invitationMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.invitationMetaItem :global(.material-symbols-rounded) {
+  font-size: 14px;
+}
+
+.declineReason {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: #fef2f2;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #991b1b;
+}
+
+.declineReason :global(.material-symbols-rounded) {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.declineReason p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .invitationsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .invitationSummary {
+    flex-wrap: wrap;
+  }
+}

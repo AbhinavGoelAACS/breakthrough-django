@@ -535,6 +535,55 @@ class EditorInviteReviewerView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class EditorPaperInvitationsView(APIView):
+    """List all reviewer invitations for a paper (editor/admin only)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        invitations = ReviewerInvitation.objects.filter(paper_id=paper.id).order_by('-invited_on')
+
+        invitations_list = []
+        for inv in invitations:
+            reviewer_name = inv.reviewer_name or ""
+            if not reviewer_name and inv.reviewer_id:
+                reviewer = User.objects.filter(id=inv.reviewer_id).first()
+                if reviewer:
+                    reviewer_name = f"{reviewer.fname} {reviewer.lname or ''}".strip()
+
+            invitations_list.append({
+                "id": inv.id,
+                "reviewer_email": inv.reviewer_email,
+                "reviewer_name": reviewer_name,
+                "reviewer_id": inv.reviewer_id,
+                "status": inv.status,
+                "is_external": inv.is_external,
+                "invited_on": inv.invited_on.isoformat() if inv.invited_on else None,
+                "accepted_on": inv.accepted_on.isoformat() if inv.accepted_on else None,
+                "declined_on": inv.declined_on.isoformat() if inv.declined_on else None,
+                "decline_reason": inv.decline_reason,
+                "token_expiry": inv.token_expiry.isoformat() if inv.token_expiry else None,
+            })
+
+        return Response({
+            "paper_id": paper.id,
+            "invitations": invitations_list,
+            "total": len(invitations_list),
+            "summary": {
+                "pending": sum(1 for i in invitations_list if i["status"] == "pending"),
+                "accepted": sum(1 for i in invitations_list if i["status"] == "accepted"),
+                "declined": sum(1 for i in invitations_list if i["status"] == "declined"),
+                "expired": sum(1 for i in invitations_list if i["status"] == "expired"),
+            }
+        }, status=status.HTTP_200_OK)
+
+
 class EditorAssignReviewerView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     

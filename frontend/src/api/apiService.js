@@ -325,6 +325,8 @@ export const acsApi = {
     // Invitation endpoints
     inviteReviewer: (paperId, reviewerEmail, dueDays = 14, reviewerName = '') =>
       apiService.post(`/api/v1/editor/papers/${paperId}/invite-reviewer`, { reviewer_email: reviewerEmail, due_days: dueDays, reviewer_name: reviewerName }),
+    getPaperInvitations: (paperId) =>
+      apiService.get(`/api/v1/editor/papers/${paperId}/invitations`),
     assignReviewerToPaper: (paperId, reviewerId, dueDays = 14) =>
       apiService.post(`/api/v1/editor/papers/${paperId}/assign-reviewer`, { reviewer_id: reviewerId, due_days: dueDays }),
     

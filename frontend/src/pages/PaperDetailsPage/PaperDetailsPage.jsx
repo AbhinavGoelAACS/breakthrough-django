@@ -398,7 +398,6 @@ const PaperDetailsPage = () => {
     setShowContactModal(false);
     if (sent) {
       success('Correspondence sent successfully');
-      // Refresh correspondence list if it's visible
       if (showCorrespondence) {
         fetchCorrespondence();
       }
@@ -848,6 +847,13 @@ const PaperDetailsPage = () => {
               <button className={styles.subNavItem} onClick={() => navigate(isAdmin() ? `/admin/submissions/${paper.id}/submission-history` : `/editor/papers/${paper.id}/submission-history`)}>
                 <span className="material-symbols-rounded">history</span>
                 Submission History
+              </button>
+            )}
+
+            {(isEditor() || isAdmin()) && (
+              <button className={styles.subNavItem} onClick={() => navigate(isAdmin() ? `/admin/submissions/${paper.id}/reviewer-invitations` : `/editor/papers/${paper.id}/reviewer-invitations`)}>
+                <span className="material-symbols-rounded">mail</span>
+                Reviewer Invitations
               </button>
             )}
             
