@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
+import { useAuth } from '../../hooks/useAuth';
 import Footer from '../../components/footer/Footer';
 import styles from './DashboardPage.module.css';
 
+const GUIDELINES_BY_ROLE = {
+  author: { label: 'Author Guidelines', path: '/author/guidelines' },
+  reviewer: { label: 'Reviewer Guidelines', path: '/reviewer/guidelines' },
+  editor: { label: 'Editor Guidelines', path: '/editor/guidelines' },
+  admin: { label: 'Author Guidelines', path: '/author/guidelines' },
+};
+
 export const DashboardPage = () => {
+  const { activeRole } = useAuth();
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,8 +99,8 @@ export const DashboardPage = () => {
                   <span className="material-icons">upload_file</span>
                   Submit Manuscript
                 </Link>
-                <Link to="/author/guidelines" className={styles.ctaBtnSecondary}>
-                  Author Guidelines
+                <Link to={(GUIDELINES_BY_ROLE[activeRole?.toLowerCase()] || GUIDELINES_BY_ROLE.author).path} className={styles.ctaBtnSecondary}>
+                  {(GUIDELINES_BY_ROLE[activeRole?.toLowerCase()] || GUIDELINES_BY_ROLE.author).label}
                 </Link>
               </div>
             </div>

@@ -165,24 +165,12 @@ const LandingPage = () => {
                 </p>
               </div>
 
-              {/* Resources Links */}
-              <div className="footer-links-section">
-                <h4 className="footer-links-title">RESOURCES</h4>
-                <ul className="footer-links-list">
-                  <li><Link to="/author-guidelines">For Authors</Link></li>
-                  <li><Link to="/reviewer-guidelines">For Reviewers</Link></li>
-                  <li><Link to="/libraries">For Libraries</Link></li>
-                  <li><Link to="/open-access">Open Access</Link></li>
-                </ul>
-              </div>
-
               {/* Legal Links */}
               <div className="footer-links-section">
                 <h4 className="footer-links-title">LEGAL</h4>
                 <ul className="footer-links-list">
                   <li><Link to="/privacy-policy">Privacy Policy</Link></li>
                   <li><Link to="/terms-of-service">Terms of Service</Link></li>
-                  <li><Link to="/cookie-policy">Cookie Policy</Link></li>
                 </ul>
               </div>
             </div>

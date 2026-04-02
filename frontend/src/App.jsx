@@ -71,6 +71,9 @@ import IssuePapersPage from './pages/IssuePapersPage/IssuePapersPage.jsx';
 import SubmissionHistoryPage from './pages/SubmissionHistoryPage/SubmissionHistoryPage.jsx';
 // Reviewer Invitations Page
 import ReviewerInvitationsPage from './pages/ReviewerInvitationsPage/ReviewerInvitationsPage.jsx';
+// Legal Pages
+import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
+import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy.jsx';
 
 function App() {
   return (
@@ -211,6 +214,8 @@ function AppContent() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/article/:id" element={<PublicPaperView />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
           {/* Protected routes */}
           <Route path="/journal/:id" element={<ProtectedRoute><JournalDetailPage /></ProtectedRoute>} />
