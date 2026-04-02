@@ -1186,8 +1186,8 @@ class AdminPaperCorrespondenceView(APIView):
 
     def get(self, request, paper_id):
         # Allow both admins and editors
-        user_role = getattr(request.user, 'role', '')
-        if user_role not in ["admin", "editor"]:
+        from .views_editor import check_editor_role
+        if not check_editor_role(request.user):
             return Response({"detail": "Admin or Editor access required"}, status=status.HTTP_403_FORBIDDEN)
         
         # Verify paper exists
@@ -1239,9 +1239,14 @@ class AdminPaperCorrespondenceView(APIView):
         import re
         
         # Allow both admins and editors
-        user_role = getattr(request.user, 'role', '')
-        if user_role not in ["admin", "editor"]:
+        from .views_editor import check_editor_role
+        if not check_editor_role(request.user):
             return Response({"detail": "Admin or Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Determine role for correspondence record
+        user_role = (getattr(request.user, 'role', '') or '').lower()
+        if user_role not in ('admin', 'editor'):
+            user_role = 'editor'
         
         # Request data
         subject = request.data.get("subject")
