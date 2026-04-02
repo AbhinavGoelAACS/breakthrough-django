@@ -794,13 +794,18 @@ class AuthorPaperView(APIView):
 
         from django.conf import settings
         import os
+        import mimetypes
         if file_path.startswith('/'):
             file_path = file_path[1:]
         full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
-        return FileResponse(open(full_path, 'rb'), as_attachment=False, filename=os.path.basename(full_path))
+        content_type, _ = mimetypes.guess_type(full_path)
+        content_type = content_type or 'application/octet-stream'
+        response = FileResponse(open(full_path, 'rb'), content_type=content_type)
+        response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+        return response
 
 
 class AuthorPaperTitlePageView(APIView):
@@ -823,13 +828,18 @@ class AuthorPaperTitlePageView(APIView):
 
         from django.conf import settings
         import os
+        import mimetypes
         if file_path.startswith('/'):
             file_path = file_path[1:]
         full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
-        return FileResponse(open(full_path, 'rb'), as_attachment=False, filename=os.path.basename(full_path))
+        content_type, _ = mimetypes.guess_type(full_path)
+        content_type = content_type or 'application/octet-stream'
+        response = FileResponse(open(full_path, 'rb'), content_type=content_type)
+        response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+        return response
 
 
 class AuthorPaperBlindedManuscriptView(APIView):
@@ -852,13 +862,18 @@ class AuthorPaperBlindedManuscriptView(APIView):
 
         from django.conf import settings
         import os
+        import mimetypes
         if file_path.startswith('/'):
             file_path = file_path[1:]
         full_path = os.path.join(settings.BASE_DIR.parent, file_path)
         if not os.path.exists(full_path):
             return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
-        return FileResponse(open(full_path, 'rb'), as_attachment=False, filename=os.path.basename(full_path))
+        content_type, _ = mimetypes.guess_type(full_path)
+        content_type = content_type or 'application/octet-stream'
+        response = FileResponse(open(full_path, 'rb'), content_type=content_type)
+        response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+        return response
 
 
 class AuthorReviewReportView(APIView):

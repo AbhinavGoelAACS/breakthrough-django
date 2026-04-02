@@ -374,6 +374,10 @@ export const acsApi = {
     
     // View paper PDF
     getViewPaperUrl: (paperId) => `/api/v1/editor/papers/${paperId}/view`,
+
+    // Submission History
+    getSubmissionHistory: (paperId) =>
+      apiService.get(`/api/v1/editor/papers/${paperId}/submission-history`),
   },
 
   // Invitation endpoints (public, no auth required)

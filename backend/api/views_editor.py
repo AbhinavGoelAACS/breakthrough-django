@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count, Q
 
-from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor
+from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor, PaperVersion
 
 
 def _is_admin(user):
@@ -1064,6 +1064,7 @@ def _get_editor_paper_file(request, paper_id: int, file_field: str):
 
     from django.conf import settings
     import os
+    import mimetypes
     from django.http import FileResponse
     if file_path.startswith('/'):
         file_path = file_path[1:]
@@ -1071,7 +1072,11 @@ def _get_editor_paper_file(request, paper_id: int, file_field: str):
     if not os.path.exists(full_path):
         return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
 
-    return FileResponse(open(full_path, 'rb'), as_attachment=False, filename=os.path.basename(full_path))
+    content_type, _ = mimetypes.guess_type(full_path)
+    content_type = content_type or 'application/octet-stream'
+    response = FileResponse(open(full_path, 'rb'), content_type=content_type)
+    response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+    return response
 
 
 class EditorPaperViewTitlePage(APIView):
@@ -1411,3 +1416,90 @@ class RegisterAcceptInvitationView(APIView):
             "user_id": new_user.id,
             "invitation_id": invitation.id,
         }, status=status.HTTP_200_OK)
+
+
+# --- Submission History Endpoints ---
+
+class EditorPaperSubmissionHistoryView(APIView):
+    """Return all file versions for a paper (editor/admin access)."""
+    from api.auth import JWTAuthentication
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not _is_admin(request.user) and (not allowed_journals or paper.journal not in allowed_journals):
+            return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+
+        versions = PaperVersion.objects.filter(paper_id=paper_id).order_by("-version_number")
+        version_list = []
+        for v in versions:
+            version_list.append({
+                "id": v.id,
+                "version_number": v.version_number,
+                "file": v.file,
+                "file_size": v.file_size,
+                "uploaded_on": v.uploaded_on.isoformat() if v.uploaded_on else None,
+                "revision_reason": v.revision_reason,
+                "change_summary": v.change_summary,
+                "uploaded_by": v.uploaded_by,
+            })
+
+        return Response({
+            "paper_id": paper.id,
+            "paper_title": paper.title,
+            "paper_status": paper.status,
+            "current_version": paper.version_number,
+            "revision_count": paper.revision_count,
+            "versions": version_list,
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPaperVersionFileView(APIView):
+    """Serve a specific historical version file for editor viewing."""
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int, version_id: int):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not _is_admin(request.user) and (not allowed_journals or paper.journal not in allowed_journals):
+            return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+
+        version = PaperVersion.objects.filter(id=version_id, paper_id=paper_id).first()
+        if not version:
+            return Response({"detail": "Version not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        file_path = version.file
+        if not file_path:
+            return Response({"detail": "No file associated with this version"}, status=status.HTTP_404_NOT_FOUND)
+
+        from django.conf import settings
+        import os
+        import mimetypes
+        from django.http import FileResponse
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+        full_path = os.path.join(settings.BASE_DIR.parent, file_path)
+        if not os.path.exists(full_path):
+            return Response({"detail": "File not found on server"}, status=status.HTTP_404_NOT_FOUND)
+
+        content_type, _ = mimetypes.guess_type(full_path)
+        content_type = content_type or 'application/octet-stream'
+        response = FileResponse(open(full_path, 'rb'), content_type=content_type)
+        response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+        return response

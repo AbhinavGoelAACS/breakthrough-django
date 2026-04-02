@@ -67,6 +67,8 @@ import EditorGuidelines from './pages/EditorGuidelines/EditorGuidelines.jsx';
 import PublicPaperView from './pages/PublicPaperView/PublicPaperView.jsx';
 // Issue Papers Page
 import IssuePapersPage from './pages/IssuePapersPage/IssuePapersPage.jsx';
+// Submission History Page
+import SubmissionHistoryPage from './pages/SubmissionHistoryPage/SubmissionHistoryPage.jsx';
 
 function App() {
   return (
@@ -224,6 +226,7 @@ function AppContent() {
               <Route path="journals" element={<AdminJournals />} />
               <Route path="submissions" element={<AdminSubmissions />} />
               <Route path="submissions/:id" element={<PaperDetailsPage />} />
+              <Route path="submissions/:id/submission-history" element={<SubmissionHistoryPage />} />
               <Route path="submissions/:paperId/decision" element={<EditorDecisionPanel />} />
               <Route path="role-requests" element={<AdminRoleRequests />} />
               <Route path="settings" element={<AdminSettings />} />
@@ -249,6 +252,7 @@ function AppContent() {
               <Route path="papers" element={<EditorPaperQueue />} />
               <Route path="papers/pending-decision" element={<EditorPendingDecision />} />
               <Route path="papers/:id" element={<PaperDetailsPage />} />
+              <Route path="papers/:id/submission-history" element={<SubmissionHistoryPage />} />
               <Route path="papers/:paperId/decision" element={<EditorDecisionPanel />} />
               <Route path="publishing" element={<EditorPublishing />} />
               <Route path="reviewers" element={<EditorReviewerList />} />

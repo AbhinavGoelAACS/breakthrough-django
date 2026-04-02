@@ -1,0 +1,461 @@
+/* =====================================================
+   SubmissionHistoryPage - Version History for Editors
+   ===================================================== */
+
+.container {
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Loading / Error States */
+.loading, .error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 12px;
+  color: #64748b;
+}
+
+.loading :global(.material-symbols-rounded),
+.error :global(.material-symbols-rounded) {
+  font-size: 40px;
+  animation: spin 1.5s linear infinite;
+}
+
+.error :global(.material-symbols-rounded) {
+  color: #ef4444;
+  animation: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.backBtn {
+  margin-top: 8px;
+  padding: 8px 20px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.backBtn:hover {
+  background: #1d4ed8;
+}
+
+/* =====================================================
+   Header
+   ===================================================== */
+.pageHeader {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 32px;
+}
+
+.headerContent {
+  max-width: 1152px;
+  margin: 0 auto;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 12px;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: #2563eb;
+}
+
+.backLink :global(.material-symbols-rounded) {
+  font-size: 14px;
+}
+
+.headerMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.versionInfo, .revisionInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.versionInfo :global(.material-symbols-rounded),
+.revisionInfo :global(.material-symbols-rounded) {
+  font-size: 18px;
+}
+
+.paperTitle {
+  margin: 10px 0 0 0;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  max-width: 800px;
+}
+
+/* =====================================================
+   Content
+   ===================================================== */
+.content {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 32px 32px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 20px 0;
+}
+
+.sectionTitle :global(.material-symbols-rounded) {
+  font-size: 22px;
+  color: #2563eb;
+}
+
+/* =====================================================
+   Current Files Grid
+   ===================================================== */
+.currentFilesSection {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.fileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.fileCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: #334155;
+}
+
+.fileCard:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.fileIcon {
+  font-size: 20px;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.fileLabel {
+  flex: 1;
+  font-weight: 500;
+}
+
+.openIcon {
+  font-size: 16px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.fileCard:hover .openIcon {
+  color: #2563eb;
+}
+
+/* =====================================================
+   Version Timeline
+   ===================================================== */
+.timelineSection {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 0;
+  color: #94a3b8;
+}
+
+.emptyState :global(.material-symbols-rounded) {
+  font-size: 48px;
+}
+
+.emptyState p {
+  font-size: 14px;
+  margin: 0;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineItem {
+  display: flex;
+  gap: 20px;
+}
+
+.timelineConnector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.timelineDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  border: 3px solid #e2e8f0;
+  flex-shrink: 0;
+  margin-top: 20px;
+}
+
+.dotCurrent {
+  background: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.timelineLine {
+  width: 2px;
+  flex: 1;
+  background: #e2e8f0;
+  min-height: 24px;
+}
+
+.versionCard {
+  flex: 1;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  transition: border-color 0.15s;
+}
+
+.versionCard:hover {
+  border-color: #cbd5e1;
+}
+
+.versionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.versionBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.badgeCurrent {
+  background: #2563eb;
+  color: #fff;
+}
+
+.versionDate {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.currentTag {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.versionMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.versionMeta :global(.material-symbols-rounded) {
+  font-size: 16px;
+}
+
+.versionDetail {
+  margin-bottom: 8px;
+}
+
+.versionDetail strong {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.versionDetail p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.versionActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.fileSize {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.fileSize :global(.material-symbols-rounded) {
+  font-size: 16px;
+}
+
+.viewFileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.viewFileBtn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.viewFileBtn :global(.material-symbols-rounded) {
+  font-size: 16px;
+}
+
+/* =====================================================
+   Responsive
+   ===================================================== */
+@media (max-width: 768px) {
+  .pageHeader {
+    padding: 12px 16px;
+  }
+
+  .content {
+    padding: 20px 16px 48px;
+  }
+
+  .pageTitle {
+    font-size: 22px;
+  }
+
+  .headerMain {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .fileGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .timelineConnector {
+    width: 16px;
+  }
+
+  .versionCard {
+    padding: 14px 16px;
+  }
+}

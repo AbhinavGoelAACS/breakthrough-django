@@ -28,13 +28,30 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (err) {
       console.error('Error fetching user roles:', err);
-      // Don't throw - roles API might not be available during initial load
+      // Re-throw 401 errors so auth initialization can clear stale state
+      if (err?.response?.status === 401) {
+        throw err;
+      }
+      // Don't throw for non-auth errors - roles API might not be available during initial load
       return null;
     }
   }, []);
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
+    const isTokenExpired = (token) => {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        // Check exp claim (JWT exp is in seconds, Date.now() is in ms)
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          return true;
+        }
+        return false;
+      } catch {
+        return true; // Can't parse token → treat as expired
+      }
+    };
+
     const initializeAuth = async () => {
       try {
         const token = authService.getToken();
@@ -42,29 +59,44 @@ export const AuthProvider = ({ children }) => {
 
         // Only consider user authenticated if BOTH token AND user data exist
         if (token && storedUser) {
-          // Validate token by making an API call before setting authenticated
+          // Quick synchronous check: if the JWT is expired, clear immediately
+          if (isTokenExpired(token)) {
+            console.log('Token expired, clearing auth state');
+            authService.logout();
+            setUser(null);
+            setIsAuthenticated(false);
+            setActiveRole(null);
+            setRoles([]);
+            return;
+          }
+
+          // Token not expired — validate by making an API call
           try {
             const rolesResponse = await fetchUserRoles();
-            // Token is valid - set authenticated state
-            setUser(storedUser);
-            setIsAuthenticated(true);
-            setActiveRole(storedUser.role?.toLowerCase() || null);
-          } catch (err) {
-            // If we get a 401, token is invalid - clear auth state
-            if (err?.response?.status === 401) {
-              console.log('Token expired or invalid, clearing auth state');
+            // After the API call, re-check that the token still exists in localStorage.
+            // The axios interceptor may have cleared it during a failed 401/refresh cycle.
+            const tokenStillExists = authService.getToken();
+            if (!tokenStillExists) {
+              console.log('Token was cleared during validation, logging out');
               authService.logout();
               setUser(null);
               setIsAuthenticated(false);
               setActiveRole(null);
               setRoles([]);
             } else {
-              // Network error - use stored auth but mark as potentially stale
-              console.warn('Could not validate token (network error), using stored auth');
+              // Token is valid - set authenticated state
               setUser(storedUser);
               setIsAuthenticated(true);
               setActiveRole(storedUser.role?.toLowerCase() || null);
             }
+          } catch (err) {
+            // Token validation failed - clear auth state regardless of error type.
+            console.log('Token validation failed, clearing auth state:', err?.message);
+            authService.logout();
+            setUser(null);
+            setIsAuthenticated(false);
+            setActiveRole(null);
+            setRoles([]);
           }
         } else {
           // Clear any stale/partial auth data if token is missing

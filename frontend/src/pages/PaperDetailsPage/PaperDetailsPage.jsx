@@ -820,6 +820,13 @@ const PaperDetailsPage = () => {
                 </button>
               )}
               
+              {(isEditor() || isAdmin()) && (
+                <button className={styles.btnOutline} onClick={() => navigate(isAdmin() ? `/admin/submissions/${paper.id}/submission-history` : `/editor/papers/${paper.id}/submission-history`)}>
+                  <span className="material-symbols-rounded">history</span>
+                  Submission History
+                </button>
+              )}
+              
               {isAdmin() && paper.status === 'accepted' && (
                 <button 
                   className={styles.btnOutline} 

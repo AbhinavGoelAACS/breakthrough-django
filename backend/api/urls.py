@@ -76,7 +76,8 @@ from .views_editor import (
     EditorPublishPaperWithFileView, EditorCheckDOIStatusView, InvitationStatusView,
     AcceptInvitationView,
     DeclineInvitationView,
-    RegisterAcceptInvitationView
+    RegisterAcceptInvitationView,
+    EditorPaperSubmissionHistoryView, EditorPaperVersionFileView
 )
 
 from .views_reviewer import (
@@ -410,6 +411,8 @@ urlpatterns = [
     path("api/v1/editor/papers/<int:paper_id>/view-response-to-reviewer", EditorPaperViewResponseToReviewer.as_view(), name="editor-paper-view-response-to-reviewer"),
     path("api/v1/editor/papers/<int:paper_id>/publish-with-file", EditorPublishPaperWithFileView.as_view(), name="editor-publish-paper-with-file"),
     path("api/v1/editor/papers/<int:paper_id>/doi-status", EditorCheckDOIStatusView.as_view(), name="editor-check-doi-status"),
+    path("api/v1/editor/papers/<int:paper_id>/submission-history", EditorPaperSubmissionHistoryView.as_view(), name="editor-paper-submission-history"),
+    path("api/v1/editor/papers/<int:paper_id>/versions/<int:version_id>/view", EditorPaperVersionFileView.as_view(), name="editor-paper-version-file"),
     
     # Invitation endpoints (Public Editor sub-namespace essentially)
     path("api/v1/invitations/status/<str:token>", InvitationStatusView.as_view(), name="invitations-status"),
