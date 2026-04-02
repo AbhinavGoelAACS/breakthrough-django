@@ -521,6 +521,14 @@ class SubmitPaperView(APIView):
                     created_at=datetime.utcnow(),
                 )
 
+        # Send submission confirmation email (best-effort)
+        email_sent = False
+        try:
+            from .services.email_service import send_submission_confirmation
+            email_sent = send_submission_confirmation(paper, user)
+        except Exception:
+            pass
+
         return Response(
             {
                 "id": paper.id,
@@ -533,7 +541,7 @@ class SubmitPaperView(APIView):
                 if paper.added_on
                 else None,
                 "co_authors_count": len(co_authors_data),
-                "email_notification_queued": False,
+                "email_notification_queued": email_sent,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -668,11 +676,14 @@ class AuthorContactEditorialView(APIView):
             created_at=datetime.utcnow()
         )
 
+        from .services.email_service import send_correspondence_email
+        email_sent = send_correspondence_email(corr)
+
         return Response({
             "success": True,
             "message": "Your message has been sent to the editorial office",
             "correspondence_id": corr.id,
-            "email_sent": False, # Background emails not wired instantly here yet
+            "email_sent": email_sent,
             "recipient": recipient_names[0]
         }, status=status.HTTP_200_OK)
 

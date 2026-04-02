@@ -1270,14 +1270,11 @@ class AdminPaperCorrespondenceView(APIView):
             created_at=datetime.utcnow()
         )
         
-        # Note: Actual email sending would be done here with an email service
-        # For now, mark as sent
+        # Send actual email if requested
         email_sent = False
         if send_email:
-            correspondence.sent_at = datetime.utcnow()
-            correspondence.delivery_status = "sent"
-            correspondence.save()
-            email_sent = True
+            from .services.email_service import send_correspondence_email
+            email_sent = send_correspondence_email(correspondence)
         
         return Response({
             "message": "Correspondence sent successfully",

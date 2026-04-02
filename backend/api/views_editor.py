@@ -761,12 +761,24 @@ class EditorPaperStatusUpdateView(APIView):
                 
         paper.save()
         
+        # Send status update email to author
+        email_sent = False
+        try:
+            author = None
+            if paper.added_by and paper.added_by.isdigit():
+                author = User.objects.filter(id=int(paper.added_by)).first()
+            if author:
+                from .services.email_service import send_status_update_notification
+                email_sent = send_status_update_notification(paper, old_status, status_val, author)
+        except Exception:
+            pass
+
         return Response({
             "id": paper.id,
             "title": paper.title,
             "status": paper.status,
             "previous_status": old_status,
-            "email_notification_queued": False # Background task mock
+            "email_notification_queued": email_sent
         }, status=status.HTTP_200_OK)
 
 
@@ -841,6 +853,18 @@ class EditorPaperDecisionView(APIView):
             
         paper.save()
         
+        # Send decision notification email to author
+        email_sent = False
+        try:
+            author = None
+            if paper.added_by and paper.added_by.isdigit():
+                author = User.objects.filter(id=int(paper.added_by)).first()
+            if author:
+                from .services.email_service import send_decision_notification
+                email_sent = send_decision_notification(paper, decision, editor_comments, author)
+        except Exception:
+            pass
+
         return Response({
             "success": True,
             "paper_id": paper.id,
@@ -850,7 +874,7 @@ class EditorPaperDecisionView(APIView):
             "editor_comments": paper.editor_comments,
             "revision_type": revision_type if decision == "correction" else None,
             "revision_deadline": paper.revision_deadline.isoformat() if getattr(paper, 'revision_deadline', None) else None,
-            "email_notification_queued": False
+            "email_notification_queued": email_sent
         }, status=status.HTTP_200_OK)
 
 
