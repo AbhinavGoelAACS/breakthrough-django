@@ -54,6 +54,9 @@ export const SubmitPaperForm = () => {
   const [keywordChips, setKeywordChips] = useState([]);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
+  const [pdfPreviewFile, setPdfPreviewFile] = useState(null);
+  const [pdfPreviewLabel, setPdfPreviewLabel] = useState('');
+  const [pdfObjectUrl, setPdfObjectUrl] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [touched, setTouched] = useState({});
   
@@ -127,6 +130,17 @@ export const SubmitPaperForm = () => {
     };
     loadInitialData();
   }, []);
+
+  // Manage PDF object URL lifecycle
+  useEffect(() => {
+    if (pdfPreviewFile) {
+      const url = URL.createObjectURL(pdfPreviewFile);
+      setPdfObjectUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPdfObjectUrl(null);
+    }
+  }, [pdfPreviewFile]);
 
   // Validation helper functions
   const validateEmail = (email) => {
@@ -1412,8 +1426,52 @@ export const SubmitPaperForm = () => {
               {/* Files */}
               <div className={styles.reviewSection}>
                 <h3>Paper Files</h3>
-                <p><strong>Title Page:</strong> {formData.titlePagePreview || 'Not uploaded'}</p>
-                <p><strong>Blinded Manuscript:</strong> {formData.blindedManuscriptPreview || 'Not uploaded'}</p>
+                <div className={styles.fileCardsGrid}>
+                  <div className={styles.fileCard}>
+                    <div className={styles.fileCardIcon}>
+                      <span className="material-symbols-rounded">description</span>
+                    </div>
+                    <div className={styles.fileCardInfo}>
+                      <p className={styles.fileCardLabel}>Title Page</p>
+                      <p className={styles.fileCardName}>{formData.titlePagePreview || 'Not uploaded'}</p>
+                    </div>
+                    {formData.titlePageFile && formData.titlePageFile.type === 'application/pdf' && (
+                      <button
+                        type="button"
+                        className={styles.fileCardPreviewBtn}
+                        onClick={() => {
+                          setPdfPreviewFile(formData.titlePageFile);
+                          setPdfPreviewLabel('Title Page');
+                        }}
+                      >
+                        <span className="material-symbols-rounded">visibility</span>
+                        Preview
+                      </button>
+                    )}
+                  </div>
+                  <div className={styles.fileCard}>
+                    <div className={styles.fileCardIcon}>
+                      <span className="material-symbols-rounded">article</span>
+                    </div>
+                    <div className={styles.fileCardInfo}>
+                      <p className={styles.fileCardLabel}>Blinded Manuscript</p>
+                      <p className={styles.fileCardName}>{formData.blindedManuscriptPreview || 'Not uploaded'}</p>
+                    </div>
+                    {formData.blindedManuscriptFile && formData.blindedManuscriptFile.type === 'application/pdf' && (
+                      <button
+                        type="button"
+                        className={styles.fileCardPreviewBtn}
+                        onClick={() => {
+                          setPdfPreviewFile(formData.blindedManuscriptFile);
+                          setPdfPreviewLabel('Blinded Manuscript');
+                        }}
+                      >
+                        <span className="material-symbols-rounded">visibility</span>
+                        Preview
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Message to Editor */}
@@ -1496,6 +1554,34 @@ export const SubmitPaperForm = () => {
       </div>
 
       {loading && <div className={styles.loadingOverlay}>Processing your submission...</div>}
+
+      {/* PDF Preview Modal */}
+      {pdfPreviewFile && (
+        <div className={styles.modalOverlay} onClick={() => { setPdfPreviewFile(null); setPdfPreviewLabel(''); }}>
+          <div className={styles.pdfViewerModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.pdfViewerHeader}>
+              <div className={styles.pdfViewerTitle}>
+                <span className="material-symbols-rounded">picture_as_pdf</span>
+                <h3>{pdfPreviewLabel}</h3>
+              </div>
+              <button
+                className={styles.modalClose}
+                onClick={() => { setPdfPreviewFile(null); setPdfPreviewLabel(''); }}
+                aria-label="Close preview"
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.pdfViewerBody}>
+              <iframe
+                src={pdfObjectUrl}
+                title={pdfPreviewLabel}
+                className={styles.pdfIframe}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Terms and Conditions Modal */}
       {showTermsModal && (

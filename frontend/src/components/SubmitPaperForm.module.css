@@ -1634,3 +1634,158 @@
     border-radius: 0;
   }
 }
+
+/* =====================================================
+   File Cards Grid (Review Step)
+   ===================================================== */
+.fileCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.fileCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: border-color 0.15s ease;
+  overflow: hidden;
+  flex-wrap: wrap;
+}
+
+.fileCard:hover {
+  border-color: #cbd5e1;
+}
+
+.fileCardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fileCardIcon :global(.material-symbols-rounded) {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.fileCardInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileCardLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin: 0 0 2px 0;
+}
+
+.fileCardName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileCardPreviewBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.fileCardPreviewBtn:hover {
+  background: #1d4ed8;
+}
+
+.fileCardPreviewBtn :global(.material-symbols-rounded) {
+  font-size: 18px;
+}
+
+/* =====================================================
+   PDF Viewer Modal
+   ===================================================== */
+.pdfViewerModal {
+  position: relative;
+  width: 90vw;
+  max-width: 900px;
+  height: 90vh;
+  background: #ffffff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.pdfViewerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.pdfViewerTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pdfViewerTitle :global(.material-symbols-rounded) {
+  font-size: 24px;
+  color: #ef4444;
+}
+
+.pdfViewerTitle h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.pdfViewerBody {
+  flex: 1;
+  overflow: hidden;
+}
+
+.pdfIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .pdfViewerModal {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    border-radius: 0;
+  }
+}
