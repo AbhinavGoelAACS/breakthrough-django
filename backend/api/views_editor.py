@@ -587,6 +587,25 @@ class EditorPaperInvitationsView(APIView):
             }
         }, status=status.HTTP_200_OK)
 
+    def delete(self, request, paper_id):
+        """Delete/cancel a pending invitation."""
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        invitation_id = request.query_params.get("invitation_id")
+        if not invitation_id:
+            return Response({"detail": "invitation_id query parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        invitation = ReviewerInvitation.objects.filter(id=invitation_id, paper_id=paper_id).first()
+        if not invitation:
+            return Response({"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if invitation.status not in ("pending", "expired"):
+            return Response({"detail": f"Cannot delete an invitation that has been {invitation.status}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        invitation.delete()
+        return Response({"success": True, "message": "Invitation deleted successfully"}, status=status.HTTP_200_OK)
+
 
 class EditorAssignReviewerView(APIView):
     permission_classes = [permissions.IsAuthenticated]

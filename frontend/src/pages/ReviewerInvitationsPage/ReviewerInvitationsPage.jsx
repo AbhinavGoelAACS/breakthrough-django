@@ -10,23 +10,43 @@ const ReviewerInvitationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [invitations, setInvitations] = useState([]);
+  const [cancellingId, setCancellingId] = useState(null);
+
+  const fetchInvitations = async () => {
+    try {
+      setLoading(true);
+      const response = await acsApi.editor.getPaperInvitations(id);
+      setInvitations(response?.invitations || []);
+    } catch (err) {
+      console.error('Failed to fetch invitations:', err);
+      const msg = err.response?.data?.detail || 'Failed to load reviewer invitations';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchInvitations = async () => {
-      try {
-        setLoading(true);
-        const response = await acsApi.editor.getPaperInvitations(id);
-        setInvitations(response?.invitations || []);
-      } catch (err) {
-        console.error('Failed to fetch invitations:', err);
-        const msg = err.response?.data?.detail || 'Failed to load reviewer invitations';
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchInvitations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const handleCancelInvitation = async (inv) => {
+    if (!window.confirm(`Are you sure you want to cancel the invitation for ${inv.reviewer_name || inv.reviewer_email}?`)) {
+      return;
+    }
+    try {
+      setCancellingId(inv.id);
+      await acsApi.editor.cancelInvitation(id, inv.id);
+      setInvitations(prev => prev.filter(i => i.id !== inv.id));
+    } catch (err) {
+      console.error('Failed to cancel invitation:', err);
+      const msg = err.response?.data?.detail || 'Failed to cancel invitation';
+      alert(msg);
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const goBack = () => {
     navigate(-1);
@@ -153,6 +173,18 @@ const ReviewerInvitationsPage = () => {
                   <div className={styles.declineReason}>
                     <span className="material-symbols-rounded">info</span>
                     <p>{inv.decline_reason}</p>
+                  </div>
+                )}
+                {(inv.status === 'pending' || inv.status === 'expired') && (
+                  <div className={styles.invitationCardActions}>
+                    <button
+                      className={styles.cancelBtn}
+                      onClick={() => handleCancelInvitation(inv)}
+                      disabled={cancellingId === inv.id}
+                    >
+                      <span className="material-symbols-rounded">delete</span>
+                      {cancellingId === inv.id ? 'Cancelling...' : 'Cancel Invitation'}
+                    </button>
                   </div>
                 )}
               </div>

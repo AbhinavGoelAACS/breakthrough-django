@@ -133,6 +133,8 @@ export const acsApi = {
     // Admin can also invite reviewers using the editor endpoint (which accepts both roles)
     inviteReviewer: (paperId, reviewerEmail, dueDays = 14, reviewerName = '') =>
       apiService.post(`/api/v1/editor/papers/${paperId}/invite-reviewer`, { reviewer_email: reviewerEmail, due_days: dueDays, reviewer_name: reviewerName }),
+    cancelInvitation: (paperId, invitationId) =>
+      apiService.delete(`/api/v1/editor/papers/${paperId}/invitations?invitation_id=${invitationId}`),
     listReviewers: (skip = 0, limit = 50, search = '', paperId = null) =>
       apiService.get(`/api/v1/editor/reviewers?skip=${skip}&limit=${limit}${search ? `&search=${search}` : ''}${paperId ? `&paper_id=${paperId}` : ''}`),
     
@@ -327,6 +329,8 @@ export const acsApi = {
       apiService.post(`/api/v1/editor/papers/${paperId}/invite-reviewer`, { reviewer_email: reviewerEmail, due_days: dueDays, reviewer_name: reviewerName }),
     getPaperInvitations: (paperId) =>
       apiService.get(`/api/v1/editor/papers/${paperId}/invitations`),
+    cancelInvitation: (paperId, invitationId) =>
+      apiService.delete(`/api/v1/editor/papers/${paperId}/invitations?invitation_id=${invitationId}`),
     assignReviewerToPaper: (paperId, reviewerId, dueDays = 14) =>
       apiService.post(`/api/v1/editor/papers/${paperId}/assign-reviewer`, { reviewer_id: reviewerId, due_days: dueDays }),
     
