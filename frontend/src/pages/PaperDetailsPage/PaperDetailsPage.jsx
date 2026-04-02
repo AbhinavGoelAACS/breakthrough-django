@@ -789,69 +789,68 @@ const PaperDetailsPage = () => {
               <h1 className={styles.pageTitle}>{paper.title}</h1>  
               <StatusChips status={paper.status} />
             </div>
-            
-            {/* Action Buttons */}
-            <div className={styles.headerActions}>
-              {/* For authors/editors/admins - show both title page and blinded manuscript buttons */}
-              {(isAuthor() || isEditor() || isAdmin()) && (
-                <>
-                  <button className={styles.btnOutline} onClick={handleViewTitlePage}>
-                    <span className="material-symbols-rounded">article</span>
-                    Title Page
-                  </button>
-                  <button className={styles.btnOutline} onClick={handleViewBlindedManuscript}>
-                    <span className="material-symbols-rounded">description</span>
-                    Blinded Manuscript
-                  </button>
-                </>
-              )}
-              
-              {isAuthor() && (paper.status === 'correction' || paper.status === 'revision_requested') && (
-                <button className={styles.btnDark} onClick={() => setShowResubmitForm(!showResubmitForm)}>
-                  <span className="material-symbols-rounded">edit</span>
-                  Revise
-                </button>
-              )}
-              
-              {(isEditor() || isAdmin()) && !['accepted', 'rejected', 'published'].includes(paper.status) && (
-                <button className={styles.btnPrimary} onClick={() => navigate(isAdmin() ? `/admin/submissions/${paper.id}/decision` : `/editor/papers/${paper.id}/decision`)}>
-                  <span className="material-symbols-rounded">gavel</span>
-                  Make Decision
-                </button>
-              )}
-              
-              {(isEditor() || isAdmin()) && (
-                <button className={styles.btnOutline} onClick={() => navigate(isAdmin() ? `/admin/submissions/${paper.id}/submission-history` : `/editor/papers/${paper.id}/submission-history`)}>
-                  <span className="material-symbols-rounded">history</span>
-                  Submission History
-                </button>
-              )}
-              
-              {isAdmin() && paper.status === 'accepted' && (
-                <button 
-                  className={styles.btnOutline} 
-                  onClick={handleTriggerCopyrightForm}
-                  disabled={triggeringCopyright}
-                >
-                  <span className="material-symbols-rounded">contract</span>
-                  {triggeringCopyright ? 'Sending...' : 'Send Copyright Form'}
-                </button>
-              )}
-              
-              {(isEditor() || isAdmin()) && String(paper.added_by) !== String(user?.id) && (
-                <button className={styles.btnOutline} onClick={() => {
-                  setShowAssignReviewer(true);
-                  setShowReviewerDropdown(true); // Always show dropdown when modal opens
-                  if (!availableReviewers.length) {
-                    fetchAvailableReviewers();
-                  }
-                }}>
-                  <span className="material-symbols-rounded">person_add</span>
-                  Assign Reviewer
-                </button>
-              )}
-            </div>
           </div>
+
+          {/* Sub Navigation */}
+          <nav className={styles.subNav}>
+            {(isAuthor() || isEditor() || isAdmin()) && (
+              <>
+                <button className={styles.subNavItem} onClick={handleViewTitlePage}>
+                  <span className="material-symbols-rounded">article</span>
+                  Title Page
+                </button>
+                <button className={styles.subNavItem} onClick={handleViewBlindedManuscript}>
+                  <span className="material-symbols-rounded">description</span>
+                  Blinded Manuscript
+                </button>
+              </>
+            )}
+            
+            {isAuthor() && (paper.status === 'correction' || paper.status === 'revision_requested') && (
+              <button className={`${styles.subNavItem} ${styles.subNavHighlight}`} onClick={() => setShowResubmitForm(!showResubmitForm)}>
+                <span className="material-symbols-rounded">edit</span>
+                Revise
+              </button>
+            )}
+            
+            {(isEditor() || isAdmin()) && !['accepted', 'rejected', 'published'].includes(paper.status) && (
+              <button className={`${styles.subNavItem} ${styles.subNavPrimary}`} onClick={() => navigate(isAdmin() ? `/admin/submissions/${paper.id}/decision` : `/editor/papers/${paper.id}/decision`)}>
+                <span className="material-symbols-rounded">gavel</span>
+                Make Decision
+              </button>
+            )}
+            
+            {(isEditor() || isAdmin()) && (
+              <button className={styles.subNavItem} onClick={() => navigate(isAdmin() ? `/admin/submissions/${paper.id}/submission-history` : `/editor/papers/${paper.id}/submission-history`)}>
+                <span className="material-symbols-rounded">history</span>
+                Submission History
+              </button>
+            )}
+            
+            {isAdmin() && paper.status === 'accepted' && (
+              <button 
+                className={styles.subNavItem}
+                onClick={handleTriggerCopyrightForm}
+                disabled={triggeringCopyright}
+              >
+                <span className="material-symbols-rounded">contract</span>
+                {triggeringCopyright ? 'Sending...' : 'Send Copyright Form'}
+              </button>
+            )}
+            
+            {(isEditor() || isAdmin()) && String(paper.added_by) !== String(user?.id) && (
+              <button className={styles.subNavItem} onClick={() => {
+                setShowAssignReviewer(true);
+                setShowReviewerDropdown(true);
+                if (!availableReviewers.length) {
+                  fetchAvailableReviewers();
+                }
+              }}>
+                <span className="material-symbols-rounded">person_add</span>
+                Assign Reviewer
+              </button>
+            )}
+          </nav>
         </div>
       </header>
 

@@ -92,6 +92,86 @@
 }
 
 /* =====================================================
+   Sub Navigation
+   ===================================================== */
+.subNav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.subNavItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.subNavItem:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.subNavItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.subNavItem :global(.material-symbols-rounded) {
+  font-size: 18px;
+}
+
+.subNavPrimary {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.subNavPrimary:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.subNavHighlight {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.subNavHighlight:hover {
+  background: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .subNav {
+    gap: 2px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .subNav::-webkit-scrollbar {
+    display: none;
+  }
+  .subNavItem {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* =====================================================
    Buttons
    ===================================================== */
 .btnOutline {
