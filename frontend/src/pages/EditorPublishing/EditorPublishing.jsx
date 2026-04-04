@@ -138,17 +138,39 @@ const EditorPublishing = () => {
   // PDF Viewer state
   const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
   const [pdfViewerTitle, setPdfViewerTitle] = useState('');
+  const [pdfViewerDocs, setPdfViewerDocs] = useState([]);
+  const [activePdfDoc, setActivePdfDoc] = useState(0);
 
   const handleViewPaper = (paperId, paperTitle) => {
     const token = localStorage.getItem('authToken');
-    const url = `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view?token=${token}`;
-    setPdfViewerUrl(url);
+    const docs = [
+      {
+        label: 'Blinded Manuscript',
+        url: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-blinded-manuscript?token=${token}`,
+        icon: 'article'
+      },
+      {
+        label: 'Title Page',
+        url: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-title-page?token=${token}`,
+        icon: 'badge'
+      }
+    ];
+    setPdfViewerDocs(docs);
+    setActivePdfDoc(0);
+    setPdfViewerUrl(docs[0].url);
     setPdfViewerTitle(paperTitle || 'Paper');
   };
 
   const closePdfViewer = () => {
     setPdfViewerUrl(null);
     setPdfViewerTitle('');
+    setPdfViewerDocs([]);
+    setActivePdfDoc(0);
+  };
+
+  const switchPdfDoc = (index) => {
+    setActivePdfDoc(index);
+    setPdfViewerUrl(pdfViewerDocs[index].url);
   };
 
   return (
@@ -474,6 +496,20 @@ const EditorPublishing = () => {
                 </button>
               </div>
             </div>
+            {pdfViewerDocs.length > 1 && (
+              <div className={styles.pdfDocTabs}>
+                {pdfViewerDocs.map((doc, idx) => (
+                  <button
+                    key={idx}
+                    className={`${styles.pdfDocTab} ${activePdfDoc === idx ? styles.pdfDocTabActive : ''}`}
+                    onClick={() => switchPdfDoc(idx)}
+                  >
+                    <span className="material-symbols-rounded">{doc.icon}</span>
+                    {doc.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className={styles.pdfViewerBody}>
               <iframe
                 src={pdfViewerUrl}
