@@ -774,7 +774,7 @@ class IssuePapersView(APIView):
                     "id": paper.id,
                     "title": clean_title,
                     "author": clean_author,
-                    "abstract": clean_abstract,
+                    "co_authors_json": paper.co_authors_json,
                     "pages": clean_pages,
                     "doi": clean_doi,
                     "doi_url": f"https://doi.org/{clean_doi}" if clean_doi else None,

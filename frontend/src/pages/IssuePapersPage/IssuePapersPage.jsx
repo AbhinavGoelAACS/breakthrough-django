@@ -6,6 +6,72 @@ import Breadcrumbs from '../../components/breadcrumbs/Breadcrumbs';
 import { formatDateIST } from '../../utils/dateUtils';
 import './IssuePapersPage.css';
 
+const parseCoAuthorsJson = (jsonString) => {
+  if (!jsonString) return null;
+  try {
+    return JSON.parse(jsonString);
+  } catch {
+    return null;
+  }
+};
+
+const parseAuthors = (authorString) => {
+  if (!authorString) return [];
+  return authorString.split(',').map(a => a.trim()).filter(a => a);
+};
+
+const AuthorChips = ({ structuredAuthors, fallbackAuthor }) => {
+  if (structuredAuthors && structuredAuthors.length > 0) {
+    return (
+      <div className="author-chips">
+        {structuredAuthors.map((author, idx) => (
+          <span key={idx} className="author-chip" onClick={(e) => e.preventDefault()}>
+            <span className="author-number">{idx + 1}</span>
+            <span className="author-name-text">{author.name}</span>
+            {author.is_corresponding && (
+              <span className="corr-star" title="Corresponding Author">*</span>
+            )}
+            <span className="author-detail">
+              <span className="detail-name">{author.name}</span>
+              {author.email && (
+                <span className="detail-row">
+                  <span className="material-symbols-rounded">email</span>
+                  <a href={`mailto:${author.email}`} onClick={(e) => e.stopPropagation()}>{author.email}</a>
+                </span>
+              )}
+              {author.affiliation && (
+                <span className="detail-row">
+                  <span className="material-symbols-rounded">business</span>
+                  {author.affiliation}
+                </span>
+              )}
+              {author.is_corresponding && (
+                <span className="detail-corr">Corresponding Author</span>
+              )}
+            </span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  const authors = parseAuthors(fallbackAuthor);
+  if (authors.length > 0) {
+    return (
+      <div className="author-chips">
+        {authors.map((author, idx) => (
+          <span key={idx} className="author-chip" onClick={(e) => e.preventDefault()}>
+            <span className="author-number">{idx + 1}</span>
+            <span className="author-name-text">{author}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
+};
+
 const IssuePapersPage = () => {
   const { id: urlJournalId, volumeNo, issueNo } = useParams();
   const { currentJournal, isJournalSite } = useJournalContext();
@@ -133,17 +199,10 @@ const IssuePapersPage = () => {
                   <div className="paper-number">{index + 1}</div>
                   <div className="paper-content">
                     <h3 className="paper-title">{paper.title}</h3>
-                    <div className="paper-authors">
-                      <span className="material-symbols-rounded">person</span>
-                      {paper.author || paper.authors}
-                    </div>
-                    {paper.abstract && (
-                      <p className="paper-abstract">
-                        {paper.abstract.length > 250 
-                          ? paper.abstract.substring(0, 250) + '...' 
-                          : paper.abstract}
-                      </p>
-                    )}
+                    <AuthorChips
+                      structuredAuthors={parseCoAuthorsJson(paper.co_authors_json)}
+                      fallbackAuthor={paper.author || paper.authors}
+                    />
                     <div className="paper-meta">
                       {paper.pages && (
                         <span className="paper-pages">

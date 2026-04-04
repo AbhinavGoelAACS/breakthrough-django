@@ -131,6 +131,7 @@
   border-color: #0d4016;
   box-shadow: 0 4px 12px rgba(118, 159, 205, 0.15);
   transform: translateY(-2px);
+  text-decoration: none;
 }
 
 .paper-number {
@@ -160,10 +161,12 @@
   color: #0f172a;
   line-height: 1.4;
   font-family: 'Open Sans', sans-serif;
+  text-decoration: none;
 }
 
 .paper-card:hover .paper-title {
   color: #0d4016;
+  text-decoration: none;
 }
 
 .paper-authors {
@@ -181,12 +184,133 @@
   color: #94a3b8;
 }
 
-.paper-abstract {
-  font-size: 14px;
-  color: #475569;
-  line-height: 1.6;
-  margin: 0 0 14px 0;
+/* Author Chips */
+.author-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 12px;
+}
+
+.author-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  cursor: default;
+  transition: all 0.2s ease;
   font-family: 'Open Sans', sans-serif;
+}
+
+.author-chip:hover {
+  background: #E8F5E9;
+  border-color: #0D4715;
+  box-shadow: 0 2px 8px rgba(13, 71, 21, 0.12);
+}
+
+.author-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #0D4715;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.author-name-text {
+  font-weight: 600;
+}
+
+.corr-star {
+  color: #0D4715;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Author hover detail card */
+.author-detail {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  min-width: 260px;
+  padding: 14px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  flex-direction: column;
+  gap: 8px;
+}
+
+.author-detail::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  transform: rotate(45deg);
+}
+
+.author-chip:hover .author-detail {
+  display: flex;
+}
+
+.detail-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.825rem;
+  color: #475569;
+}
+
+.detail-row .material-symbols-rounded {
+  font-size: 15px;
+  color: #0D4715;
+}
+
+.detail-row a {
+  color: #0D4715;
+  text-decoration: none;
+}
+
+.detail-row a:hover {
+  text-decoration: underline;
+}
+
+.detail-corr {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0D4715;
+  background: #E8F5E9;
+  padding: 2px 8px;
+  border-radius: 10px;
+  align-self: flex-start;
 }
 
 .paper-meta {
