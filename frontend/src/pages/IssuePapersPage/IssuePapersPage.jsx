@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useJournalContext } from '../../contexts/JournalContext';
 import { acsApi, apiService } from '../../api/apiService';
-import Breadcrumbs from '../../components/breadcrumbs/Breadcrumbs';
 import { formatDateIST } from '../../utils/dateUtils';
 import './IssuePapersPage.css';
 
@@ -148,23 +147,8 @@ const IssuePapersPage = () => {
   // Get display name, handling different field names
   const journalName = journal?.name || journal?.fld_journal_name || journal?.short_form || 'Journal';
 
-  // Breadcrumbs - different for journal page vs main site
-  const journalBasePath = `/j/${currentJournal?.short_form || ''}`;
-  const breadcrumbItems = isJournalSite ? [
-    { label: 'Home', path: journalBasePath },
-    { label: 'Archives', path: `${journalBasePath}/archives` },
-    { label: `Vol. ${volumeNo}, Issue ${issueNo}` },
-  ] : [
-    { label: 'Home', path: '/' },
-    { label: 'Journals', path: '/journals' },
-    { label: journalName, path: `/journal/${journalId}` },
-    { label: `Vol. ${volumeNo}, Issue ${issueNo}` },
-  ];
-
   return (
     <div className="issue-papers-page">
-      <Breadcrumbs items={breadcrumbItems} />
-
       {/* Header */}
       <div className="issue-papers-header">
         <div className="issue-papers-header-content">
