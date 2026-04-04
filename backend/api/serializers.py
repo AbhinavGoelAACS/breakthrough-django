@@ -3,6 +3,24 @@ from rest_framework import serializers
 from .models import User, Journal, JournalDetails, PaperPublished, News
 
 
+def _build_journal_media_url(value, request=None):
+    """Build a full URL for journal image/logo fields.
+    Handles both new uploads (journals/SHORT/file.png) and legacy filenames (JOURNAL.png).
+    """
+    if not value:
+        return None
+    # Already a full URL
+    if value.startswith(('http://', 'https://')):
+        return value
+    # New upload path (contains a slash, e.g. journals/IJMA/image_abc.png)
+    if '/' in value:
+        if request:
+            return request.build_absolute_uri(f'/media/{value}')
+        return f'/media/{value}'
+    # Legacy plain filename — serve from static CDN
+    return f'https://static.aacsjournals.com/images/{value}'
+
+
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -90,6 +108,7 @@ class JournalListSerializer(serializers.ModelSerializer):
     issn_online = serializers.CharField(source="issn_ol", allow_null=True)
     issn_print = serializers.CharField(source="issn_prt", allow_null=True)
     chief_editor = serializers.CharField(source="cheif_editor", allow_null=True)
+    journal_logo = serializers.SerializerMethodField()
 
     class Meta:
         model = Journal
@@ -105,6 +124,9 @@ class JournalListSerializer(serializers.ModelSerializer):
             "description",
         ]
 
+    def get_journal_logo(self, obj):
+        return _build_journal_media_url(obj.journal_logo, self.context.get('request'))
+
 
 class JournalSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="fld_id")
@@ -115,6 +137,8 @@ class JournalSerializer(serializers.ModelSerializer):
     chief_editor = serializers.CharField(source="cheif_editor", allow_null=True)
     abstract_indexing = serializers.CharField(source="abs_ind", allow_null=True)
     added_on = serializers.SerializerMethodField()
+    journal_image = serializers.SerializerMethodField()
+    journal_logo = serializers.SerializerMethodField()
 
     class Meta:
         model = Journal
@@ -142,6 +166,12 @@ class JournalSerializer(serializers.ModelSerializer):
 
     def get_added_on(self, obj):
         return obj.added_on.isoformat() if obj.added_on else None
+
+    def get_journal_image(self, obj):
+        return _build_journal_media_url(obj.journal_image, self.context.get('request'))
+
+    def get_journal_logo(self, obj):
+        return _build_journal_media_url(obj.journal_logo, self.context.get('request'))
 
 
 class JournalCreateUpdateSerializer(serializers.Serializer):

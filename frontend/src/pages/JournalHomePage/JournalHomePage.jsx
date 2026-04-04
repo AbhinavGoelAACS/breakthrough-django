@@ -135,7 +135,7 @@ const JournalHomePage = () => {
           {currentJournal.journal_image && (
             <div className="journal-hero-image">
               <img 
-                src={`/media/${currentJournal.journal_image}`}
+                src={currentJournal.journal_image}
                 alt={currentJournal.name}
               />
             </div>

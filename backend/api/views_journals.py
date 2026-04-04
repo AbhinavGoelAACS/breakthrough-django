@@ -82,7 +82,7 @@ class JournalListView(APIView):
         skip = int(request.query_params.get("skip", 0))
         limit = int(request.query_params.get("limit", 10))
         journals = Journal.objects.all()[skip : skip + limit]
-        serializer = JournalListSerializer(journals, many=True)
+        serializer = JournalListSerializer(journals, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -211,7 +211,7 @@ class JournalListView(APIView):
                 added_on=date.today(),
             )
 
-        response = JournalSerializer(journal)
+        response = JournalSerializer(journal, context={'request': request})
         return Response(response.data, status=status.HTTP_201_CREATED)
 
 
@@ -226,7 +226,7 @@ class JournalByShortFormView(APIView):
                 {"detail": f"Journal with short_form '{short_form}' not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        serializer = JournalSerializer(journal)
+        serializer = JournalSerializer(journal, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -255,7 +255,7 @@ class JournalDetailView(APIView):
                 {"detail": f"Journal with ID {journal_id} not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        serializer = JournalSerializer(journal)
+        serializer = JournalSerializer(journal, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, journal_id: int):
@@ -390,7 +390,7 @@ class JournalDetailView(APIView):
                 details.readings = data.get("readings")
             details.save()
 
-        response = JournalSerializer(journal)
+        response = JournalSerializer(journal, context={'request': request})
         return Response(response.data, status=status.HTTP_200_OK)
 
     def delete(self, request, journal_id: int):

@@ -43,7 +43,7 @@ const JournalNavbar = ({ journal }) => {
           <Link to={journalBasePath} className="journal-logo-link">
             {journal?.journal_logo && (
               <img 
-                src={`https://static.aacsjournals.com/images/${journal.journal_logo}`} 
+                src={journal.journal_logo} 
                 alt={journal.name}
                 className="journal-logo-img"
               />
