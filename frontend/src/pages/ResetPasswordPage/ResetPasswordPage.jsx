@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
-import apiService from '../../api/apiService';
+import { apiService } from '../../api/apiService';
 import PasswordPolicyIndicator from '../../components/shared/PasswordPolicyIndicator';
 import { validatePasswordPolicy } from '../../utils/passwordPolicy';
 import '../AuthPages.css';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
-import apiService from '../../api/apiService';
+import { apiService } from '../../api/apiService';
 import '../AuthPages.css';
 import '../../components/auth/AuthForms.css';
 
