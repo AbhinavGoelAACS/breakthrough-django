@@ -172,7 +172,7 @@ const JournalHomePage = () => {
                 <div className="editorial-member-card chief">
                   <div className="editorial-member-avatar">
                     {editorialBoard.chief_editor.profile_picture ? (
-                      <img src={`/${editorialBoard.chief_editor.profile_picture}`} alt={editorialBoard.chief_editor.name} />
+                      <img src={editorialBoard.chief_editor.profile_picture} alt={editorialBoard.chief_editor.name} />
                     ) : (
                       <span className="material-symbols-rounded">person</span>
                     )}
@@ -198,7 +198,7 @@ const JournalHomePage = () => {
                 <div key={`co-${idx}`} className="editorial-member-card co-editor">
                   <div className="editorial-member-avatar">
                     {editor.profile_picture ? (
-                      <img src={`/${editor.profile_picture}`} alt={editor.name} />
+                      <img src={editor.profile_picture} alt={editor.name} />
                     ) : (
                       <span className="material-symbols-rounded">person</span>
                     )}
@@ -224,7 +224,7 @@ const JournalHomePage = () => {
                 <div key={`sec-${idx}`} className="editorial-member-card section-editor">
                   <div className="editorial-member-avatar">
                     {editor.profile_picture ? (
-                      <img src={`/${editor.profile_picture}`} alt={editor.name} />
+                      <img src={editor.profile_picture} alt={editor.name} />
                     ) : (
                       <span className="material-symbols-rounded">person</span>
                     )}

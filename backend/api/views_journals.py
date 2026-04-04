@@ -926,6 +926,9 @@ class JournalEditorialBoardView(APIView):
 
         for ur in roles:
             u = ur.user
+            pic = getattr(u, 'profile_picture', None)
+            if pic:
+                pic = request.build_absolute_uri(f'/{pic}')
             entry = {
                 "name": f"{u.fname or ''} {u.lname or ''}".strip() or u.email,
                 "email": u.email,
@@ -934,7 +937,7 @@ class JournalEditorialBoardView(APIView):
                 "affiliation": u.affiliation,
                 "organisation": u.organisation,
                 "editor_type": ur.editor_type or "section_editor",
-                "profile_picture": getattr(u, 'profile_picture', None),
+                "profile_picture": pic,
             }
             if ur.editor_type == "chief_editor":
                 chief_editor = entry

@@ -51,7 +51,7 @@ class PasswordChangeSerializer(serializers.Serializer):
 
 
 class UserResponseSerializer(serializers.ModelSerializer):
-    profile_picture = serializers.CharField(default=None, allow_null=True, required=False)
+    profile_picture = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -73,6 +73,15 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "organisation",
             "profile_picture",
         ]
+
+    def get_profile_picture(self, obj):
+        pic = getattr(obj, 'profile_picture', None)
+        if not pic:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(f'/{pic}')
+        return f'/{pic}'
 
 
 class JournalListSerializer(serializers.ModelSerializer):

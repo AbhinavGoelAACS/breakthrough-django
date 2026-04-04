@@ -134,7 +134,7 @@ const ProfilePage = () => {
               <div className={styles.profileAvatarWrapper}>
                 {profile.profile_picture ? (
                   <img 
-                    src={`/${profile.profile_picture}`} 
+                    src={profile.profile_picture} 
                     alt={fullName} 
                     className={styles.profileAvatarImg}
                   />

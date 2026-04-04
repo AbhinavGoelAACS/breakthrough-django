@@ -177,7 +177,7 @@ class RefreshTokenView(APIView):
 class MeView(APIView):
     def get(self, request):
         user = request.user
-        serializer = UserResponseSerializer(user)
+        serializer = UserResponseSerializer(user, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
@@ -242,7 +242,7 @@ class MeView(APIView):
             )
 
         user.save(update_fields=updated)
-        serializer = UserResponseSerializer(user)
+        serializer = UserResponseSerializer(user, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
