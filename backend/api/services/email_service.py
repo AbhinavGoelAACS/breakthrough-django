@@ -69,11 +69,23 @@ def send_decision_notification(paper, decision, editor_comments, author):
 
     paper_id_display = paper.paper_code or paper.id
 
+
+    # --- Reviewer Comments Section ---
+    from backend.api.models import ReviewSubmission, User
+    review_submissions = ReviewSubmission.objects.filter(paper_id=paper.id, status="submitted")
+    reviewer_comments = []
+    for idx, review in enumerate(review_submissions, 1):
+        rec = review.recommendation or "--"
+        comments = review.author_comments or "No comments provided."
+        reviewer_comments.append(f"Reviewer #{idx} ({rec.title().replace('_', ' ')}):\n{comments}\n")
+    reviewer_comments_text = "\n".join(reviewer_comments) if reviewer_comments else "No reviewer comments available."
+
     plain_body = (
         f"Dear {author_name},\n\n"
-        f"A decision has been made on your manuscript \"{paper.title}\" (ID: {paper_id_display}).\n\n"
+        f"We have completed the review of your manuscript, \"{paper.title}\" (ID: {paper_id_display}).\n\n"
         f"Decision: {decision_label}\n\n"
         f"Editor Comments:\n{editor_comments}\n\n"
+        f"--- Reviewer Comments ---\n{reviewer_comments_text}\n\n"
     )
 
     if decision == "correction":
@@ -82,7 +94,15 @@ def send_decision_notification(paper, decision, editor_comments, author):
             deadline = paper.revision_deadline.strftime("%B %d, %Y")
         plain_body += (
             f"Please submit your revised manuscript by {deadline}.\n"
-            f"You can submit your revision through your author dashboard.\n\n"
+            "When preparing your revision, please:\n"
+            "- Carefully address each reviewer comment in a separate response letter.\n"
+            "- Highlight all changes in the revised manuscript.\n"
+            "- Upload only editable source files (Word, LaTeX). PDF is not allowed at this stage.\n"
+            "- Check the website for possible reviewer attachments.\n\n"
+            f"To submit your revision, log in to your author dashboard: {_get_frontend_url()}/login\n"
+        )
+        plain_body += (
+            f"If you forgot your password, you can reset it using the 'Forgot Password' link on the login page.\n\n"
         )
     elif decision == "accepted":
         plain_body += "Congratulations! Your manuscript has been accepted for publication.\n\n"
@@ -90,7 +110,11 @@ def send_decision_notification(paper, decision, editor_comments, author):
     plain_body += (
         "If you have any questions, please contact the editorial office.\n\n"
         "Best regards,\n"
-        "BreakThrough Publishers"
+        "The Editorial Team\n"
+        f"BreakThrough Publishers\n"
+        f"{getattr(paper, 'journal', 'Journal')}\n"
+        "\nThis letter contains confidential information for the author only.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
     )
 
     success, _ = send_email(
