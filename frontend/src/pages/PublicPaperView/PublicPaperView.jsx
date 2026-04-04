@@ -144,10 +144,13 @@ const PublicPaperView = () => {
                   {author.is_corresponding && (
                     <span className={styles.correspondingBadge} title="Corresponding Author">*</span>
                   )}
-                  {!author.is_primary && (
-                    <span className={styles.coAuthorBadge}>Co-Author</span>
-                  )}
                 </div>
+                {author.email && (
+                  <div className={styles.authorEmail}>
+                    <span className="material-icons">email</span>
+                    <span>{author.email}</span>
+                  </div>
+                )}
                 {author.affiliation && (
                   <div className={styles.authorAffiliation}>
                     <span className="material-icons">business</span>
