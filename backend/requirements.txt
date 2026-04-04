@@ -25,4 +25,4 @@ mysqlclient>=2.2.4
 
 # NLP / Machine Learning (for recommendation systems)
 scikit-learn>=1.0
-numpy>=1.21# Deployment trigger
+numpy>=1.21  # Deployment trigger

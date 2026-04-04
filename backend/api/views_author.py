@@ -352,7 +352,7 @@ class AuthorSubmissionDetailView(APIView):
                     "designation": author.designation or "",
                 }
 
-        co_authors_qs = PaperCoAuthor.objects.filter(paper_id=paper.id)
+        co_authors_qs = PaperCoAuthor.objects.filter(paper_id=paper.id).defer('user_id', 'invitation_token')
         co_authors_list = []
         for ca in co_authors_qs:
             co_authors_list.append(
