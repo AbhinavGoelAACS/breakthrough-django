@@ -934,7 +934,7 @@ class JournalEditorialBoardView(APIView):
                 "affiliation": u.affiliation,
                 "organisation": u.organisation,
                 "editor_type": ur.editor_type or "section_editor",
-                "profile_picture": u.profile_picture,
+                "profile_picture": getattr(u, 'profile_picture', None),
             }
             if ur.editor_type == "chief_editor":
                 chief_editor = entry
