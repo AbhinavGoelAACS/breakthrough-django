@@ -63,6 +63,8 @@ class LoginView(APIView):
             "role": user.role,
             "fname": user.fname,
             "lname": user.lname,
+            "affiliation": user.affiliation,
+            "organisation": user.organisation,
         }
         out = TokenResponseSerializer(resp)
         return Response(out.data, status=status.HTTP_200_OK)
@@ -123,6 +125,8 @@ class SignupView(APIView):
             "role": user.role,
             "fname": user.fname,
             "lname": user.lname,
+            "affiliation": user.affiliation,
+            "organisation": user.organisation,
         }
         out = TokenResponseSerializer(resp)
         return Response(out.data, status=status.HTTP_201_CREATED)

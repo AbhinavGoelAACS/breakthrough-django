@@ -239,6 +239,11 @@ class AuthorSubmissionsView(APIView):
                     if paper.added_on
                     else None,
                     "journal": journal_name,
+                    "journal_id": paper.journal,
+                    "author": paper.author or "",
+                    "keyword": paper.keyword or "",
+                    "version_number": paper.version_number,
+                    "revision_count": paper.revision_count,
                 }
             )
 
@@ -339,6 +344,10 @@ class AuthorSubmissionDetailView(APIView):
                     "name": f"{author.fname or ''} {author.lname or ''}".strip()
                     or "Unknown",
                     "email": author.email,
+                    "affiliation": author.affiliation or "",
+                    "organisation": author.organisation or "",
+                    "department": author.department or "",
+                    "designation": author.designation or "",
                 }
 
         co_authors_qs = PaperCoAuthor.objects.filter(paper_id=paper.id)

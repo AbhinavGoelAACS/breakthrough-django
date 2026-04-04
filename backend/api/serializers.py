@@ -36,6 +36,8 @@ class TokenResponseSerializer(serializers.Serializer):
     role = serializers.CharField(required=False)
     fname = serializers.CharField(required=False, allow_blank=True)
     lname = serializers.CharField(required=False, allow_blank=True)
+    affiliation = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    organisation = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
 
 class RefreshTokenSerializer(serializers.Serializer):
