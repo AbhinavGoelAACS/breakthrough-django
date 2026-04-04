@@ -188,6 +188,8 @@ class MeView(APIView):
             "designation", "department", "organisation",
         ]
 
+        updated = []
+
         # Handle profile picture file upload
         profile_pic = request.FILES.get("profile_picture")
         if profile_pic:
@@ -227,7 +229,7 @@ class MeView(APIView):
 
             user.profile_picture = f"media/profile_pictures/{filename}"
             updated.append("profile_picture")
-        updated = []
+
         for field in allowed_fields:
             if field in request.data:
                 setattr(user, field, request.data[field])
