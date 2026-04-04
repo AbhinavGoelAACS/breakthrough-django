@@ -222,7 +222,7 @@ function AppContent() {
           <Route path="/journal/:id/volume/:volumeNo/issue/:issueNo" element={<ProtectedRoute><IssuePapersPage /></ProtectedRoute>} />
           <Route path="/paper/:id" element={<ProtectedRoute><PaperDetailsPage /></ProtectedRoute>} />
           <Route path="/submit" element={<ProtectedRoute><SubmitPage /></ProtectedRoute>} />
-          <Route path="/invitations/:token" element={<ProtectedRoute><InvitationPage /></ProtectedRoute>} />
+          <Route path="/invitations/:token" element={<InvitationPage />} />
 
           {/* Admin routes */}
           <Route path="/admin/*" element={<ProtectedAdminRoute />}>

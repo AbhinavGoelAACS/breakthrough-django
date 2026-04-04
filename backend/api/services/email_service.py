@@ -1,12 +1,14 @@
 import logging
-import os
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://breakthroughpublishers.com")
+
+def _get_frontend_url():
+    """Get frontend URL from Django settings, evaluated at call time."""
+    return getattr(settings, 'FRONTEND_URL', 'https://dev.breakthroughpublishers.com')
 
 
 def send_email(recipient_email, subject, plain_body, html_body=None, from_email=None):
@@ -65,9 +67,11 @@ def send_decision_notification(paper, decision, editor_comments, author):
 
     subject = f"Decision on Your Manuscript: {paper.title}"
 
+    paper_id_display = paper.paper_code or paper.id
+
     plain_body = (
         f"Dear {author_name},\n\n"
-        f"A decision has been made on your manuscript \"{paper.title}\" (ID: {paper.id}).\n\n"
+        f"A decision has been made on your manuscript \"{paper.title}\" (ID: {paper_id_display}).\n\n"
         f"Decision: {decision_label}\n\n"
         f"Editor Comments:\n{editor_comments}\n\n"
     )
@@ -106,10 +110,12 @@ def send_status_update_notification(paper, old_status, new_status, author):
 
     author_name = f"{author.fname or ''} {author.lname or ''}".strip() or "Author"
 
+    paper_id_display = paper.paper_code or paper.id
+
     subject = f"Status Update: {paper.title}"
     plain_body = (
         f"Dear {author_name},\n\n"
-        f"The status of your manuscript \"{paper.title}\" (ID: {paper.id}) "
+        f"The status of your manuscript \"{paper.title}\" (ID: {paper_id_display}) "
         f"has been updated from \"{old_status}\" to \"{new_status}\".\n\n"
         f"You can check the latest status in your author dashboard.\n\n"
         "Best regards,\n"
@@ -133,10 +139,12 @@ def send_submission_confirmation(paper, author):
 
     author_name = f"{author.fname or ''} {author.lname or ''}".strip() or "Author"
 
+    paper_id_display = paper.paper_code or paper.id
+
     subject = f"Submission Received: {paper.title}"
     plain_body = (
         f"Dear {author_name},\n\n"
-        f"Your manuscript \"{paper.title}\" (ID: {paper.id}) has been successfully submitted.\n\n"
+        f"Your manuscript \"{paper.title}\" (ID: {paper_id_display}) has been successfully submitted.\n\n"
         f"Our editorial team will review your submission and get back to you shortly.\n\n"
         "Best regards,\n"
         "BreakThrough Publishers"
@@ -158,7 +166,9 @@ def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=
         return False
 
     reviewer_name = invitation.reviewer_name or "Reviewer"
-    invitation_url = f"{FRONTEND_URL}/invitations/{invitation.invitation_token}"
+    invitation_url = f"{_get_frontend_url()}/invitations/{invitation.invitation_token}"
+
+    paper_id_display = paper.paper_code or paper.id
 
     subject = f"Invitation to Review: {paper.title}"
 
@@ -166,14 +176,11 @@ def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=
         f"Dear {reviewer_name},\n\n"
         f"You have been invited to review a manuscript for {journal_name}.\n\n"
         f"Paper Title: {paper.title}\n"
-        f"Paper ID: {paper.id}\n"
+        f"Paper ID: {paper_id_display}\n"
     )
 
     if paper.abstract:
-        abstract_preview = paper.abstract[:300]
-        if len(paper.abstract) > 300:
-            abstract_preview += "..."
-        plain_body += f"\nAbstract:\n{abstract_preview}\n"
+        plain_body += f"\nAbstract:\n{paper.abstract}\n"
 
     if invitation.token_expiry:
         deadline = invitation.token_expiry.strftime("%B %d, %Y")
@@ -229,6 +236,8 @@ def notify_editors_new_submission(paper, author, journal):
 
     journal_name = journal.fld_journal_name if journal else "BreakThrough Publishers"
 
+    paper_id_display = paper.paper_code or paper.id
+
     subject = f"New Submission: {paper.title}"
 
     any_sent = False
@@ -237,19 +246,16 @@ def notify_editors_new_submission(paper, author, journal):
             f"Dear {editor.editor_name or 'Editor'},\n\n"
             f"A new manuscript has been submitted to {journal_name}.\n\n"
             f"Title: {paper.title}\n"
-            f"Paper ID: {paper.id}\n"
+            f"Paper ID: {paper_id_display}\n"
             f"Author: {author_name}\n"
         )
 
         if paper.abstract:
-            abstract_preview = paper.abstract[:300]
-            if len(paper.abstract) > 300:
-                abstract_preview += "..."
-            plain_body += f"\nAbstract:\n{abstract_preview}\n"
+            plain_body += f"\nAbstract:\n{paper.abstract}\n"
 
         plain_body += (
             f"\nPlease log in to your editor dashboard to review this submission.\n"
-            f"{FRONTEND_URL}/editor/papers/{paper.id}\n\n"
+            f"{_get_frontend_url()}/editor/papers/{paper.id}\n\n"
             "Best regards,\n"
             "BreakThrough Publishers"
         )

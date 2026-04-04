@@ -476,18 +476,25 @@ class EditorInviteReviewerView(APIView):
         if reviewer:
             if reviewer.id == request.user.id or str(reviewer.id) == paper.added_by:
                 return Response({"detail": "Cannot invite the author or yourself as a reviewer"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if reviewer is already assigned (has an OnlineReview record)
+            existing_assignment = OnlineReview.objects.filter(paper_id=str(paper.id), reviewer_id=str(reviewer.id)).first()
+            if existing_assignment:
+                return Response({
+                    "detail": "This reviewer is already assigned to this paper"
+                }, status=status.HTTP_400_BAD_REQUEST)
                 
-            existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_id=reviewer.id, status="pending").first()
+            existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_id=reviewer.id).exclude(status__in=["declined", "expired"]).first()
             if existing:
                 return Response({
-                    "detail": f"This reviewer has already been invited. Status: {existing.status}"
+                    "detail": f"This reviewer already has a {existing.status} invitation for this paper"
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             # External reviewer — check by email
-            existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_email=reviewer_email, status="pending").first()
+            existing = ReviewerInvitation.objects.filter(paper_id=paper.id, reviewer_email=reviewer_email).exclude(status__in=["declined", "expired"]).first()
             if existing:
                 return Response({
-                    "detail": f"An invitation has already been sent to {reviewer_email}. Status: {existing.status}"
+                    "detail": f"An invitation for {reviewer_email} already exists with status: {existing.status}"
                 }, status=status.HTTP_400_BAD_REQUEST)
             
         reviewer_name_param = request.data.get("reviewer_name") or request.query_params.get("reviewer_name", "")

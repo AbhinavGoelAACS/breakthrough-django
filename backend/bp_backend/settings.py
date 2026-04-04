@@ -216,3 +216,6 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'noreply@breakthroughpublishers.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'BreakThrough Publishers <noreply@breakthroughpublishers.com>')
+
+# Frontend URL (used in email links)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://dev.breakthroughpublishers.com')
