@@ -297,6 +297,13 @@ const JournalDetailPage = () => {
   const [expandedVolumes, setExpandedVolumes] = useState({});
   const [volumeIssues, setVolumeIssues] = useState({});
 
+  // Volume/Issue management state (edit mode)
+  const [newVolumeNo, setNewVolumeNo] = useState('');
+  const [newVolumeYear, setNewVolumeYear] = useState('');
+  const [addingVolume, setAddingVolume] = useState(false);
+  const [newIssueData, setNewIssueData] = useState({});
+  const [addingIssue, setAddingIssue] = useState({});
+
   // Check for edit mode from URL params
   useEffect(() => {
     const editParam = searchParams.get('edit');
@@ -344,7 +351,9 @@ const JournalDetailPage = () => {
   };
 
   // Toggle volume expansion and fetch issues
-  const toggleVolume = async (volumeId) => {
+  const toggleVolume = async (volume) => {
+    const volumeId = volume.id || volume;
+    const volumeNo = volume.volume_no || volume;
     setExpandedVolumes(prev => ({
       ...prev,
       [volumeId]: !prev[volumeId]
@@ -353,7 +362,7 @@ const JournalDetailPage = () => {
     // Fetch issues if not already loaded
     if (!volumeIssues[volumeId] && !expandedVolumes[volumeId]) {
       try {
-        const response = await acsApi.journals.getVolumeIssues(id, volumeId);
+        const response = await acsApi.journals.getVolumeIssues(id, volumeNo);
         setVolumeIssues(prev => ({
           ...prev,
           [volumeId]: response.issues || []
@@ -362,6 +371,102 @@ const JournalDetailPage = () => {
         console.error('Failed to load issues:', err);
       }
     }
+  };
+
+  // Add a new volume
+  const handleAddVolume = async () => {
+    if (!newVolumeNo) {
+      showError('Volume number is required');
+      return;
+    }
+    setAddingVolume(true);
+    try {
+      const response = await acsApi.journals.createVolume(id, {
+        volume_no: newVolumeNo,
+        year: newVolumeYear,
+      });
+      setVolumes(prev => [response, ...prev].sort((a, b) => b.volume_no - a.volume_no));
+      setNewVolumeNo('');
+      setNewVolumeYear('');
+      success('Volume added successfully');
+    } catch (err) {
+      showError(err?.response?.data?.detail || 'Failed to add volume');
+    } finally {
+      setAddingVolume(false);
+    }
+  };
+
+  // Delete a volume
+  const handleDeleteVolume = async (volume) => {
+    confirm({
+      title: 'Delete Volume',
+      message: `Delete Volume ${volume.volume_no}${volume.year ? ` (${volume.year})` : ''}? This will also delete all its issues.`,
+      confirmText: 'Delete',
+      type: 'error',
+      onConfirm: async () => {
+        try {
+          await acsApi.journals.deleteVolume(id, volume.id);
+          setVolumes(prev => prev.filter(v => v.id !== volume.id));
+          const updated = { ...volumeIssues };
+          delete updated[volume.id];
+          setVolumeIssues(updated);
+          success('Volume deleted');
+        } catch (err) {
+          showError(err?.response?.data?.detail || 'Failed to delete volume');
+        }
+      },
+    });
+  };
+
+  // Add a new issue to a volume
+  const handleAddIssue = async (volume) => {
+    const data = newIssueData[volume.id] || {};
+    if (!data.issue_no) {
+      showError('Issue number is required');
+      return;
+    }
+    setAddingIssue(prev => ({ ...prev, [volume.id]: true }));
+    try {
+      const response = await acsApi.journals.createIssue(id, volume.volume_no, {
+        issue_no: data.issue_no,
+        month: data.month || '',
+        pages: data.pages || '',
+      });
+      setVolumeIssues(prev => ({
+        ...prev,
+        [volume.id]: [...(prev[volume.id] || []), response].sort((a, b) => a.issue_no - b.issue_no),
+      }));
+      setVolumes(prev => prev.map(v => v.id === volume.id ? { ...v, issue_count: (v.issue_count || 0) + 1 } : v));
+      setNewIssueData(prev => ({ ...prev, [volume.id]: {} }));
+      success('Issue added successfully');
+    } catch (err) {
+      showError(err?.response?.data?.detail || 'Failed to add issue');
+    } finally {
+      setAddingIssue(prev => ({ ...prev, [volume.id]: false }));
+    }
+  };
+
+  // Delete an issue
+  const handleDeleteIssue = async (volume, issue) => {
+    confirm({
+      title: 'Delete Issue',
+      message: `Delete Issue ${issue.issue_no} from Volume ${volume.volume_no}?`,
+      confirmText: 'Delete',
+      type: 'error',
+      onConfirm: async () => {
+        try {
+          await acsApi.journals.deleteIssue(id, volume.volume_no, issue.id);
+          setVolumeIssues(prev => ({
+            ...prev,
+            [volume.id]: (prev[volume.id] || []).filter(i => i.id !== issue.id),
+          }));
+          setVolumes(prev => prev.map(v => v.id === volume.id ? { ...v, issue_count: Math.max(0, (v.issue_count || 1) - 1) } : v));
+          success('Issue deleted');
+        } catch (err) {
+          showError(err?.response?.data?.detail || 'Failed to delete issue');
+        }
+      },
+    });
   };
 
   // Fetch available editors for dropdowns (uses same API as add journal modal)
@@ -939,6 +1044,173 @@ const JournalDetailPage = () => {
               </div>
             </section>
 
+            {/* Volumes & Issues Management Section */}
+            <section className="form-section">
+              <div className="section-header">
+                <span className="material-symbols-rounded">library_books</span>
+                <h3>Volumes & Issues</h3>
+              </div>
+              <p className="section-description">
+                Add and manage volumes and issues for this journal.
+              </p>
+
+              {/* Add Volume Form */}
+              <div className="volume-add-form">
+                <div className="volume-add-inputs">
+                  <input
+                    type="number"
+                    placeholder="Volume No."
+                    value={newVolumeNo}
+                    onChange={(e) => setNewVolumeNo(e.target.value)}
+                    min="1"
+                    className="volume-input"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Year (e.g., 2024)"
+                    value={newVolumeYear}
+                    onChange={(e) => setNewVolumeYear(e.target.value)}
+                    className="volume-input"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={handleAddVolume}
+                    disabled={addingVolume || !newVolumeNo}
+                  >
+                    <span className="material-symbols-rounded">add</span>
+                    {addingVolume ? 'Adding...' : 'Add Volume'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Volumes List */}
+              {loadingVolumes ? (
+                <div className="volumes-loading">
+                  <div className="spinner-small"></div>
+                  <span>Loading volumes...</span>
+                </div>
+              ) : volumes.length === 0 ? (
+                <div className="no-volumes">
+                  <p>No volumes yet. Add one above.</p>
+                </div>
+              ) : (
+                <div className="volumes-manage-list">
+                  {volumes.map((volume) => (
+                    <div key={volume.id} className="volume-manage-item">
+                      <div
+                        className={`volume-manage-header ${expandedVolumes[volume.id] ? 'expanded' : ''}`}
+                      >
+                        <div
+                          className="volume-manage-info"
+                          onClick={() => toggleVolume(volume)}
+                          style={{ cursor: 'pointer', flex: 1 }}
+                        >
+                          <span className="material-symbols-rounded">
+                            {expandedVolumes[volume.id] ? 'expand_less' : 'expand_more'}
+                          </span>
+                          <span className="volume-title">Volume {volume.volume_no}</span>
+                          {volume.year && <span className="volume-year">({volume.year})</span>}
+                          <span className="volume-issue-count">
+                            {volume.issue_count || 0} {(volume.issue_count || 0) === 1 ? 'issue' : 'issues'}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDeleteVolume(volume)}
+                          title="Delete volume"
+                        >
+                          <span className="material-symbols-rounded">delete</span>
+                        </button>
+                      </div>
+
+                      {expandedVolumes[volume.id] && (
+                        <div className="issues-manage-container">
+                          {/* Add Issue Form */}
+                          <div className="issue-add-form">
+                            <input
+                              type="number"
+                              placeholder="Issue No."
+                              value={newIssueData[volume.id]?.issue_no || ''}
+                              onChange={(e) => setNewIssueData(prev => ({
+                                ...prev,
+                                [volume.id]: { ...(prev[volume.id] || {}), issue_no: e.target.value }
+                              }))}
+                              min="1"
+                              className="issue-input"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Month (e.g., January)"
+                              value={newIssueData[volume.id]?.month || ''}
+                              onChange={(e) => setNewIssueData(prev => ({
+                                ...prev,
+                                [volume.id]: { ...(prev[volume.id] || {}), month: e.target.value }
+                              }))}
+                              className="issue-input"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Pages"
+                              value={newIssueData[volume.id]?.pages || ''}
+                              onChange={(e) => setNewIssueData(prev => ({
+                                ...prev,
+                                [volume.id]: { ...(prev[volume.id] || {}), pages: e.target.value }
+                              }))}
+                              className="issue-input issue-input-sm"
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              onClick={() => handleAddIssue(volume)}
+                              disabled={addingIssue[volume.id] || !newIssueData[volume.id]?.issue_no}
+                            >
+                              <span className="material-symbols-rounded">add</span>
+                              {addingIssue[volume.id] ? 'Adding...' : 'Add Issue'}
+                            </button>
+                          </div>
+
+                          {/* Issues List */}
+                          {!volumeIssues[volume.id] ? (
+                            <div className="issues-loading">
+                              <div className="spinner-small"></div>
+                              <span>Loading issues...</span>
+                            </div>
+                          ) : volumeIssues[volume.id].length === 0 ? (
+                            <div className="no-issues">
+                              <p>No issues in this volume yet.</p>
+                            </div>
+                          ) : (
+                            <div className="issues-manage-list">
+                              {volumeIssues[volume.id].map((issue) => (
+                                <div key={issue.id} className="issue-manage-item">
+                                  <div className="issue-manage-info">
+                                    <span className="issue-number">Issue {issue.issue_no}</span>
+                                    {issue.month && <span className="issue-month">{issue.month}</span>}
+                                    {issue.pages && <span className="issue-pages">{issue.pages} pages</span>}
+                                    <span className="issue-papers">{issue.paper_count || 0} papers</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => handleDeleteIssue(volume, issue)}
+                                    title="Delete issue"
+                                  >
+                                    <span className="material-symbols-rounded">delete</span>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {/* Form Actions */}
             <div className="form-actions">
               <button
@@ -1056,7 +1328,7 @@ const JournalDetailPage = () => {
                       <div key={volume.id} className="volume-item">
                         <div 
                           className={`volume-header ${expandedVolumes[volume.id] ? 'expanded' : ''}`}
-                          onClick={() => toggleVolume(volume.id)}
+                          onClick={() => toggleVolume(volume)}
                         >
                           <div className="volume-info">
                             <span className="volume-icon">

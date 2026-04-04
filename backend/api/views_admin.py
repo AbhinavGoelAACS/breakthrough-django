@@ -786,11 +786,11 @@ class AdminEditorsListView(APIView):
         
         if not user:
             # Create new user account
-            from django.contrib.auth.hashers import make_password
+            from api.jwt_utils import hash_password
             name_parts = editor_name.split(' ', 1) if editor_name else ['', '']
             user = User.objects.create(
                 email=editor_email,
-                password=make_password("TempPassword123!"),
+                password=hash_password("TempPassword123!"),
                 role="Editor",
                 fname=name_parts[0] if name_parts else None,
                 lname=name_parts[1] if len(name_parts) > 1 else None,
@@ -1154,8 +1154,8 @@ class AdminUserCreateView(APIView):
             )
         
         # Hash password
-        from django.contrib.auth.hashers import make_password
-        hashed_password = make_password(password)
+        from api.jwt_utils import hash_password
+        hashed_password = hash_password(password)
         
         # Create user
         new_user = User.objects.create(

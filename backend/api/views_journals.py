@@ -18,6 +18,18 @@ from .serializers import (
 )
 
 
+def _is_admin_or_editor(user):
+    """Check if user is an admin or editor."""
+    role = (user.role or "").lower()
+    if role == "admin":
+        return True
+    if role == "editor":
+        return True
+    if UserRole.objects.filter(user=user, role="editor", status="approved").exists():
+        return True
+    return False
+
+
 def save_journal_image(file, journal_short_form, field_name):
     """Save uploaded image file and return the relative path."""
     if not file:
@@ -466,6 +478,62 @@ class JournalVolumesView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    def post(self, request, journal_id: int):
+        if not request.user.is_authenticated or not _is_admin_or_editor(request.user):
+            return Response({"detail": "Admin or editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            journal = Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return Response({"detail": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        volume_no = request.data.get("volume_no")
+        year = request.data.get("year", "")
+
+        if not volume_no:
+            return Response({"detail": "volume_no is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            volume_no = int(volume_no)
+        except (ValueError, TypeError):
+            return Response({"detail": "volume_no must be a number"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Volume.objects.filter(journal=str(journal_id), volume_no=volume_no).exists():
+            return Response({"detail": f"Volume {volume_no} already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        vol = Volume.objects.create(
+            journal=str(journal_id),
+            volume_no=volume_no,
+            year=str(year) if year else "",
+            added_on=date.today(),
+        )
+
+        return Response({
+            "id": vol.id,
+            "volume_no": vol.volume_no,
+            "year": vol.year,
+            "issue_count": 0,
+            "added_on": vol.added_on.isoformat() if vol.added_on else None,
+        }, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, journal_id: int):
+        if not request.user.is_authenticated or not _is_admin_or_editor(request.user):
+            return Response({"detail": "Admin or editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        volume_id = request.query_params.get("volume_id")
+        if not volume_id:
+            return Response({"detail": "volume_id query param required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        vol = Volume.objects.filter(id=volume_id, journal=str(journal_id)).first()
+        if not vol:
+            return Response({"detail": "Volume not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Delete related issues first
+        Issue.objects.filter(volume=vol.id).delete()
+        vol.delete()
+
+        return Response({"detail": "Volume deleted"}, status=status.HTTP_200_OK)
+
 
 class VolumeIssuesView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -521,6 +589,72 @@ class VolumeIssuesView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+    def post(self, request, journal_id: int, volume_no: int):
+        if not request.user.is_authenticated or not _is_admin_or_editor(request.user):
+            return Response({"detail": "Admin or editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            journal = Journal.objects.get(fld_id=journal_id)
+        except Journal.DoesNotExist:
+            return Response({"detail": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        volume = Volume.objects.filter(volume_no=volume_no, journal=str(journal_id)).first()
+        if not volume:
+            return Response({"detail": f"Volume {volume_no} not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        issue_no = request.data.get("issue_no")
+        month = request.data.get("month", "")
+        pages = request.data.get("pages", "")
+
+        if not issue_no:
+            return Response({"detail": "issue_no is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            issue_no = int(issue_no)
+        except (ValueError, TypeError):
+            return Response({"detail": "issue_no must be a number"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Issue.objects.filter(volume=volume.id, issue_no=issue_no).exists():
+            return Response({"detail": f"Issue {issue_no} already exists in Volume {volume_no}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        issue = Issue.objects.create(
+            volume=volume.id,
+            journal=journal_id,
+            issue_no=issue_no,
+            month=str(month)[:16] if month else "",
+            pages=str(pages)[:7] if pages else "",
+            add_on=date.today().isoformat(),
+            complete_issue="",
+        )
+
+        return Response({
+            "id": issue.id,
+            "issue_no": issue.issue_no,
+            "month": issue.month,
+            "pages": issue.pages,
+            "paper_count": 0,
+            "complete_issue": issue.complete_issue,
+        }, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, journal_id: int, volume_no: int):
+        if not request.user.is_authenticated or not _is_admin_or_editor(request.user):
+            return Response({"detail": "Admin or editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        issue_id = request.query_params.get("issue_id")
+        if not issue_id:
+            return Response({"detail": "issue_id query param required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        volume = Volume.objects.filter(volume_no=volume_no, journal=str(journal_id)).first()
+        if not volume:
+            return Response({"detail": "Volume not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        issue = Issue.objects.filter(id=issue_id, volume=volume.id).first()
+        if not issue:
+            return Response({"detail": "Issue not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        issue.delete()
+        return Response({"detail": "Issue deleted"}, status=status.HTTP_200_OK)
 
 
 class JournalAllIssuesView(APIView):

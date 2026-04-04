@@ -23,6 +23,12 @@ def verify_password(plain_password: str, hashed: str) -> bool:
     try:
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed.encode('utf-8'))
     except Exception:
+        pass
+    # Fallback: check Django-style hashed passwords (e.g. PBKDF2 from make_password)
+    try:
+        from django.contrib.auth.hashers import check_password
+        return check_password(plain_password, hashed)
+    except Exception:
         return False
 
 

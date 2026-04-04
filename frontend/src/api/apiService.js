@@ -83,8 +83,12 @@ export const acsApi = {
     getDetails: (id) => apiService.get(`/api/v1/journals/${id}/details`, { skipAuth: true }),
     getByShortForm: (shortForm) => apiService.get(`/api/v1/journals/by-subdomain/${shortForm}`, { skipAuth: true }),
     getVolumes: (journalId) => apiService.get(`/api/v1/journals/${journalId}/volumes`, { skipAuth: true }),
-    getVolumeIssues: (journalId, volumeId) => apiService.get(`/api/v1/journals/${journalId}/volumes/${volumeId}/issues`, { skipAuth: true }),
+    getVolumeIssues: (journalId, volumeNo) => apiService.get(`/api/v1/journals/${journalId}/volumes/${volumeNo}/issues`, { skipAuth: true }),
     getAllIssues: (journalId) => apiService.get(`/api/v1/journals/${journalId}/issues`, { skipAuth: true }),
+    createVolume: (journalId, data) => apiService.post(`/api/v1/journals/${journalId}/volumes`, data),
+    deleteVolume: (journalId, volumeId) => apiService.delete(`/api/v1/journals/${journalId}/volumes?volume_id=${volumeId}`),
+    createIssue: (journalId, volumeNo, data) => apiService.post(`/api/v1/journals/${journalId}/volumes/${volumeNo}/issues`, data),
+    deleteIssue: (journalId, volumeNo, issueId) => apiService.delete(`/api/v1/journals/${journalId}/volumes/${volumeNo}/issues?issue_id=${issueId}`),
     getRecommendations: (researchArea, keywords, abstract = '') => 
       apiService.post('/api/v1/journals/recommend/', { research_area: researchArea, keywords, abstract }),
   },
