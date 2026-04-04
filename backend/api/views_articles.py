@@ -8,7 +8,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import News, PaperPublished, Journal
+from .models import News, PaperPublished, Journal, Paper, User, PaperCoAuthor
 from .serializers import ArticleDetailSerializer, ArticleListSerializer, NewsSerializer
 
 
@@ -99,12 +99,46 @@ class ArticleDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # Build co_authors_json dynamically if not stored
+        co_authors_json = article.co_authors_json
+        author_display = strip_html_tags(article.author)
+
+        if not co_authors_json and article.paper_submission_id:
+            import json
+            paper = Paper.objects.filter(id=article.paper_submission_id).first()
+            if paper:
+                authors_list = []
+                author_user = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by and str(paper.added_by).isdigit() else None
+                if author_user:
+                    authors_list.append({
+                        "name": f"{author_user.fname or ''} {author_user.lname or ''}".strip() or author_user.email,
+                        "email": author_user.email,
+                        "affiliation": author_user.affiliation or author_user.organisation or "",
+                        "is_primary": True,
+                        "is_corresponding": True,
+                    })
+                try:
+                    co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).defer('user_id', 'invitation_token')
+                    for ca in co_authors:
+                        authors_list.append({
+                            "name": f"{ca.first_name or ''} {ca.middle_name or ''} {ca.last_name or ''}".strip(),
+                            "email": ca.email or "",
+                            "affiliation": ca.organisation or "",
+                            "is_primary": False,
+                            "is_corresponding": bool(ca.is_corresponding),
+                        })
+                except Exception:
+                    pass
+                if authors_list:
+                    co_authors_json = json.dumps(authors_list)
+                    author_display = ", ".join(a["name"] for a in authors_list)
+
         data = {
             "id": article.id,
             "title": strip_html_tags(article.title) or "Untitled",
             "abstract": strip_html_tags(article.abstract),
             "p_reference": decode_references(article.p_reference),
-            "author": strip_html_tags(article.author),
+            "author": author_display,
             "date": article.date.isoformat() if article.date else None,
             "journal": article.journal,
             "journal_id": article.journal_id,
@@ -118,7 +152,7 @@ class ArticleDetailView(APIView):
             "email": article.email,
             "affiliation": strip_html_tags(article.affiliation),
             "doi": strip_html_tags(article.doi),
-            "co_authors_json": article.co_authors_json,
+            "co_authors_json": co_authors_json,
         }
         return Response(data, status=status.HTTP_200_OK)
 
