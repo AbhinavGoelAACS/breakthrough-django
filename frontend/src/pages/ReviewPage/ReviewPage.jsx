@@ -67,7 +67,7 @@ const ReviewPage = () => {
       
       // Redirect to dashboard after successful submission
       setTimeout(() => {
-        navigate('/reviewer-dashboard');
+        navigate('/reviewer/dashboard');
       }, 1500);
       
       return result;

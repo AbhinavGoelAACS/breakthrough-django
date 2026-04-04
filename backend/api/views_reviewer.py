@@ -175,12 +175,13 @@ class AcceptInvitationAuthView(APIView):
         invitation.reviewer_id = user.id
         invitation.save()
         
-        from datetime import date
+        from datetime import date, timedelta
         online_review = OnlineReview.objects.create(
             paper_id=str(invitation.paper_id),
             reviewer_id=str(user.id),
             review_status="pending",
             assigned_on=date.today(),
+            due_date=date.today() + timedelta(days=14),
         )
         
         # NOTE: Skipping email background task translation for brevity initially.
@@ -273,6 +274,15 @@ class ReviewerAssignmentsView(APIView):
                 
             is_resubmission = paper.version_number > 1 if paper else False
             
+            # Compute due_date: prefer the field on the review, fall back to invitation expiry, then assigned_on + 14 days
+            due_date = review.due_date
+            if not due_date:
+                inv = ReviewerInvitation.objects.filter(paper_id=review.paper_id, reviewer_id=review.reviewer_id).order_by('-id').first()
+                if inv and inv.token_expiry:
+                    due_date = inv.token_expiry
+                elif review.assigned_on:
+                    due_date = review.assigned_on + timedelta(days=14)
+
             assignments_list.append({
                 "id": review.id,
                 "paper_id": review.paper_id,
@@ -280,6 +290,7 @@ class ReviewerAssignmentsView(APIView):
                 "author": f"{author.fname} {author.lname or ''}".strip() if author else "Unknown",
                 "journal": journal.fld_journal_name if journal else "Unknown",
                 "assigned_date": review.assigned_on.isoformat() if review.assigned_on else None,
+                "due_date": due_date.isoformat() if due_date else None,
                 "status": review.review_status or "pending",
                 "paper_version": paper.version_number if paper else 1,
                 "is_resubmission": is_resubmission,
@@ -314,6 +325,15 @@ class ReviewerAssignmentDetailView(APIView):
         author = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by and paper.added_by.isdigit() else None
         journal = Journal.objects.filter(fld_id=paper.journal).first() if paper.journal else None
         
+        # Compute due_date
+        due_date = review.due_date
+        if not due_date:
+            inv = ReviewerInvitation.objects.filter(paper_id=review.paper_id, reviewer_id=review.reviewer_id).order_by('-id').first()
+            if inv and inv.token_expiry:
+                due_date = inv.token_expiry
+            elif review.assigned_on:
+                due_date = review.assigned_on + timedelta(days=14)
+
         return Response({
             "review_id": review.id,
             "paper": {
@@ -333,6 +353,7 @@ class ReviewerAssignmentDetailView(APIView):
             },
             "assignment": {
                 "assigned_date": getattr(review, 'assigned_on', None),
+                "due_date": due_date.isoformat() if due_date else None,
                 "status": getattr(review, 'review_status', 'pending')
             }
         }, status=status.HTTP_200_OK)
@@ -415,7 +436,10 @@ class ReviewerAssignmentPaperDetailView(APIView):
             },
             "assignment": {
                 "id": assignment.id,
-                "status": getattr(assignment, 'review_status', 'pending')
+                "status": getattr(assignment, 'review_status', 'pending'),
+                "due_date": (assignment.due_date.isoformat() if assignment.due_date
+                             else (assignment.assigned_on + timedelta(days=14)).isoformat() if assignment.assigned_on
+                             else None)
             },
             "review_submission": _to_dict(review_submission),
             "previous_review": _to_dict(previous_review)

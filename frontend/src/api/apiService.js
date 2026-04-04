@@ -419,7 +419,7 @@ export const acsApi = {
       formData.append('file', file);
       return apiClient.post(`/api/v1/reviewer/assignments/${reviewId}/upload-report`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      }).then(res => res.data);
     },
     downloadReviewReport: (reviewId) =>
       apiClient.get(`/api/v1/reviewer/assignments/${reviewId}/download-report`, {

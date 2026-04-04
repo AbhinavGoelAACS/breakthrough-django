@@ -40,6 +40,10 @@ const ReviewForm = ({
     initialSubmission?.file_version || 1
   );
 
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+
   const [errors, setErrors] = useState({});
 
   // Update state when initialSubmission changes (e.g., when data loads from API)
@@ -64,6 +68,18 @@ const ReviewForm = ({
 
   const hasChanges = () => {
     return Object.values(ratings).some(v => v !== null) || Object.values(comments).some(v => v.trim() !== '');
+  };
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const getFileExtension = (filename) => {
+    if (!filename) return '';
+    return filename.split('.').pop().toLowerCase();
   };
 
   const isFormComplete = () => {
@@ -104,6 +120,9 @@ const ReviewForm = ({
 
     if (missingRatings.length > 0) {
       newErrors.ratings = 'All ratings are required';
+      missingRatings.forEach(k => {
+        newErrors[`rating_${k}`] = 'Please select a rating';
+      });
     }
 
     // Check for comments (50+ characters total)
@@ -111,10 +130,13 @@ const ReviewForm = ({
     if (totalComments.length < 50) {
       newErrors.comments = 'At least one comment with 50+ characters is required';
     }
+    if (!comments.author_comments.trim()) {
+      newErrors.author_comments = 'Comments for authors are required';
+    }
 
     // Check recommendation
     if (!recommendation) {
-      newErrors.recommendation = 'Recommendation is required';
+      newErrors.recommendation = 'Please select a recommendation';
     }
 
     setErrors(newErrors);
@@ -173,8 +195,12 @@ const ReviewForm = ({
     try {
       setUploadingFile(true);
       const result = await onUploadReport(file);
-      setUploadedFile(result.file_path);
+      setUploadedFile(result.filename || file.name);
       setFileVersion(result.file_version);
+      // Store local file for preview
+      setPreviewFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
     } catch (err) {
       console.error('Error uploading file:', err);
     } finally {
@@ -237,46 +263,67 @@ const ReviewForm = ({
           <div className={styles.ratingsTab}>
             <div className={styles.ratingItem}>
               <label>Technical Quality</label>
+              <p className={styles.hint}>Rate from 1 (Poor) to 5 (Excellent)</p>
               <RatingScale
                 value={ratings.technical_quality}
                 onChange={(v) => handleRatingChange('technical_quality', v)}
               />
+              {errors.rating_technical_quality && (
+                <p className={styles.error}>{errors.rating_technical_quality}</p>
+              )}
             </div>
 
             <div className={styles.ratingItem}>
               <label>Clarity</label>
+              <p className={styles.hint}>Rate from 1 (Poor) to 5 (Excellent)</p>
               <RatingScale
                 value={ratings.clarity}
                 onChange={(v) => handleRatingChange('clarity', v)}
               />
+              {errors.rating_clarity && (
+                <p className={styles.error}>{errors.rating_clarity}</p>
+              )}
             </div>
 
             <div className={styles.ratingItem}>
               <label>Originality</label>
+              <p className={styles.hint}>Rate from 1 (Poor) to 5 (Excellent)</p>
               <RatingScale
                 value={ratings.originality}
                 onChange={(v) => handleRatingChange('originality', v)}
               />
+              {errors.rating_originality && (
+                <p className={styles.error}>{errors.rating_originality}</p>
+              )}
             </div>
 
             <div className={styles.ratingItem}>
               <label>Significance</label>
+              <p className={styles.hint}>Rate from 1 (Poor) to 5 (Excellent)</p>
               <RatingScale
                 value={ratings.significance}
                 onChange={(v) => handleRatingChange('significance', v)}
               />
+              {errors.rating_significance && (
+                <p className={styles.error}>{errors.rating_significance}</p>
+              )}
             </div>
 
             <div className={styles.ratingItem}>
               <label>Overall Rating</label>
+              <p className={styles.hint}>Rate from 1 (Poor) to 5 (Excellent)</p>
               <RatingScale
                 value={ratings.overall_rating}
                 onChange={(v) => handleRatingChange('overall_rating', v)}
               />
+              {errors.rating_overall_rating && (
+                <p className={styles.error}>{errors.rating_overall_rating}</p>
+              )}
             </div>
 
             <div className={styles.recommendationSection}>
               <label>Recommendation</label>
+              <p className={styles.hint}>Select your recommendation for this manuscript</p>
               <select
                 value={recommendation}
                 onChange={(e) => setRecommendation(e.target.value)}
@@ -304,7 +351,7 @@ const ReviewForm = ({
           <div className={styles.commentsTab}>
             <div className={styles.commentSection}>
               <label>Comments for Authors</label>
-              <p className={styles.hint}>Public comments visible to authors</p>
+              <p className={styles.hint}>Public comments visible to authors. Provide constructive feedback on the manuscript.</p>
               <textarea
                 value={comments.author_comments}
                 onChange={(e) => handleCommentChange('author_comments', e.target.value)}
@@ -315,11 +362,14 @@ const ReviewForm = ({
               <p className={styles.charCount}>
                 {comments.author_comments.length} characters
               </p>
+              {errors.author_comments && (
+                <p className={styles.error}>{errors.author_comments}</p>
+              )}
             </div>
 
             <div className={styles.commentSection}>
               <label>Confidential Comments</label>
-              <p className={styles.hint}>Private comments for editors only</p>
+              <p className={styles.hint}>Private comments for editors only. These will not be shared with the authors.</p>
               <textarea
                 value={comments.confidential_comments}
                 onChange={(e) => handleCommentChange('confidential_comments', e.target.value)}
@@ -385,21 +435,56 @@ const ReviewForm = ({
               )}
 
               {uploadedFile && (
-                <div className={styles.uploadedFile}>
-                  <span className="material-symbols-rounded">description</span>
-                  <div className={styles.fileInfo}>
-                    <p className={styles.fileName}>{uploadedFile.split('/').pop()}</p>
-                    <p className={styles.fileVersion}>Version {fileVersion}</p>
-                  </div>
-                  {onDownloadReport && (
+                <div className={styles.uploadedFileSection}>
+                  <div className={styles.uploadedFile}>
+                    <span className="material-symbols-rounded">description</span>
+                    <div className={styles.fileInfo}>
+                      <p className={styles.fileName}>{typeof uploadedFile === 'string' ? uploadedFile.split('/').pop() : uploadedFile}</p>
+                      <p className={styles.fileVersion}>Version {fileVersion}</p>
+                    </div>
                     <button
                       type="button"
-                      className={styles.downloadBtn}
-                      onClick={onDownloadReport}
-                      title="Download this report"
+                      className={styles.previewBtn}
+                      onClick={() => setShowPreview(!showPreview)}
+                      title={showPreview ? 'Hide preview' : 'Preview file'}
                     >
-                      <span className="material-symbols-rounded">download</span>
+                      <span className="material-symbols-rounded">{showPreview ? 'visibility_off' : 'visibility'}</span>
                     </button>
+                    {onDownloadReport && (
+                      <button
+                        type="button"
+                        className={styles.downloadBtn}
+                        onClick={onDownloadReport}
+                        title="Download this report"
+                      >
+                        <span className="material-symbols-rounded">download</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {showPreview && previewUrl && (
+                    <div className={styles.filePreview}>
+                      {getFileExtension(previewFile?.name || uploadedFile) === 'pdf' ? (
+                        <iframe
+                          src={previewUrl}
+                          className={styles.pdfPreview}
+                          title="PDF Preview"
+                        />
+                      ) : (
+                        <div className={styles.docxPreviewFallback}>
+                          <span className="material-symbols-rounded">article</span>
+                          <p>DOCX preview is not available in the browser.</p>
+                          <button
+                            type="button"
+                            className={styles.downloadBtn}
+                            onClick={onDownloadReport}
+                          >
+                            <span className="material-symbols-rounded">download</span>
+                            Download to view
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
