@@ -390,13 +390,13 @@ export const acsApi = {
   // Invitation endpoints (public, no auth required)
   invitations: {
     getInvitationStatus: (token) => 
-      apiService.get(`/api/v1/editor/invitations/status/${token}`, { skipAuth: true }),
+      apiService.get(`/api/v1/invitations/status/${token}`, { skipAuth: true }),
     acceptInvitation: (token) =>
-      apiService.post(`/api/v1/editor/invitations/${token}/accept`, {}, { skipAuth: true }),
+      apiService.post(`/api/v1/invitations/${token}/accept`, {}, { skipAuth: true }),
     declineInvitation: (token, reason = '') =>
-      apiService.post(`/api/v1/editor/invitations/${token}/decline?${reason ? `reason=${encodeURIComponent(reason)}` : ''}`, {}, { skipAuth: true }),
+      apiService.post(`/api/v1/invitations/${token}/decline?${reason ? `reason=${encodeURIComponent(reason)}` : ''}`, {}, { skipAuth: true }),
     registerAndAccept: (token, { fname, lname, password, organization }) =>
-      apiService.post(`/api/v1/editor/invitations/${token}/register-accept?fname=${encodeURIComponent(fname)}&lname=${encodeURIComponent(lname || '')}&password=${encodeURIComponent(password)}&organization=${encodeURIComponent(organization || '')}`, {}, { skipAuth: true }),
+      apiService.post(`/api/v1/invitations/${token}/register-accept?fname=${encodeURIComponent(fname)}&lname=${encodeURIComponent(lname || '')}&password=${encodeURIComponent(password)}&organization=${encodeURIComponent(organization || '')}`, {}, { skipAuth: true }),
   },
 
   // Reviewer endpoints
