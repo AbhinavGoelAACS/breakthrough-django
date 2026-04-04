@@ -121,6 +121,30 @@
   border-bottom: 2px solid #e5e7eb;
 }
 
+.policyBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.policyBox p {
+  margin: 0 0 10px 0;
+}
+
+.policyBox p:last-child {
+  margin-bottom: 0;
+}
+
+.policyBox strong {
+  color: #1f2937;
+}
+
 .formGroup {
   margin-bottom: 16px;
 }

@@ -1502,6 +1502,8 @@ class AdminTriggerCopyrightView(APIView):
                 status="pending",
                 deadline=deadline,
                 reminder_count=0,
+                author_name=f"{author.fname or ''} {author.lname or ''}".strip(),
+                author_affiliation=author.affiliation or "",
                 created_at=datetime.utcnow()
             )
         

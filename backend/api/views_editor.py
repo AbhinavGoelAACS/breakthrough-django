@@ -995,7 +995,7 @@ class EditorPaperDecisionView(APIView):
                                 status="pending",
                                 deadline=deadline,
                                 author_name=f"{author.fname or ''} {author.lname or ''}".strip(),
-                                author_affiliation="",
+                                author_affiliation=author.affiliation or "",
                                 created_at=timezone.now(),
                             )
                         copyright_created = True
@@ -1079,16 +1079,32 @@ class EditorPublishPaperView(APIView):
         
         # Simple DOI generation logic matching FastAPI version
         doi = f"10.58517/{journal.short_form}.{pub_date.year}.{volume}{issue}{paper_num}"
-        
+
+        page_start = request.data.get("page_start", "")
+        page_end = request.data.get("page_end", "")
+        pages = f"{page_start}-{page_end}" if page_start and page_end else str(page_start or page_end or "")
+
+        author_user = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by else None
+
         # Publish Paper
         published = PaperPublished.objects.create(
             paper_submission_id=paper.id,
+            title=paper.title or "",
+            abstract=paper.abstract or "",
+            author=paper.author or "",
+            journal=journal.fld_journal_name or "",
             journal_id=journal.fld_id,
             volume=str(volume),
             issue=str(issue),
-            published_date=pub_date,
+            date=pub_date,
+            pages=pages,
+            keyword=paper.keyword or "",
+            language="English",
             access_type="subscription",
-            doi=doi
+            doi=doi,
+            doi_status="pending",
+            email=author_user.email if author_user else "",
+            affiliation=author_user.affiliation if author_user else "",
         )
         
         paper.status = "published"
@@ -1383,7 +1399,6 @@ class EditorPublishPaperWithFileView(APIView):
         doi = f"10.58517/{journal.short_form}.{pub_date.year}.{volume}{issue}{paper_num}"
 
         final_paper = request.FILES['final_paper']
-        # Very basic file saving mock for brevity. Real implementation should use Django storage
         import os
         from django.conf import settings
         from datetime import datetime
@@ -1398,18 +1413,32 @@ class EditorPublishPaperWithFileView(APIView):
                 destination.write(chunk)
                 
         relative_path = f"published/{journal.fld_id}/{filename}"
-        
+
+        page_start = request.data.get("page_start", "")
+        page_end = request.data.get("page_end", "")
+        pages = f"{page_start}-{page_end}" if page_start and page_end else str(page_start or page_end or "")
+
+        author_user = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by else None
+
         published = PaperPublished.objects.create(
             paper_submission_id=paper.id,
+            title=paper.title or "",
+            abstract=paper.abstract or "",
+            author=paper.author or "",
+            journal=journal.fld_journal_name or "",
             journal_id=journal.fld_id,
             volume=str(volume),
             issue=str(issue),
-            published_date=pub_date,
+            date=pub_date,
+            pages=pages,
+            keyword=paper.keyword or "",
+            language="English",
             access_type="subscription",
             doi=doi,
-            paper=relative_path, # store relative path
-            title=paper.title,
-            author=paper.author
+            doi_status="pending",
+            paper=relative_path,
+            email=author_user.email if author_user else "",
+            affiliation=author_user.affiliation if author_user else "",
         )
         
         paper.status = "published"

@@ -257,6 +257,18 @@ const CopyrightForm = ({ isOpen, onClose, paperId, onSuccess }) => {
                 </div>
               </div>
 
+              {/* Copyright Policy */}
+              <div className={styles.section}>
+                <h4>Copyright Policy</h4>
+                <div className={styles.policyBox}>
+                  <p><strong>1. Grant of Rights:</strong> By submitting this form, you grant BreakThrough Publishers India the exclusive first publication rights for your manuscript. The publisher shall have the right to publish, reproduce, distribute, and display the work in all formats and media.</p>
+                  <p><strong>2. Author Rights:</strong> Authors retain the right to use their work for non-commercial purposes, including sharing preprints, self-archiving the accepted manuscript after an embargo period, and using the work for teaching or personal use with proper attribution.</p>
+                  <p><strong>3. Originality &amp; Warranty:</strong> The author(s) warrant that the submitted manuscript is original, has not been previously published, and is not under consideration elsewhere. Any content derived from other sources must be properly cited.</p>
+                  <p><strong>4. Conflict of Interest:</strong> Authors must disclose any financial or personal relationships that could inappropriately influence or bias the work.</p>
+                  <p><strong>5. Open Access Option:</strong> If the article is published under an Open Access model, it will be distributed under the terms of a Creative Commons license as specified by the journal.</p>
+                </div>
+              </div>
+
               {/* Declarations */}
               <div className={styles.section}>
                 <h4>Declarations</h4>
