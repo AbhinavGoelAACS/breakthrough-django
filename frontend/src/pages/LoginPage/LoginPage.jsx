@@ -52,6 +52,11 @@ export const LoginPage = () => {
 
           <div className="auth-footer">
             <p>
+              <Link to="/forgot-password" className="auth-link">
+                Forgot your password?
+              </Link>
+            </p>
+            <p>
               Don't have an account?{' '}
               <Link to="/signup" className="auth-link">
                 Create one

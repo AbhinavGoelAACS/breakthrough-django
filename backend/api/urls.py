@@ -2,9 +2,11 @@ from django.urls import path
 
 from .views_auth import (
     ChangePasswordView,
+    ForgotPasswordView,
     LoginView,
     MeView,
     RefreshTokenView,
+    ResetPasswordView,
     SignupView,
     CoAuthorTokenStatusView,
     CompleteProfileView,
@@ -147,6 +149,16 @@ urlpatterns = [
         "api/v1/auth/change-password",
         ChangePasswordView.as_view(),
         name="auth-change-password",
+    ),
+    path(
+        "api/v1/auth/forgot-password",
+        ForgotPasswordView.as_view(),
+        name="auth-forgot-password",
+    ),
+    path(
+        "api/v1/auth/reset-password",
+        ResetPasswordView.as_view(),
+        name="auth-reset-password",
     ),
     # Co-author profile completion endpoints
     path(

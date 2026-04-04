@@ -10,6 +10,8 @@ from .jwt_utils import (
     hash_password,
     verify_password,
     verify_token,
+    JWT_SECRET_KEY,
+    JWT_ALGORITHM,
 )
 from .models import User, PaperCoAuthor
 from .serializers import (
@@ -343,3 +345,140 @@ class CompleteProfileView(APIView):
         }
         out = TokenResponseSerializer(resp)
         return Response(out.data, status=status.HTTP_200_OK)
+
+
+class ForgotPasswordView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email", "").strip().lower()
+        if not email:
+            return Response(
+                {"detail": "Email is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Always return success to prevent email enumeration
+        success_msg = {
+            "message": "If an account with that email exists, a password reset link has been sent."
+        }
+
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            return Response(success_msg, status=status.HTTP_200_OK)
+
+        # Create a short-lived reset token (1 hour)
+        from datetime import datetime, timezone
+        from jose import jwt
+
+        payload = {
+            "sub": str(user.id),
+            "email": user.email,
+            "type": "password_reset",
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+        }
+        reset_token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+        # Send reset email
+        from .services.email_service import send_email, _get_frontend_url
+
+        frontend_url = _get_frontend_url()
+        reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+
+        html_body = f"""
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #0D4715; font-size: 24px; margin: 0;">BreakThrough Publishers India</h1>
+            </div>
+            <div style="background: #fff; border-radius: 12px; padding: 32px; border: 1px solid #e5e7eb;">
+                <h2 style="color: #1e293b; margin: 0 0 16px 0; font-size: 20px;">Password Reset Request</h2>
+                <p style="color: #475569; line-height: 1.6; margin: 0 0 24px 0;">
+                    We received a request to reset the password for your account associated with <strong>{user.email}</strong>.
+                </p>
+                <div style="text-align: center; margin: 32px 0;">
+                    <a href="{reset_link}"
+                       style="display: inline-block; background: #0D4715; color: white; padding: 14px 32px;
+                              border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                        Reset Password
+                    </a>
+                </div>
+                <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0 0 8px 0;">
+                    This link will expire in <strong>1 hour</strong>. If you didn't request this, you can safely ignore this email.
+                </p>
+                <p style="color: #94a3b8; font-size: 12px; margin: 16px 0 0 0; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                    If the button doesn't work, copy and paste this link into your browser:<br/>
+                    <a href="{reset_link}" style="color: #0D4715; word-break: break-all;">{reset_link}</a>
+                </p>
+            </div>
+        </div>
+        """
+
+        plain_body = (
+            f"Password Reset Request\n\n"
+            f"We received a request to reset your password for {user.email}.\n\n"
+            f"Click the link below to reset your password (expires in 1 hour):\n"
+            f"{reset_link}\n\n"
+            f"If you didn't request this, you can safely ignore this email."
+        )
+
+        send_email(user.email, "Password Reset - BreakThrough Publishers", plain_body, html_body)
+
+        return Response(success_msg, status=status.HTTP_200_OK)
+
+
+class ResetPasswordView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token", "")
+        new_password = request.data.get("new_password", "")
+        confirm_password = request.data.get("confirm_password", "")
+
+        if not token:
+            return Response(
+                {"detail": "Reset token is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not new_password or not confirm_password:
+            return Response(
+                {"detail": "New password and confirmation are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if new_password != confirm_password:
+            return Response(
+                {"detail": "Passwords do not match"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(new_password) < 8:
+            return Response(
+                {"detail": "Password must be at least 8 characters"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Verify the reset token
+        payload = verify_token(token)
+        if not payload or payload.get("type") != "password_reset":
+            return Response(
+                {"detail": "Invalid or expired reset token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_id = payload.get("sub")
+        try:
+            user = User.objects.get(id=int(user_id))
+        except (User.DoesNotExist, ValueError, TypeError):
+            return Response(
+                {"detail": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user.password = hash_password(new_password)
+        user.save(update_fields=["password"])
+
+        return Response(
+            {"message": "Password has been reset successfully. You can now log in."},
+            status=status.HTTP_200_OK,
+        )

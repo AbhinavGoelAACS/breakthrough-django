@@ -65,7 +65,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     
     // Define public routes where we shouldn't redirect to login
-    const publicRoutes = ['/', '/journals', '/login', '/signup', '/article'];
+    const publicRoutes = ['/', '/journals', '/login', '/signup', '/article', '/forgot-password', '/reset-password'];
     const isPublicRoute = publicRoutes.some(route => 
       window.location.pathname === route || 
       window.location.pathname.startsWith('/j/') ||

@@ -75,6 +75,9 @@ import ReviewerInvitationsPage from './pages/ReviewerInvitationsPage/ReviewerInv
 // Legal Pages
 import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy.jsx';
+// Forgot/Reset Password Pages
+import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage.jsx';
 
 function App() {
   return (
@@ -217,6 +220,8 @@ function AppContent() {
           <Route path="/journals" element={<JournalsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/article/:id" element={<PublicPaperView />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
