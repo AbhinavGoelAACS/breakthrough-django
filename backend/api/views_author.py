@@ -446,6 +446,7 @@ class SubmitPaperView(APIView):
         journal_id = request.data.get("journal_id")
         research_area = request.data.get("research_area") or ""
         message_to_editor = request.data.get("message_to_editor") or ""
+        paper_references = request.data.get("paper_references") or ""
         terms_accepted = request.data.get("terms_accepted")
         authors_raw = request.data.get("authors", "[]")
         title_page_file = request.FILES.get("title_page")
@@ -528,6 +529,7 @@ class SubmitPaperView(APIView):
                 added_on=tz.now(),
                 research_area=research_area or None,
                 message_to_editor=message_to_editor or None,
+                paper_references=paper_references or None,
                 terms_accepted=True,
             )
 

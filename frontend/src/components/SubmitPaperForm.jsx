@@ -91,6 +91,7 @@ export const SubmitPaperForm = () => {
     research_area: '',
     paper_type: 'Full Length Article',
     message_to_editor: '',
+    paper_references: '',
     journal_id: '',
     // Step 2: Author Details
     authors: [],
@@ -563,6 +564,7 @@ export const SubmitPaperForm = () => {
         research_area: formData.research_area,
         paper_type: formData.paper_type,
         message_to_editor: formData.message_to_editor,
+        paper_references: formData.paper_references,
         terms_accepted: formData.termsAccepted,
         authors: formData.authors.map((a, idx) => ({
           ...a,
@@ -890,6 +892,19 @@ export const SubmitPaperForm = () => {
                 className={styles.textarea}
               />
               <small className={styles.helperText}>Any special notes or requests you'd like to communicate to the editor</small>
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="paper_references">References (Optional)</label>
+              <textarea
+                id="paper_references"
+                placeholder="Enter your paper references, one per line..."
+                value={formData.paper_references}
+                onChange={(e) => handleInputChange('paper_references', e.target.value)}
+                rows={6}
+                className={styles.textarea}
+              />
+              <small className={styles.helperText}>List the references cited in your paper</small>
             </div>
           </div>
         )}
@@ -1336,6 +1351,14 @@ export const SubmitPaperForm = () => {
                 <div className={styles.reviewSection}>
                   <h3>Message to Editor</h3>
                   <p>{formData.message_to_editor}</p>
+                </div>
+              )}
+
+              {/* References */}
+              {formData.paper_references && (
+                <div className={styles.reviewSection}>
+                  <h3>References</h3>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{formData.paper_references}</p>
                 </div>
               )}
 

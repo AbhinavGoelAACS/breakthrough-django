@@ -234,6 +234,7 @@ class Paper(models.Model):
     editor_comments = models.TextField(null=True, blank=True)
     research_area = models.CharField(max_length=200, null=True, blank=True)
     message_to_editor = models.TextField(null=True, blank=True)
+    paper_references = models.TextField(null=True, blank=True)
     terms_accepted = models.BooleanField(default=False)
 
 
