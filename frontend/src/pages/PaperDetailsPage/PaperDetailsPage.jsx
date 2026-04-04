@@ -1249,7 +1249,7 @@ const PaperDetailsPage = () => {
                       <div className={styles.timelineInfo}>
                         <p className={styles.timelineEvent}>{event.title}</p>
                         <p className={styles.timelineDate}>
-                          {event.date ? formatDateTime(event.date) : event.description}
+                          {event.date ? formatDateTimeIST(event.date) : event.description}
                         </p>
                         {event.description && event.date && (
                           <p className={styles.timelineDescription}>{event.description}</p>
