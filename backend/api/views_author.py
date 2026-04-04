@@ -447,12 +447,11 @@ class SubmitPaperView(APIView):
         research_area = request.data.get("research_area") or ""
         message_to_editor = request.data.get("message_to_editor") or ""
         terms_accepted = request.data.get("terms_accepted")
-        author_details_raw = request.data.get("author_details")
-        co_authors_raw = request.data.get("co_authors", "[]")
+        authors_raw = request.data.get("authors", "[]")
         title_page_file = request.FILES.get("title_page")
         blinded_file = request.FILES.get("blinded_manuscript")
 
-        if not all([title, abstract, keywords, journal_id, title_page_file, blinded_file, author_details_raw]):
+        if not all([title, abstract, keywords, journal_id, title_page_file, blinded_file]):
             return Response(
                 {"detail": "Missing required fields"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -465,19 +464,27 @@ class SubmitPaperView(APIView):
             )
 
         try:
-            author_data = json.loads(author_details_raw)
+            authors_data = json.loads(authors_raw)
+            if not isinstance(authors_data, list):
+                authors_data = []
         except json.JSONDecodeError:
             return Response(
-                {"detail": "Invalid author_details format - must be valid JSON"},
+                {"detail": "Invalid authors format - must be valid JSON array"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            co_authors_data = json.loads(co_authors_raw)
-            if not isinstance(co_authors_data, list):
-                co_authors_data = []
-        except json.JSONDecodeError:
-            co_authors_data = []
+        if len(authors_data) == 0:
+            return Response(
+                {"detail": "At least one author is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        has_corresponding = any(a.get("is_corresponding", False) for a in authors_data)
+        if not has_corresponding:
+            return Response(
+                {"detail": "At least one corresponding author must be selected"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user = User.objects.filter(id=request.user.id).first()
         if not user:
@@ -505,12 +512,16 @@ class SubmitPaperView(APIView):
             return str(rel)
 
         with transaction.atomic():
+            # Use first author's email as the paper author, or fallback to submitter
+            first_author = authors_data[0] if authors_data else {}
+            paper_author = (first_author.get("email") or "").strip().lower() or user.email
+
             paper = Paper.objects.create(
                 title=title,
                 abstract=abstract,
                 keyword=keywords,
                 journal=int(journal_id),
-                author=user.email,
+                author=paper_author,
                 added_by=str(user.id),
                 status="submitted",
                 mailstatus="0",
@@ -531,7 +542,7 @@ class SubmitPaperView(APIView):
             paper.file = title_page_path
             paper.save()
 
-            for idx, ca in enumerate(co_authors_data):
+            for idx, ca in enumerate(authors_data):
                 ca_email = (ca.get("email") or "").strip().lower()
                 ca_user_id = None
                 invitation_token = None
@@ -574,7 +585,7 @@ class SubmitPaperView(APIView):
                     designation=ca.get("designation"),
                     department=ca.get("department"),
                     organisation=ca.get("organisation"),
-                    author_order=ca.get("author_order", idx + 2),
+                    author_order=ca.get("author_order", idx + 1),
                     is_corresponding=ca.get("is_corresponding", False),
                     created_at=tz.now(),
                 )
@@ -589,10 +600,10 @@ class SubmitPaperView(APIView):
                     # Fallback: migration not yet applied, create without new fields
                     PaperCoAuthor.objects.create(**coauthor_kwargs)
 
-        # Send co-author notification emails (best-effort, outside transaction)
+        # Send author notification emails (best-effort, outside transaction)
         try:
             from .services.email_service import send_coauthor_notification_email
-            for ca in co_authors_data:
+            for ca in authors_data:
                 ca_email = (ca.get("email") or "").strip().lower()
                 if ca_email:
                     coauthor_record = PaperCoAuthor.objects.filter(
@@ -628,7 +639,7 @@ class SubmitPaperView(APIView):
                 "submitted_date": paper.added_on.isoformat()
                 if paper.added_on
                 else None,
-                "co_authors_count": len(co_authors_data),
+                "co_authors_count": len(authors_data),
                 "email_notification_queued": email_sent,
             },
             status=status.HTTP_201_CREATED,

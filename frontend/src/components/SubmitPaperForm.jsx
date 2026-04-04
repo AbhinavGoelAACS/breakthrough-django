@@ -45,7 +45,7 @@ const RESEARCH_CATEGORIES = [
   { value: 'Other', label: 'Other' },
 ];
 
-const EMPTY_CO_AUTHOR = {
+const EMPTY_AUTHOR = {
   salutation: '',
   first_name: '',
   middle_name: '',
@@ -57,7 +57,7 @@ const EMPTY_CO_AUTHOR = {
   is_corresponding: false,
 };
 
-const MAX_CO_AUTHORS = 5;
+const MAX_AUTHORS = 10;
 
 export const SubmitPaperForm = () => {
   const navigate = useNavigate();
@@ -93,16 +93,7 @@ export const SubmitPaperForm = () => {
     message_to_editor: '',
     journal_id: '',
     // Step 2: Author Details
-    authorDetails: {
-      salutation: '',
-      first_name: '',
-      middle_name: '',
-      last_name: '',
-      designation: '',
-      department: '',
-      organisation: '',
-    },
-    coAuthors: [],
+    authors: [],
     // Step 3: File Upload
     titlePageFile: null,
     titlePagePreview: null,
@@ -120,27 +111,6 @@ export const SubmitPaperForm = () => {
         const journalsResponse = await acsApi.getJournals(0, 100);
         const journalsArray = journalsResponse.journals || journalsResponse.data || journalsResponse || [];
         setJournals(Array.isArray(journalsArray) ? journalsArray : []);
-        
-        // Load author profile for pre-fill
-        try {
-          const profile = await acsApi.author.getAuthorProfile();
-          if (profile) {
-            setFormData(prev => ({
-              ...prev,
-              authorDetails: {
-                salutation: profile.salutation || '',
-                first_name: profile.fname || '',
-                middle_name: profile.mname || '',
-                last_name: profile.lname || '',
-                designation: profile.designation || '',
-                department: profile.department || '',
-                organisation: profile.organisation || profile.affiliation || '',
-              }
-            }));
-          }
-        } catch (profileErr) {
-          console.log('Could not load author profile for pre-fill:', profileErr);
-        }
       } catch (err) {
         console.error('Failed to load initial data:', err);
         setJournals([]);
@@ -249,18 +219,10 @@ export const SubmitPaperForm = () => {
     setFieldErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  const handleAuthorBlur = (field) => {
-    const touchedKey = `author_${field}`;
+  const handleAuthorBlur = (index, field) => {
+    const touchedKey = `author_${index}_${field}`;
     setTouched(prev => ({ ...prev, [touchedKey]: true }));
-    const value = formData.authorDetails[field];
-    const error = validateField(field, value);
-    setFieldErrors(prev => ({ ...prev, [touchedKey]: error }));
-  };
-
-  const handleCoAuthorBlur = (index, field) => {
-    const touchedKey = `coauthor_${index}_${field}`;
-    setTouched(prev => ({ ...prev, [touchedKey]: true }));
-    const value = formData.coAuthors[index]?.[field];
+    const value = formData.authors[index]?.[field];
     const error = validateField(field, value);
     setFieldErrors(prev => ({ ...prev, [touchedKey]: error }));
   };
@@ -271,19 +233,6 @@ export const SubmitPaperForm = () => {
     if (touched[field]) {
       const error = validateField(field, value);
       setFieldErrors(prev => ({ ...prev, [field]: error }));
-    }
-  };
-
-  const handleAuthorChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      authorDetails: { ...prev.authorDetails, [field]: value }
-    }));
-    // Clear error when user starts typing
-    const touchedKey = `author_${field}`;
-    if (touched[touchedKey]) {
-      const error = validateField(field, value);
-      setFieldErrors(prev => ({ ...prev, [touchedKey]: error }));
     }
   };
 
@@ -389,54 +338,54 @@ export const SubmitPaperForm = () => {
   };
 
 
-  // Co-author handling
-  const addCoAuthor = () => {
-    if (formData.coAuthors.length >= MAX_CO_AUTHORS) {
-      showError(`Maximum ${MAX_CO_AUTHORS} co-authors allowed per paper`);
+  // Author handling
+  const addAuthor = () => {
+    if (formData.authors.length >= MAX_AUTHORS) {
+      showError(`Maximum ${MAX_AUTHORS} authors allowed per paper`);
       return;
     }
     setFormData(prev => ({
       ...prev,
-      coAuthors: [...prev.coAuthors, { ...EMPTY_CO_AUTHOR, author_order: prev.coAuthors.length + 2 }]
+      authors: [...prev.authors, { ...EMPTY_AUTHOR, author_order: prev.authors.length + 1 }]
     }));
   };
 
-  const removeCoAuthor = (index) => {
+  const removeAuthor = (index) => {
     setFormData(prev => ({
       ...prev,
-      coAuthors: prev.coAuthors.filter((_, idx) => idx !== index).map((co, idx) => ({
-        ...co,
-        author_order: idx + 2
+      authors: prev.authors.filter((_, idx) => idx !== index).map((a, idx) => ({
+        ...a,
+        author_order: idx + 1
       }))
     }));
   };
 
-  // Move co-author up or down in the list (swap positions)
-  const moveCoAuthor = (index, direction) => {
+  // Move author up or down in the list (swap positions)
+  const moveAuthor = (index, direction) => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= formData.coAuthors.length) return;
+    if (newIndex < 0 || newIndex >= formData.authors.length) return;
     
     setFormData(prev => {
-      const newCoAuthors = [...prev.coAuthors];
-      // Swap the two co-authors
-      [newCoAuthors[index], newCoAuthors[newIndex]] = [newCoAuthors[newIndex], newCoAuthors[index]];
+      const newAuthors = [...prev.authors];
+      // Swap the two authors
+      [newAuthors[index], newAuthors[newIndex]] = [newAuthors[newIndex], newAuthors[index]];
       // Update author_order for all
       return {
         ...prev,
-        coAuthors: newCoAuthors.map((co, idx) => ({ ...co, author_order: idx + 2 }))
+        authors: newAuthors.map((a, idx) => ({ ...a, author_order: idx + 1 }))
       };
     });
   };
 
-  const updateCoAuthor = (index, field, value) => {
+  const updateAuthor = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      coAuthors: prev.coAuthors.map((co, idx) => 
-        idx === index ? { ...co, [field]: value } : co
+      authors: prev.authors.map((a, idx) => 
+        idx === index ? { ...a, [field]: value } : a
       )
     }));
     // Validate on change if field was touched
-    const touchedKey = `coauthor_${index}_${field}`;
+    const touchedKey = `author_${index}_${field}`;
     if (touched[touchedKey]) {
       const error = validateField(field, value);
       setFieldErrors(prev => ({ ...prev, [touchedKey]: error }));
@@ -521,42 +470,45 @@ export const SubmitPaperForm = () => {
         return isValid;
       },
       2: () => {
-        const { authorDetails } = formData;
-        const requiredAuthorFields = ['salutation', 'first_name', 'last_name', 'designation', 'department', 'organisation'];
-        
-        // Validate primary author (all fields required)
-        requiredAuthorFields.forEach(field => {
-          const error = validateField(field, authorDetails[field]);
-          if (error) {
-            errors[`author_${field}`] = error;
-            isValid = false;
-          }
-        });
+        if (formData.authors.length === 0) {
+          showError('Please add at least one author');
+          return false;
+        }
 
-        // Validate co-authors (all fields required)
-        formData.coAuthors.forEach((co, index) => {
-          const requiredCoAuthorFields = ['salutation', 'first_name', 'last_name', 'email', 'designation', 'department', 'organisation'];
-          requiredCoAuthorFields.forEach(field => {
-            const error = validateField(field, co[field]);
+        const requiredFields = ['salutation', 'first_name', 'last_name', 'email', 'designation', 'department', 'organisation'];
+
+        // Validate all authors
+        formData.authors.forEach((author, index) => {
+          requiredFields.forEach(field => {
+            const error = validateField(field, author[field]);
             if (error) {
-              errors[`coauthor_${index}_${field}`] = error;
+              errors[`author_${index}_${field}`] = error;
               isValid = false;
             }
           });
         });
 
+        // Check at least one corresponding author
+        const hasCorresponding = formData.authors.some(a => a.is_corresponding);
+        if (!hasCorresponding) {
+          isValid = false;
+        }
+
         if (!isValid) {
           setFieldErrors(prev => ({ ...prev, ...errors }));
           // Mark all author fields as touched
           const touchedFields = {};
-          requiredAuthorFields.forEach(f => touchedFields[`author_${f}`] = true);
-          formData.coAuthors.forEach((_, i) => {
-            ['salutation', 'first_name', 'last_name', 'email', 'designation', 'department', 'organisation'].forEach(f => {
-              touchedFields[`coauthor_${i}_${f}`] = true;
+          formData.authors.forEach((_, i) => {
+            requiredFields.forEach(f => {
+              touchedFields[`author_${i}_${f}`] = true;
             });
           });
           setTouched(prev => ({ ...prev, ...touchedFields }));
-          showError('Please fill in all required author details');
+          if (!hasCorresponding) {
+            showError('Please select at least one corresponding author');
+          } else {
+            showError('Please fill in all required author details');
+          }
         }
         return isValid;
       },
@@ -612,10 +564,9 @@ export const SubmitPaperForm = () => {
         paper_type: formData.paper_type,
         message_to_editor: formData.message_to_editor,
         terms_accepted: formData.termsAccepted,
-        author_details: formData.authorDetails,
-        co_authors: formData.coAuthors.map((co, idx) => ({
-          ...co,
-          author_order: idx + 2
+        authors: formData.authors.map((a, idx) => ({
+          ...a,
+          author_order: idx + 1
         }))
       });
 
@@ -947,162 +898,42 @@ export const SubmitPaperForm = () => {
         {currentStep === 2 && (
           <div>
             <h2>Step 2: Author Details</h2>
-            <p className={styles.stepSubtitle}>All fields marked with * are required</p>
+            <p className={styles.stepSubtitle}>Add all authors in the desired order. At least one corresponding author must be selected. All fields marked with * are required.</p>
             
-            {/* Primary Author */}
-            <div className={styles.authorSection}>
-              <h3 className={styles.authorSectionTitle}>
-                <span className="material-symbols-rounded">person</span>
-                Primary Author (You)
-                <span className={styles.tooltipWrapper}>
-                  <span className={`material-symbols-rounded ${styles.tooltipIcon}`}>info</span>
-                  <span className={styles.tooltipText}>
-                    These fields are pre-filled from your profile. You can edit them to enter a different primary author's details if needed.
-                  </span>
-                </span>
-              </h3>
-              
-              <div className={styles.fieldRow}>
-                <div className={`${styles.fieldSmall} ${touched.author_salutation && fieldErrors.author_salutation ? styles.fieldError : ''}`}>
-                  <label htmlFor="author_salutation">Salutation *</label>
-                  <select
-                    id="author_salutation"
-                    value={formData.authorDetails.salutation}
-                    onChange={(e) => handleAuthorChange('salutation', e.target.value)}
-                    onBlur={() => handleAuthorBlur('salutation')}
-                    className={`${styles.select} ${touched.author_salutation && fieldErrors.author_salutation ? styles.inputError : ''}`}
-                  >
-                    {SALUTATION_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  {touched.author_salutation && fieldErrors.author_salutation && (
-                    <span className={styles.errorText}>{fieldErrors.author_salutation}</span>
-                  )}
-                </div>
-                <div className={`${styles.field} ${touched.author_first_name && fieldErrors.author_first_name ? styles.fieldError : ''}`}>
-                  <label htmlFor="author_fname">First Name *</label>
-                  <input
-                    id="author_fname"
-                    type="text"
-                    placeholder="First name"
-                    value={formData.authorDetails.first_name}
-                    onChange={(e) => handleAuthorChange('first_name', e.target.value)}
-                    onBlur={() => handleAuthorBlur('first_name')}
-                    className={`${styles.input} ${touched.author_first_name && fieldErrors.author_first_name ? styles.inputError : ''}`}
-                  />
-                  {touched.author_first_name && fieldErrors.author_first_name && (
-                    <span className={styles.errorText}>{fieldErrors.author_first_name}</span>
-                  )}
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="author_mname">Middle Name</label>
-                  <input
-                    id="author_mname"
-                    type="text"
-                    placeholder="Middle name (optional)"
-                    value={formData.authorDetails.middle_name}
-                    onChange={(e) => handleAuthorChange('middle_name', e.target.value)}
-                    className={styles.input}
-                  />
-                </div>
-                <div className={`${styles.field} ${touched.author_last_name && fieldErrors.author_last_name ? styles.fieldError : ''}`}>
-                  <label htmlFor="author_lname">Last Name *</label>
-                  <input
-                    id="author_lname"
-                    type="text"
-                    placeholder="Last name"
-                    value={formData.authorDetails.last_name}
-                    onChange={(e) => handleAuthorChange('last_name', e.target.value)}
-                    onBlur={() => handleAuthorBlur('last_name')}
-                    className={`${styles.input} ${touched.author_last_name && fieldErrors.author_last_name ? styles.inputError : ''}`}
-                  />
-                  {touched.author_last_name && fieldErrors.author_last_name && (
-                    <span className={styles.errorText}>{fieldErrors.author_last_name}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.fieldRow}>
-                <div className={`${styles.field} ${touched.author_designation && fieldErrors.author_designation ? styles.fieldError : ''}`}>
-                  <label htmlFor="author_designation">Designation/Occupation *</label>
-                  <input
-                    id="author_designation"
-                    type="text"
-                    placeholder="e.g., Associate Professor"
-                    value={formData.authorDetails.designation}
-                    onChange={(e) => handleAuthorChange('designation', e.target.value)}
-                    onBlur={() => handleAuthorBlur('designation')}
-                    className={`${styles.input} ${touched.author_designation && fieldErrors.author_designation ? styles.inputError : ''}`}
-                  />
-                  {touched.author_designation && fieldErrors.author_designation && (
-                    <span className={styles.errorText}>{fieldErrors.author_designation}</span>
-                  )}
-                </div>
-                <div className={`${styles.field} ${touched.author_department && fieldErrors.author_department ? styles.fieldError : ''}`}>
-                  <label htmlFor="author_department">Department *</label>
-                  <input
-                    id="author_department"
-                    type="text"
-                    placeholder="e.g., Computer Science"
-                    value={formData.authorDetails.department}
-                    onChange={(e) => handleAuthorChange('department', e.target.value)}
-                    onBlur={() => handleAuthorBlur('department')}
-                    className={`${styles.input} ${touched.author_department && fieldErrors.author_department ? styles.inputError : ''}`}
-                  />
-                  {touched.author_department && fieldErrors.author_department && (
-                    <span className={styles.errorText}>{fieldErrors.author_department}</span>
-                  )}
-                </div>
-                <div className={`${styles.field} ${touched.author_organisation && fieldErrors.author_organisation ? styles.fieldError : ''}`}>
-                  <label htmlFor="author_organisation">Organisation *</label>
-                  <OrganizationAutocomplete
-                    id="author_organisation"
-                    name="author_organisation"
-                    placeholder="Search for your organization..."
-                    value={formData.authorDetails.organisation}
-                    onChange={(value) => handleAuthorChange('organisation', value)}
-                    onSelect={() => handleAuthorBlur('organisation')}
-                    required
-                    className={touched.author_organisation && fieldErrors.author_organisation ? styles.inputError : ''}
-                  />
-                  {touched.author_organisation && fieldErrors.author_organisation && (
-                    <span className={styles.errorText}>{fieldErrors.author_organisation}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Co-Authors */}
+            {/* Authors */}
             <div className={styles.coAuthorsSection}>
               <div className={styles.coAuthorsHeader}>
                 <h3 className={styles.authorSectionTitle}>
                   <span className="material-symbols-rounded">group</span>
-                  Co-Authors
-                  <span className={styles.coAuthorCount}>({formData.coAuthors.length}/{MAX_CO_AUTHORS})</span>
+                  Authors
+                  <span className={styles.coAuthorCount}>({formData.authors.length}/{MAX_AUTHORS})</span>
                 </h3>
                 <button 
                   type="button" 
-                  onClick={addCoAuthor} 
+                  onClick={addAuthor} 
                   className={styles.addCoAuthorBtn}
-                  disabled={formData.coAuthors.length >= MAX_CO_AUTHORS}
+                  disabled={formData.authors.length >= MAX_AUTHORS}
                 >
                   <span className="material-symbols-rounded">add</span>
-                  Add Co-Author
+                  Add Author
                 </button>
               </div>
 
-              {formData.coAuthors.length === 0 ? (
-                <p className={styles.noCoAuthors}>No co-authors added. Click &quot;Add Co-Author&quot; to add one. (Max {MAX_CO_AUTHORS})</p>
+              {formData.authors.length === 0 ? (
+                <p className={styles.noCoAuthors}>No authors added yet. Click &quot;Add Author&quot; to add one. (Max {MAX_AUTHORS})</p>
               ) : (
-                formData.coAuthors.map((coAuthor, index) => (
+                formData.authors.map((author, index) => (
                   <div key={index} className={styles.coAuthorCard}>
                     <div className={styles.coAuthorHeader}>
-                      <span className={styles.coAuthorNumber}>Co-Author {index + 1}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className={styles.authorOrderBadge}>{index + 1}</span>
+                        <span className={styles.coAuthorNumber}>Author {index + 1}</span>
+                        {author.is_corresponding && <span className={styles.correspondingBadge}>Corresponding</span>}
+                      </div>
                       <div className={styles.coAuthorActions}>
                         <button 
                           type="button" 
-                          onClick={() => moveCoAuthor(index, 'up')}
+                          onClick={() => moveAuthor(index, 'up')}
                           className={styles.moveCoAuthorBtn}
                           disabled={index === 0}
                           title="Move up"
@@ -1111,16 +942,16 @@ export const SubmitPaperForm = () => {
                         </button>
                         <button 
                           type="button" 
-                          onClick={() => moveCoAuthor(index, 'down')}
+                          onClick={() => moveAuthor(index, 'down')}
                           className={styles.moveCoAuthorBtn}
-                          disabled={index === formData.coAuthors.length - 1}
+                          disabled={index === formData.authors.length - 1}
                           title="Move down"
                         >
                           <span className="material-symbols-rounded">arrow_downward</span>
                         </button>
                         <button 
                           type="button" 
-                          onClick={() => removeCoAuthor(index)}
+                          onClick={() => removeAuthor(index)}
                           className={styles.removeCoAuthorBtn}
                         >
                           <span className="material-symbols-rounded">close</span>
@@ -1129,34 +960,34 @@ export const SubmitPaperForm = () => {
                     </div>
 
                     <div className={styles.fieldRow}>
-                      <div className={`${styles.fieldSmall} ${touched[`coauthor_${index}_salutation`] && fieldErrors[`coauthor_${index}_salutation`] ? styles.fieldError : ''}`}>
+                      <div className={`${styles.fieldSmall} ${touched[`author_${index}_salutation`] && fieldErrors[`author_${index}_salutation`] ? styles.fieldError : ''}`}>
                         <label>Salutation *</label>
                         <select
-                          value={coAuthor.salutation}
-                          onChange={(e) => updateCoAuthor(index, 'salutation', e.target.value)}
-                          onBlur={() => handleCoAuthorBlur(index, 'salutation')}
-                          className={`${styles.select} ${touched[`coauthor_${index}_salutation`] && fieldErrors[`coauthor_${index}_salutation`] ? styles.inputError : ''}`}
+                          value={author.salutation}
+                          onChange={(e) => updateAuthor(index, 'salutation', e.target.value)}
+                          onBlur={() => handleAuthorBlur(index, 'salutation')}
+                          className={`${styles.select} ${touched[`author_${index}_salutation`] && fieldErrors[`author_${index}_salutation`] ? styles.inputError : ''}`}
                         >
                           {SALUTATION_OPTIONS.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                           ))}
                         </select>
-                        {touched[`coauthor_${index}_salutation`] && fieldErrors[`coauthor_${index}_salutation`] && (
-                          <span className={styles.errorText}>{fieldErrors[`coauthor_${index}_salutation`]}</span>
+                        {touched[`author_${index}_salutation`] && fieldErrors[`author_${index}_salutation`] && (
+                          <span className={styles.errorText}>{fieldErrors[`author_${index}_salutation`]}</span>
                         )}
                       </div>
-                      <div className={`${styles.field} ${touched[`coauthor_${index}_first_name`] && fieldErrors[`coauthor_${index}_first_name`] ? styles.fieldError : ''}`}>
+                      <div className={`${styles.field} ${touched[`author_${index}_first_name`] && fieldErrors[`author_${index}_first_name`] ? styles.fieldError : ''}`}>
                         <label>First Name *</label>
                         <input
                           type="text"
                           placeholder="First name"
-                          value={coAuthor.first_name}
-                          onChange={(e) => updateCoAuthor(index, 'first_name', e.target.value)}
-                          onBlur={() => handleCoAuthorBlur(index, 'first_name')}
-                          className={`${styles.input} ${touched[`coauthor_${index}_first_name`] && fieldErrors[`coauthor_${index}_first_name`] ? styles.inputError : ''}`}
+                          value={author.first_name}
+                          onChange={(e) => updateAuthor(index, 'first_name', e.target.value)}
+                          onBlur={() => handleAuthorBlur(index, 'first_name')}
+                          className={`${styles.input} ${touched[`author_${index}_first_name`] && fieldErrors[`author_${index}_first_name`] ? styles.inputError : ''}`}
                         />
-                        {touched[`coauthor_${index}_first_name`] && fieldErrors[`coauthor_${index}_first_name`] && (
-                          <span className={styles.errorText}>{fieldErrors[`coauthor_${index}_first_name`]}</span>
+                        {touched[`author_${index}_first_name`] && fieldErrors[`author_${index}_first_name`] && (
+                          <span className={styles.errorText}>{fieldErrors[`author_${index}_first_name`]}</span>
                         )}
                       </div>
                       <div className={styles.field}>
@@ -1164,86 +995,86 @@ export const SubmitPaperForm = () => {
                         <input
                           type="text"
                           placeholder="Middle name"
-                          value={coAuthor.middle_name}
-                          onChange={(e) => updateCoAuthor(index, 'middle_name', e.target.value)}
+                          value={author.middle_name}
+                          onChange={(e) => updateAuthor(index, 'middle_name', e.target.value)}
                           className={styles.input}
                         />
                       </div>
-                      <div className={`${styles.field} ${touched[`coauthor_${index}_last_name`] && fieldErrors[`coauthor_${index}_last_name`] ? styles.fieldError : ''}`}>
+                      <div className={`${styles.field} ${touched[`author_${index}_last_name`] && fieldErrors[`author_${index}_last_name`] ? styles.fieldError : ''}`}>
                         <label>Last Name *</label>
                         <input
                           type="text"
                           placeholder="Last name"
-                          value={coAuthor.last_name}
-                          onChange={(e) => updateCoAuthor(index, 'last_name', e.target.value)}
-                          onBlur={() => handleCoAuthorBlur(index, 'last_name')}
-                          className={`${styles.input} ${touched[`coauthor_${index}_last_name`] && fieldErrors[`coauthor_${index}_last_name`] ? styles.inputError : ''}`}
+                          value={author.last_name}
+                          onChange={(e) => updateAuthor(index, 'last_name', e.target.value)}
+                          onBlur={() => handleAuthorBlur(index, 'last_name')}
+                          className={`${styles.input} ${touched[`author_${index}_last_name`] && fieldErrors[`author_${index}_last_name`] ? styles.inputError : ''}`}
                         />
-                        {touched[`coauthor_${index}_last_name`] && fieldErrors[`coauthor_${index}_last_name`] && (
-                          <span className={styles.errorText}>{fieldErrors[`coauthor_${index}_last_name`]}</span>
+                        {touched[`author_${index}_last_name`] && fieldErrors[`author_${index}_last_name`] && (
+                          <span className={styles.errorText}>{fieldErrors[`author_${index}_last_name`]}</span>
                         )}
                       </div>
                     </div>
 
                     <div className={styles.fieldRow}>
-                      <div className={`${styles.field} ${touched[`coauthor_${index}_email`] && fieldErrors[`coauthor_${index}_email`] ? styles.fieldError : ''}`}>
+                      <div className={`${styles.field} ${touched[`author_${index}_email`] && fieldErrors[`author_${index}_email`] ? styles.fieldError : ''}`}>
                         <label>Email *</label>
                         <input
                           type="email"
                           placeholder="Email address"
-                          value={coAuthor.email}
-                          onChange={(e) => updateCoAuthor(index, 'email', e.target.value)}
-                          onBlur={() => handleCoAuthorBlur(index, 'email')}
-                          className={`${styles.input} ${touched[`coauthor_${index}_email`] && fieldErrors[`coauthor_${index}_email`] ? styles.inputError : ''}`}
+                          value={author.email}
+                          onChange={(e) => updateAuthor(index, 'email', e.target.value)}
+                          onBlur={() => handleAuthorBlur(index, 'email')}
+                          className={`${styles.input} ${touched[`author_${index}_email`] && fieldErrors[`author_${index}_email`] ? styles.inputError : ''}`}
                         />
-                        {touched[`coauthor_${index}_email`] && fieldErrors[`coauthor_${index}_email`] && (
-                          <span className={styles.errorText}>{fieldErrors[`coauthor_${index}_email`]}</span>
+                        {touched[`author_${index}_email`] && fieldErrors[`author_${index}_email`] && (
+                          <span className={styles.errorText}>{fieldErrors[`author_${index}_email`]}</span>
                         )}
                       </div>
-                      <div className={`${styles.field} ${touched[`coauthor_${index}_designation`] && fieldErrors[`coauthor_${index}_designation`] ? styles.fieldError : ''}`}>
+                      <div className={`${styles.field} ${touched[`author_${index}_designation`] && fieldErrors[`author_${index}_designation`] ? styles.fieldError : ''}`}>
                         <label>Designation *</label>
                         <input
                           type="text"
                           placeholder="Designation"
-                          value={coAuthor.designation}
-                          onChange={(e) => updateCoAuthor(index, 'designation', e.target.value)}
-                          onBlur={() => handleCoAuthorBlur(index, 'designation')}
-                          className={`${styles.input} ${touched[`coauthor_${index}_designation`] && fieldErrors[`coauthor_${index}_designation`] ? styles.inputError : ''}`}
+                          value={author.designation}
+                          onChange={(e) => updateAuthor(index, 'designation', e.target.value)}
+                          onBlur={() => handleAuthorBlur(index, 'designation')}
+                          className={`${styles.input} ${touched[`author_${index}_designation`] && fieldErrors[`author_${index}_designation`] ? styles.inputError : ''}`}
                         />
-                        {touched[`coauthor_${index}_designation`] && fieldErrors[`coauthor_${index}_designation`] && (
-                          <span className={styles.errorText}>{fieldErrors[`coauthor_${index}_designation`]}</span>
+                        {touched[`author_${index}_designation`] && fieldErrors[`author_${index}_designation`] && (
+                          <span className={styles.errorText}>{fieldErrors[`author_${index}_designation`]}</span>
                         )}
                       </div>
                     </div>
 
                     <div className={styles.fieldRow}>
-                      <div className={`${styles.field} ${touched[`coauthor_${index}_department`] && fieldErrors[`coauthor_${index}_department`] ? styles.fieldError : ''}`}>
+                      <div className={`${styles.field} ${touched[`author_${index}_department`] && fieldErrors[`author_${index}_department`] ? styles.fieldError : ''}`}>
                         <label>Department *</label>
                         <input
                           type="text"
                           placeholder="Department"
-                          value={coAuthor.department}
-                          onChange={(e) => updateCoAuthor(index, 'department', e.target.value)}
-                          onBlur={() => handleCoAuthorBlur(index, 'department')}
-                          className={`${styles.input} ${touched[`coauthor_${index}_department`] && fieldErrors[`coauthor_${index}_department`] ? styles.inputError : ''}`}
+                          value={author.department}
+                          onChange={(e) => updateAuthor(index, 'department', e.target.value)}
+                          onBlur={() => handleAuthorBlur(index, 'department')}
+                          className={`${styles.input} ${touched[`author_${index}_department`] && fieldErrors[`author_${index}_department`] ? styles.inputError : ''}`}
                         />
-                        {touched[`coauthor_${index}_department`] && fieldErrors[`coauthor_${index}_department`] && (
-                          <span className={styles.errorText}>{fieldErrors[`coauthor_${index}_department`]}</span>
+                        {touched[`author_${index}_department`] && fieldErrors[`author_${index}_department`] && (
+                          <span className={styles.errorText}>{fieldErrors[`author_${index}_department`]}</span>
                         )}
                       </div>
-                      <div className={`${styles.field} ${touched[`coauthor_${index}_organisation`] && fieldErrors[`coauthor_${index}_organisation`] ? styles.fieldError : ''}`}>
+                      <div className={`${styles.field} ${touched[`author_${index}_organisation`] && fieldErrors[`author_${index}_organisation`] ? styles.fieldError : ''}`}>
                         <label>Organisation *</label>
                         <OrganizationAutocomplete
-                          name={`coauthor_${index}_organisation`}
+                          name={`author_${index}_organisation`}
                           placeholder="Search for organization..."
-                          value={coAuthor.organisation}
-                          onChange={(value) => updateCoAuthor(index, 'organisation', value)}
-                          onSelect={() => handleCoAuthorBlur(index, 'organisation')}
+                          value={author.organisation}
+                          onChange={(value) => updateAuthor(index, 'organisation', value)}
+                          onSelect={() => handleAuthorBlur(index, 'organisation')}
                           required
-                          className={touched[`coauthor_${index}_organisation`] && fieldErrors[`coauthor_${index}_organisation`] ? styles.inputError : ''}
+                          className={touched[`author_${index}_organisation`] && fieldErrors[`author_${index}_organisation`] ? styles.inputError : ''}
                         />
-                        {touched[`coauthor_${index}_organisation`] && fieldErrors[`coauthor_${index}_organisation`] && (
-                          <span className={styles.errorText}>{fieldErrors[`coauthor_${index}_organisation`]}</span>
+                        {touched[`author_${index}_organisation`] && fieldErrors[`author_${index}_organisation`] && (
+                          <span className={styles.errorText}>{fieldErrors[`author_${index}_organisation`]}</span>
                         )}
                       </div>
                     </div>
@@ -1252,8 +1083,8 @@ export const SubmitPaperForm = () => {
                       <label className={styles.checkboxLabel}>
                         <input
                           type="checkbox"
-                          checked={coAuthor.is_corresponding}
-                          onChange={(e) => updateCoAuthor(index, 'is_corresponding', e.target.checked)}
+                          checked={author.is_corresponding}
+                          onChange={(e) => updateAuthor(index, 'is_corresponding', e.target.checked)}
                         />
                         <span>Corresponding Author</span>
                       </label>
@@ -1431,41 +1262,18 @@ export const SubmitPaperForm = () => {
               </div>
 
               {/* Author Details */}
-              <div className={styles.reviewSection}>
-                <h3>Primary Author</h3>
-                <div className={styles.reviewGrid}>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Name:</span>
-                    <span className={styles.reviewValue}>{formatAuthorName(formData.authorDetails)}</span>
-                  </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Designation:</span>
-                    <span className={styles.reviewValue}>{formData.authorDetails.designation || 'Not specified'}</span>
-                  </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Department:</span>
-                    <span className={styles.reviewValue}>{formData.authorDetails.department || 'Not specified'}</span>
-                  </div>
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Organisation:</span>
-                    <span className={styles.reviewValue}>{formData.authorDetails.organisation || 'Not specified'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Co-Authors */}
-              {formData.coAuthors.length > 0 && (
+              {formData.authors.length > 0 && (
                 <div className={styles.reviewSection}>
-                  <h3>Co-Authors ({formData.coAuthors.length})</h3>
-                  {formData.coAuthors.map((co, idx) => (
+                  <h3>Authors ({formData.authors.length})</h3>
+                  {formData.authors.map((author, idx) => (
                     <div key={idx} className={styles.coAuthorReview}>
-                      <strong>{idx + 1}. {formatAuthorName(co)}</strong>
-                      {co.is_corresponding && <span className={styles.correspondingBadge}>Corresponding</span>}
+                      <strong>{idx + 1}. {formatAuthorName(author)}</strong>
+                      {author.is_corresponding && <span className={styles.correspondingBadge}>Corresponding</span>}
                       <div className={styles.coAuthorDetails}>
-                        {co.designation && <span>{co.designation}</span>}
-                        {co.department && <span>{co.department}</span>}
-                        {co.organisation && <span>{co.organisation}</span>}
-                        {co.email && <span>{co.email}</span>}
+                        {author.designation && <span>{author.designation}</span>}
+                        {author.department && <span>{author.department}</span>}
+                        {author.organisation && <span>{author.organisation}</span>}
+                        {author.email && <span>{author.email}</span>}
                       </div>
                     </div>
                   ))}

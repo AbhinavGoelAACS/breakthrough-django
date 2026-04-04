@@ -202,7 +202,7 @@ export const acsApi = {
     listSubmissions: (skip = 0, limit = 20, statusFilter = '') =>
       apiService.get(`/api/v1/author/submissions?skip=${skip}&limit=${limit}${statusFilter ? `&status_filter=${statusFilter}` : ''}`),
     getSubmissionDetail: (paperId) => apiService.get(`/api/v1/author/submissions/${paperId}`),
-    submitPaper: ({ title, abstract, keywords, journal_id, title_page, blinded_manuscript, research_area, paper_type, message_to_editor, terms_accepted, author_details, co_authors }) => {
+    submitPaper: ({ title, abstract, keywords, journal_id, title_page, blinded_manuscript, research_area, paper_type, message_to_editor, terms_accepted, authors }) => {
       console.log('submitPaper called with:', { 
         title, 
         abstract: abstract?.substring(0, 50) + '...', 
@@ -215,8 +215,7 @@ export const acsApi = {
         research_area,
         paper_type,
         terms_accepted,
-        author_details,
-        co_authors_count: co_authors?.length || 0
+        authors_count: authors?.length || 0
       });
       
       if (!title_page || !(title_page instanceof File)) {
@@ -240,8 +239,7 @@ export const acsApi = {
       formData.append('paper_type', paper_type || 'Full Length Article');
       formData.append('message_to_editor', message_to_editor || '');
       formData.append('terms_accepted', terms_accepted ? 'true' : 'false');
-      formData.append('author_details', JSON.stringify(author_details || {}));
-      formData.append('co_authors', JSON.stringify(co_authors || []));
+      formData.append('authors', JSON.stringify(authors || []));
       
       // Debug FormData contents
       console.log('FormData entries:');

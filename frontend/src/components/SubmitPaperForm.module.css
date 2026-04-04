@@ -1232,6 +1232,20 @@
   font-size: 14px;
 }
 
+.authorOrderBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0d4715;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
 .coAuthorCount {
   font-weight: 400;
   color: #7f8c8d;
