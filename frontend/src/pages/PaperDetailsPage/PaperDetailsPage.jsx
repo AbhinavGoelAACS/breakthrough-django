@@ -191,7 +191,7 @@ const PaperDetailsPage = () => {
         iconColor: 'iconBlue',
         title: 'Paper Submitted',
         description: 'Initial manuscript submitted',
-        date: formatDateTimeIST(paper.submittedDate),
+        date: new Date(paper.submittedDate),
         showToAll: true
       });
     }
