@@ -486,16 +486,6 @@ class SubmitPaperView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Update user profile with primary author details
-        user.fname = author_data.get("first_name", user.fname)
-        user.mname = author_data.get("middle_name", user.mname)
-        user.lname = author_data.get("last_name", user.lname)
-        user.salutation = author_data.get("salutation", user.salutation)
-        user.designation = author_data.get("designation", user.designation)
-        user.department = author_data.get("department", user.department)
-        user.organisation = author_data.get("organisation", user.organisation)
-        user.save()
-
         backend_root = Path(__file__).resolve().parent.parent.parent
         upload_dir = backend_root / "uploads" / "papers" / f"user_{user.id}"
         upload_dir.mkdir(parents=True, exist_ok=True)
