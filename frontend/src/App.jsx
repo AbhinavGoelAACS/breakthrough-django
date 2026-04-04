@@ -54,6 +54,7 @@ import ReviewerAssignments from './pages/ReviewerAssignments/ReviewerAssignments
 import ReviewerInvitations from './pages/ReviewerInvitations/ReviewerInvitations.jsx';
 import ReviewerProfile from './pages/ReviewerProfile/ReviewerProfile.jsx';
 import ReviewerHistory from './pages/ReviewerHistory/ReviewerHistory.jsx';
+import ProfilePage from './pages/ProfilePage/ProfilePage.jsx';
 import ReviewerGuidelines from './pages/ReviewerGuidelines/ReviewerGuidelines.jsx';
 import ReviewPage from './pages/ReviewPage/ReviewPage.jsx';
 // Editor Decision Panel
@@ -248,6 +249,7 @@ function AppContent() {
               <Route path="submissions/:paperId/decision" element={<EditorDecisionPanel />} />
               <Route path="role-requests" element={<AdminRoleRequests />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Route>
 
@@ -258,6 +260,7 @@ function AppContent() {
               <Route path="submissions" element={<AuthorSubmissions />} />
               <Route path="submissions/:id" element={<PaperDetailsPage />} />
               <Route path="guidelines" element={<AuthorGuidelines />} />
+              <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Route>
 
@@ -276,6 +279,7 @@ function AppContent() {
               <Route path="publishing" element={<EditorPublishing />} />
               <Route path="reviewers" element={<EditorReviewerList />} />
               <Route path="guidelines" element={<EditorGuidelines />} />
+              <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Route>
 

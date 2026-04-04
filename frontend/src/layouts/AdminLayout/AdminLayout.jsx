@@ -23,7 +23,8 @@ const AdminLayout = () => {
     {
       title: 'System',
       items: [
-        { icon: 'settings', label: 'Settings', path: '/admin/settings' }
+        { icon: 'settings', label: 'Settings', path: '/admin/settings' },
+        { icon: 'person', label: 'Profile', path: '/admin/profile' }
       ]
     }
   ];

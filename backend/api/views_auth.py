@@ -180,6 +180,29 @@ class MeView(APIView):
         serializer = UserResponseSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def put(self, request):
+        user = request.user
+        allowed_fields = [
+            "fname", "lname", "mname", "title", "affiliation",
+            "specialization", "contact", "address", "salutation",
+            "designation", "department", "organisation",
+        ]
+        updated = []
+        for field in allowed_fields:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+                updated.append(field)
+
+        if not updated:
+            return Response(
+                {"detail": "No fields to update"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.save(update_fields=updated)
+        serializer = UserResponseSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class ChangePasswordView(APIView):
     def post(self, request):
