@@ -51,6 +51,8 @@ class PasswordChangeSerializer(serializers.Serializer):
 
 
 class UserResponseSerializer(serializers.ModelSerializer):
+    profile_picture = serializers.CharField(default=None, allow_null=True, required=False)
+
     class Meta:
         model = User
         fields = [
