@@ -8,7 +8,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import News, PaperPublished, Journal, Paper, User, PaperCoAuthor
+from .models import News, PaperPublished, Journal, Paper, User, PaperCoAuthor, OnlineReview, ReviewSubmission, PaperVersion
 from .serializers import ArticleDetailSerializer, ArticleListSerializer, NewsSerializer
 
 
@@ -133,6 +133,79 @@ class ArticleDetailView(APIView):
                     co_authors_json = json.dumps(authors_list)
                     author_display = ", ".join(a["name"] for a in authors_list)
 
+        # Build paper timeline from submission data
+        timeline = []
+        if article.paper_submission_id:
+            paper_for_timeline = paper if 'paper' in dir() and paper else Paper.objects.filter(id=article.paper_submission_id).first()
+            if paper_for_timeline:
+                # Submitted
+                if paper_for_timeline.added_on:
+                    timeline.append({
+                        "event": "Submitted",
+                        "date": paper_for_timeline.added_on.isoformat(),
+                        "icon": "upload_file",
+                    })
+
+                # Under review (first reviewer assigned)
+                first_review = OnlineReview.objects.filter(
+                    paper_id=str(paper_for_timeline.id)
+                ).order_by('assigned_on').first()
+                if first_review and first_review.assigned_on:
+                    timeline.append({
+                        "event": "Under Review",
+                        "date": first_review.assigned_on.isoformat(),
+                        "icon": "rate_review",
+                    })
+
+                # Revision requested
+                if paper_for_timeline.revision_requested_date:
+                    rev_label = "Revision Requested"
+                    if paper_for_timeline.revision_type:
+                        rev_label = f"{paper_for_timeline.revision_type.title()} Revision Requested"
+                    timeline.append({
+                        "event": rev_label,
+                        "date": paper_for_timeline.revision_requested_date.isoformat(),
+                        "icon": "edit_note",
+                    })
+
+                # Revision submitted (latest version upload after v1)
+                if paper_for_timeline.version_number and paper_for_timeline.version_number > 1:
+                    latest_version = PaperVersion.objects.filter(
+                        paper_id=paper_for_timeline.id,
+                        version_number=paper_for_timeline.version_number
+                    ).first()
+                    if latest_version and latest_version.uploaded_on:
+                        timeline.append({
+                            "event": "Revised Manuscript Submitted",
+                            "date": latest_version.uploaded_on.isoformat(),
+                            "icon": "description",
+                        })
+
+                # Accepted — use the last review completion or revision_requested_date as proxy
+                # For accepted papers, the acceptance date is typically just before publish date
+                last_completed_review = ReviewSubmission.objects.filter(
+                    paper_id=paper_for_timeline.id,
+                    status="submitted"
+                ).order_by('-submitted_at').first()
+                accepted_date = None
+                if last_completed_review and last_completed_review.submitted_at:
+                    accepted_date = last_completed_review.submitted_at.isoformat()
+
+                if accepted_date:
+                    timeline.append({
+                        "event": "Accepted",
+                        "date": accepted_date,
+                        "icon": "check_circle",
+                    })
+
+                # Published
+                if article.date:
+                    timeline.append({
+                        "event": "Published",
+                        "date": article.date.isoformat(),
+                        "icon": "publish",
+                    })
+
         data = {
             "id": article.id,
             "title": strip_html_tags(article.title) or "Untitled",
@@ -153,6 +226,7 @@ class ArticleDetailView(APIView):
             "affiliation": strip_html_tags(article.affiliation),
             "doi": strip_html_tags(article.doi),
             "co_authors_json": co_authors_json,
+            "timeline": timeline,
         }
         return Response(data, status=status.HTTP_200_OK)
 

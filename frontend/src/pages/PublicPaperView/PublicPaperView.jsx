@@ -282,6 +282,27 @@ const PublicPaperView = () => {
         </section>
       )}
 
+      {/* Article Timeline */}
+      {article?.timeline?.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            <span className="material-icons">timeline</span>
+            Article Timeline
+          </h2>
+          <div className={styles.timeline}>
+            {article.timeline.map((item, idx) => (
+              <div key={idx} className={styles.timelineItem}>
+                <span className={styles.timelineDot}>
+                  <span className="material-icons">{item.icon}</span>
+                </span>
+                <div className={styles.timelineEvent}>{item.event}</div>
+                <div className={styles.timelineDate}>{formatDate(item.date)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Citation */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>

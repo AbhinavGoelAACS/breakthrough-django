@@ -398,6 +398,73 @@
   text-align: justify;
 }
 
+/* Timeline */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timelineItem {
+  position: relative;
+  padding-bottom: 1.5rem;
+  padding-left: 1.25rem;
+}
+
+.timelineItem:last-child {
+  padding-bottom: 0;
+}
+
+/* Vertical line connecting dots */
+.timelineItem::before {
+  content: '';
+  position: absolute;
+  left: -2rem;
+  top: 0.5rem;
+  bottom: 0;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.timelineItem:last-child::before {
+  display: none;
+}
+
+/* The dot */
+.timelineDot {
+  position: absolute;
+  left: -2.55rem;
+  top: 0.125rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0066cc;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.timelineDot .material-icons {
+  font-size: 0.7rem;
+  color: white;
+}
+
+.timelineItem:last-child .timelineDot {
+  background: #16a34a;
+}
+
+.timelineEvent {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.timelineDate {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-top: 0.125rem;
+}
+
 /* Citation */
 .citation {
   display: flex;
