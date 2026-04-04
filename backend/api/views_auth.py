@@ -220,8 +220,9 @@ class MeView(APIView):
                 if old_path.exists():
                     old_path.unlink()
 
+            import time
             ext = FilePath(profile_pic.name).suffix.lower()
-            filename = f"user_{user.id}{ext}"
+            filename = f"user_{user.id}_{int(time.time())}{ext}"
             dest = upload_dir / filename
             with dest.open("wb") as f:
                 for chunk in profile_pic.chunks():
