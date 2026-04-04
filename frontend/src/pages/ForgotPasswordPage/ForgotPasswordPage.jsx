@@ -20,7 +20,7 @@ export const ForgotPasswordPage = () => {
 
     setLoading(true);
     try {
-      await apiService.post('/api/v1/auth/forgot-password', { email: email.trim() });
+      await apiService.post('/api/v1/auth/forgot-password', { email: email.trim() }, { skipAuth: true });
       setSent(true);
       success('Reset link sent! Check your email.');
     } catch (err) {

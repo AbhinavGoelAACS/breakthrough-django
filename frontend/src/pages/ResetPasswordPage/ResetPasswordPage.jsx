@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 import apiService from '../../api/apiService';
+import PasswordPolicyIndicator from '../../components/shared/PasswordPolicyIndicator';
+import { validatePasswordPolicy } from '../../utils/passwordPolicy';
 import '../AuthPages.css';
 import '../../components/auth/AuthForms.css';
 
@@ -27,8 +29,8 @@ export const ResetPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.new_password.length < 8) {
-      showError('Password must be at least 8 characters');
+    if (!validatePasswordPolicy(formData.new_password)) {
+      showError('Password does not meet the requirements');
       return;
     }
 
@@ -43,7 +45,7 @@ export const ResetPasswordPage = () => {
         token,
         new_password: formData.new_password,
         confirm_password: formData.confirm_password,
-      });
+      }, { skipAuth: true });
       setDone(true);
       success('Password reset successfully!');
     } catch (err) {
@@ -113,6 +115,7 @@ export const ResetPasswordPage = () => {
                   required
                   autoFocus
                 />
+                <PasswordPolicyIndicator password={formData.new_password} />
               </div>
 
               <div className="auth-form-group">

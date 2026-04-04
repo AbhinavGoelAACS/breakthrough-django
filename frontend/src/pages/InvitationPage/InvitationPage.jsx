@@ -4,6 +4,8 @@ import acsApi from '../../api/apiService.js';
 import Header from '../../components/header/Header';
 import Footer from '../../components/footer/Footer';
 import OrganizationAutocomplete from '../../components/OrganizationAutocomplete';
+import PasswordPolicyIndicator from '../../components/shared/PasswordPolicyIndicator';
+import { validatePasswordPolicy } from '../../utils/passwordPolicy';
 import { formatDateIST } from '../../utils/dateUtils';
 import './InvitationPage.css';
 
@@ -128,8 +130,8 @@ const InvitationPage = () => {
       setError('Please enter your first name');
       return;
     }
-    if (!regForm.password || regForm.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!regForm.password || !validatePasswordPolicy(regForm.password)) {
+      setError('Password does not meet the requirements');
       return;
     }
     if (regForm.password !== regForm.confirmPassword) {
@@ -328,10 +330,11 @@ const InvitationPage = () => {
                           id="password"
                           value={regForm.password}
                           onChange={(e) => setRegForm({...regForm, password: e.target.value})}
-                          placeholder="Minimum 6 characters"
-                          minLength={6}
+                          placeholder="Create a strong password"
+                          minLength={8}
                           required
                         />
+                        <PasswordPolicyIndicator password={regForm.password} />
                       </div>
                       
                       <div className="form-group">

@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 from jose import jwt
@@ -51,4 +52,19 @@ def verify_token(token: str):
         return jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     except Exception:
         return None
+
+
+def validate_password_policy(password: str) -> str | None:
+    """Return an error message if `password` violates the policy, else None."""
+    if len(password) < 8:
+        return "Password must be at least 8 characters"
+    if not re.search(r'[A-Z]', password):
+        return "Password must contain at least one uppercase letter"
+    if not re.search(r'[a-z]', password):
+        return "Password must contain at least one lowercase letter"
+    if not re.search(r'\d', password):
+        return "Password must contain at least one number"
+    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|`~]', password):
+        return "Password must contain at least one special character"
+    return None
 

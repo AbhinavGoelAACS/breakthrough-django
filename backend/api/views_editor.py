@@ -1620,8 +1620,12 @@ class RegisterAcceptInvitationView(APIView):
         if not fname or not password or not email:
             return Response({"detail": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
-        from .jwt_utils import hash_password
+        from .jwt_utils import hash_password, validate_password_policy
         from django.utils import timezone as tz
+
+        policy_error = validate_password_policy(password)
+        if policy_error:
+            return Response({"detail": policy_error}, status=status.HTTP_400_BAD_REQUEST)
 
         existing_user = User.objects.filter(email=email).first()
         if existing_user:

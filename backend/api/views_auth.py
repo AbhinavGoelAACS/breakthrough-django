@@ -8,6 +8,7 @@ from .jwt_utils import (
     create_access_token,
     create_refresh_token,
     hash_password,
+    validate_password_policy,
     verify_password,
     verify_token,
     JWT_SECRET_KEY,
@@ -348,6 +349,7 @@ class CompleteProfileView(APIView):
 
 
 class ForgotPasswordView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -427,6 +429,7 @@ class ForgotPasswordView(APIView):
 
 
 class ResetPasswordView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -455,6 +458,13 @@ class ResetPasswordView(APIView):
         if len(new_password) < 8:
             return Response(
                 {"detail": "Password must be at least 8 characters"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        policy_error = validate_password_policy(new_password)
+        if policy_error:
+            return Response(
+                {"detail": policy_error},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
