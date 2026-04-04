@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { renderAsync } from 'docx-preview';
 import acsApi from '../../api/apiService';
 import { API_BASE_URL } from '../../api/axios';
 import Pagination from '../../components/pagination/Pagination';
@@ -135,42 +136,117 @@ const EditorPublishing = () => {
     }
   };
 
-  // PDF Viewer state
+  // Document Viewer state
   const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
   const [pdfViewerTitle, setPdfViewerTitle] = useState('');
   const [pdfViewerDocs, setPdfViewerDocs] = useState([]);
   const [activePdfDoc, setActivePdfDoc] = useState(0);
+  const [docLoading, setDocLoading] = useState(false);
+  const [docType, setDocType] = useState(null); // 'pdf' | 'docx'
+  const [docBlobUrl, setDocBlobUrl] = useState(null);
+  const [docError, setDocError] = useState(null);
+  const docxContainerRef = useRef(null);
+
+  const fetchAndDisplayDoc = async (apiUrl) => {
+    setDocLoading(true);
+    setDocError(null);
+    setDocType(null);
+
+    // Clean up previous blob URL
+    if (docBlobUrl) {
+      URL.revokeObjectURL(docBlobUrl);
+      setDocBlobUrl(null);
+    }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(apiUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || `Failed to load document (${response.status})`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const blob = await response.blob();
+
+      if (contentType.includes('pdf')) {
+        const blobUrl = URL.createObjectURL(blob);
+        setDocBlobUrl(blobUrl);
+        setDocType('pdf');
+      } else if (contentType.includes('word') || contentType.includes('openxmlformats')) {
+        const arrayBuffer = await blob.arrayBuffer();
+        setDocType('docx');
+        // Render after React paints the container
+        requestAnimationFrame(() => {
+          if (docxContainerRef.current) {
+            docxContainerRef.current.innerHTML = '';
+            renderAsync(arrayBuffer, docxContainerRef.current, null, {
+              className: styles.docxWrapper,
+              inWrapper: true,
+              ignoreWidth: false,
+              ignoreHeight: true,
+            }).catch((err) => {
+              console.error('DOCX render error:', err);
+              setDocError('Failed to render document');
+            });
+          }
+        });
+      } else {
+        // Fallback: try as PDF
+        const blobUrl = URL.createObjectURL(blob);
+        setDocBlobUrl(blobUrl);
+        setDocType('pdf');
+      }
+    } catch (err) {
+      console.error('Error loading document:', err);
+      setDocError(err.message);
+    } finally {
+      setDocLoading(false);
+    }
+  };
 
   const handleViewPaper = (paperId, paperTitle) => {
     const token = localStorage.getItem('authToken');
     const docs = [
       {
         label: 'Blinded Manuscript',
-        url: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-blinded-manuscript?token=${token}`,
+        apiUrl: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-blinded-manuscript`,
+        openUrl: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-blinded-manuscript?token=${token}`,
         icon: 'article'
       },
       {
         label: 'Title Page',
-        url: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-title-page?token=${token}`,
+        apiUrl: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-title-page`,
+        openUrl: `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view-title-page?token=${token}`,
         icon: 'badge'
       }
     ];
     setPdfViewerDocs(docs);
     setActivePdfDoc(0);
-    setPdfViewerUrl(docs[0].url);
+    setPdfViewerUrl(docs[0].openUrl);
     setPdfViewerTitle(paperTitle || 'Paper');
+    fetchAndDisplayDoc(docs[0].apiUrl);
   };
 
   const closePdfViewer = () => {
+    if (docBlobUrl) URL.revokeObjectURL(docBlobUrl);
     setPdfViewerUrl(null);
     setPdfViewerTitle('');
     setPdfViewerDocs([]);
     setActivePdfDoc(0);
+    setDocLoading(false);
+    setDocType(null);
+    setDocBlobUrl(null);
+    setDocError(null);
   };
 
   const switchPdfDoc = (index) => {
     setActivePdfDoc(index);
-    setPdfViewerUrl(pdfViewerDocs[index].url);
+    setPdfViewerUrl(pdfViewerDocs[index].openUrl);
+    fetchAndDisplayDoc(pdfViewerDocs[index].apiUrl);
   };
 
   return (
@@ -538,11 +614,28 @@ const EditorPublishing = () => {
               </div>
             )}
             <div className={styles.pdfViewerBody}>
-              <iframe
-                src={pdfViewerUrl}
-                title="Paper PDF Viewer"
-                className={styles.pdfIframe}
-              />
+              {docLoading && (
+                <div className={styles.docLoading}>
+                  <span className="material-symbols-rounded">hourglass_empty</span>
+                  <p>Loading document...</p>
+                </div>
+              )}
+              {docError && !docLoading && (
+                <div className={styles.docError}>
+                  <span className="material-symbols-rounded">error_outline</span>
+                  <p>{docError}</p>
+                </div>
+              )}
+              {!docLoading && !docError && docType === 'pdf' && (
+                <iframe
+                  src={docBlobUrl}
+                  title="Paper PDF Viewer"
+                  className={styles.pdfIframe}
+                />
+              )}
+              {!docLoading && !docError && docType === 'docx' && (
+                <div ref={docxContainerRef} className={styles.docxContainer} />
+              )}
             </div>
           </div>
         </div>

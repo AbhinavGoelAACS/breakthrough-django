@@ -778,3 +778,55 @@
   height: 100%;
   border: none;
 }
+
+/* Document viewer states */
+.docLoading,
+.docError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #64748b;
+  padding: 40px;
+}
+
+.docLoading span,
+.docError span {
+  font-size: 40px;
+  animation: spin 1.2s linear infinite;
+}
+
+.docError span {
+  color: #dc2626;
+  animation: none;
+}
+
+.docError p {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.docxContainer {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: #f1f5f9;
+  padding: 16px;
+}
+
+.docxContainer :global(.docx-wrapper) {
+  background: #f1f5f9 !important;
+  padding: 16px 0 !important;
+}
+
+.docxContainer :global(.docx-wrapper > section.docx) {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12) !important;
+  margin: 0 auto 24px !important;
+}

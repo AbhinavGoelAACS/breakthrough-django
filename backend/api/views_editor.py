@@ -1259,6 +1259,8 @@ def _get_editor_paper_file(request, paper_id: int, file_field: str):
     content_type = content_type or 'application/octet-stream'
     response = FileResponse(open(full_path, 'rb'), content_type=content_type)
     response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+    # Allow this response to be embedded in iframes (exempt from XFrameOptionsMiddleware)
+    response.xframe_options_exempt = True
     return response
 
 

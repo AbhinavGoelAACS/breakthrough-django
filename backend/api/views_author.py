@@ -843,6 +843,7 @@ class AuthorPaperView(APIView):
         content_type = content_type or 'application/octet-stream'
         response = FileResponse(open(full_path, 'rb'), content_type=content_type)
         response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+        response.xframe_options_exempt = True
         return response
 
 
@@ -877,6 +878,7 @@ class AuthorPaperTitlePageView(APIView):
         content_type = content_type or 'application/octet-stream'
         response = FileResponse(open(full_path, 'rb'), content_type=content_type)
         response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+        response.xframe_options_exempt = True
         return response
 
 
@@ -911,6 +913,7 @@ class AuthorPaperBlindedManuscriptView(APIView):
         content_type = content_type or 'application/octet-stream'
         response = FileResponse(open(full_path, 'rb'), content_type=content_type)
         response['Content-Disposition'] = f'inline; filename="{os.path.basename(full_path)}"'
+        response.xframe_options_exempt = True
         return response
 
 
