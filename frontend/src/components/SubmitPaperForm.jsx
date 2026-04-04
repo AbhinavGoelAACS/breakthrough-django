@@ -911,6 +911,12 @@ export const SubmitPaperForm = () => {
               <h3 className={styles.authorSectionTitle}>
                 <span className="material-symbols-rounded">person</span>
                 Primary Author (You)
+                <span className={styles.tooltipWrapper}>
+                  <span className={`material-symbols-rounded ${styles.tooltipIcon}`}>info</span>
+                  <span className={styles.tooltipText}>
+                    These fields are pre-filled from your profile. You can edit them to enter a different primary author's details if needed.
+                  </span>
+                </span>
               </h3>
               
               <div className={styles.fieldRow}>
