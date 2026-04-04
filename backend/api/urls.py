@@ -6,6 +6,8 @@ from .views_auth import (
     MeView,
     RefreshTokenView,
     SignupView,
+    CoAuthorTokenStatusView,
+    CompleteProfileView,
 )
 from .views_journals import (
     IssuePapersView,
@@ -145,6 +147,17 @@ urlpatterns = [
         "api/v1/auth/change-password",
         ChangePasswordView.as_view(),
         name="auth-change-password",
+    ),
+    # Co-author profile completion endpoints
+    path(
+        "api/v1/auth/coauthor-token/<str:token>",
+        CoAuthorTokenStatusView.as_view(),
+        name="auth-coauthor-token-status",
+    ),
+    path(
+        "api/v1/auth/complete-profile/<str:token>",
+        CompleteProfileView.as_view(),
+        name="auth-complete-profile",
     ),
     # Journal endpoints
     path("api/v1/journals/", JournalListView.as_view(), name="journals-list"),

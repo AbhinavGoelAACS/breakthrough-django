@@ -311,3 +311,63 @@ def send_copyright_form_email(paper, author, deadline):
         plain_body=plain_body,
     )
     return success
+
+
+def send_coauthor_notification_email(coauthor_record, paper, submitting_author):
+    """
+    Send an email to a co-author notifying them they have been added to a paper.
+    Includes a link to complete their profile and set their password.
+    """
+    if not coauthor_record.email:
+        return False
+
+    ca_name = f"{coauthor_record.first_name or ''} {coauthor_record.last_name or ''}".strip() or "Co-Author"
+    submitter_name = f"{submitting_author.fname or ''} {submitting_author.lname or ''}".strip() or submitting_author.email
+    paper_id_display = paper.paper_code or paper.id
+    profile_url = f"{_get_frontend_url()}/complete-profile/{coauthor_record.invitation_token}"
+
+    subject = f"You have been added as a co-author: {paper.title}"
+
+    plain_body = (
+        f"Dear {ca_name},\n\n"
+        f"You have been added as a co-author on the following manuscript submitted to BreakThrough Publishers:\n\n"
+        f"Paper Title: {paper.title}\n"
+        f"Paper ID: {paper_id_display}\n"
+        f"Submitted by: {submitter_name}\n\n"
+        f"An account has been created for you on our platform. "
+        f"Please visit the link below to set your password and complete your profile:\n\n"
+        f"{profile_url}\n\n"
+        f"Once your profile is complete, you can log in to view the submission and track its progress.\n\n"
+        "If you believe this was sent in error, please contact the editorial office.\n\n"
+        "Best regards,\n"
+        "BreakThrough Publishers"
+    )
+
+    html_body = (
+        f"<p>Dear {ca_name},</p>"
+        f"<p>You have been added as a co-author on the following manuscript submitted to BreakThrough Publishers:</p>"
+        f"<table style='border-collapse:collapse;margin:16px 0;'>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Paper Title:</td><td>{paper.title}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Paper ID:</td><td>{paper_id_display}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Submitted by:</td><td>{submitter_name}</td></tr>"
+        f"</table>"
+        f"<p>An account has been created for you on our platform. "
+        f"Please click the button below to set your password and complete your profile:</p>"
+        f"<p style='margin:24px 0;'>"
+        f"<a href='{profile_url}' style='background-color:#2563eb;color:#fff;padding:12px 24px;"
+        f"text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;'>"
+        f"Complete Your Profile</a></p>"
+        f"<p>Once your profile is complete, you can log in to view the submission and track its progress.</p>"
+        f"<p>If you believe this was sent in error, please contact the editorial office.</p>"
+        f"<p>Best regards,<br/>BreakThrough Publishers</p>"
+    )
+
+    success, error = send_email(
+        recipient_email=coauthor_record.email,
+        subject=subject,
+        plain_body=plain_body,
+        html_body=html_body,
+    )
+    if not success:
+        logger.error("Failed to send co-author notification to %s: %s", coauthor_record.email, error)
+    return success

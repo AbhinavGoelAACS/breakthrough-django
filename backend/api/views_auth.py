@@ -11,7 +11,7 @@ from .jwt_utils import (
     verify_password,
     verify_token,
 )
-from .models import User
+from .models import User, PaperCoAuthor
 from .serializers import (
     PasswordChangeSerializer,
     RefreshTokenSerializer,
@@ -206,3 +206,140 @@ class ChangePasswordView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
+class CoAuthorTokenStatusView(APIView):
+    """GET: Validate a co-author invitation token and return pre-filled profile data."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, token):
+        coauthor = PaperCoAuthor.objects.filter(invitation_token=token).first()
+        if not coauthor:
+            return Response(
+                {"detail": "Invalid or expired token"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user = User.objects.filter(id=coauthor.user_id).first() if coauthor.user_id else None
+
+        return Response({
+            "email": coauthor.email,
+            "first_name": coauthor.first_name,
+            "middle_name": coauthor.middle_name or "",
+            "last_name": coauthor.last_name,
+            "salutation": coauthor.salutation or "",
+            "designation": coauthor.designation or "",
+            "department": coauthor.department or "",
+            "organisation": coauthor.organisation or "",
+            "has_set_password": False,
+            "affiliation": user.affiliation or "" if user else "",
+            "specialization": user.specialization or "" if user else "",
+            "contact": user.contact or "" if user else "",
+            "address": user.address or "" if user else "",
+        }, status=status.HTTP_200_OK)
+
+
+class CompleteProfileView(APIView):
+    """POST: Let a co-author set their password and complete their profile via invitation token."""
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, token):
+        coauthor = PaperCoAuthor.objects.filter(invitation_token=token).first()
+        if not coauthor:
+            return Response(
+                {"detail": "Invalid or expired token"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not coauthor.user_id:
+            return Response(
+                {"detail": "No user account linked to this invitation"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.filter(id=coauthor.user_id).first()
+        if not user:
+            return Response(
+                {"detail": "User account not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        data = request.data
+        password = data.get("password")
+        confirm_password = data.get("confirm_password")
+
+        if not password or not confirm_password:
+            return Response(
+                {"detail": "Password and confirm password are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if password != confirm_password:
+            return Response(
+                {"detail": "Passwords do not match"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(password) < 6:
+            return Response(
+                {"detail": "Password must be at least 6 characters"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Update password
+        user.password = hash_password(password)
+
+        # Update profile fields if provided
+        if data.get("first_name"):
+            user.fname = data["first_name"]
+        if data.get("last_name"):
+            user.lname = data["last_name"]
+        if data.get("middle_name") is not None:
+            user.mname = data["middle_name"]
+        if data.get("salutation"):
+            user.salutation = data["salutation"]
+        if data.get("designation"):
+            user.designation = data["designation"]
+        if data.get("department"):
+            user.department = data["department"]
+        if data.get("organisation"):
+            user.organisation = data["organisation"]
+        if data.get("affiliation"):
+            user.affiliation = data["affiliation"]
+        if data.get("specialization"):
+            user.specialization = data["specialization"]
+        if data.get("contact"):
+            user.contact = data["contact"]
+        if data.get("address"):
+            user.address = data["address"]
+
+        user.save()
+
+        # Invalidate the token so it can't be reused
+        coauthor.invitation_token = None
+        coauthor.save()
+
+        # Issue JWT tokens so the user is logged in immediately
+        access_token_expires = timedelta(hours=24)
+        access_token = create_access_token(
+            data={"sub": str(user.id), "email": user.email},
+            expires_delta=access_token_expires,
+        )
+        refresh_token = create_refresh_token(
+            data={"sub": str(user.id), "email": user.email},
+        )
+
+        resp = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "expires_in": 86400,
+            "id": user.id,
+            "email": user.email,
+            "role": user.role,
+            "fname": user.fname,
+            "lname": user.lname,
+            "affiliation": user.affiliation,
+            "organisation": user.organisation,
+        }
+        out = TokenResponseSerializer(resp)
+        return Response(out.data, status=status.HTTP_200_OK)

@@ -340,6 +340,7 @@ class PaperCoAuthor(models.Model):
 
     id = models.AutoField(primary_key=True)
     paper_id = models.IntegerField()
+    user_id = models.IntegerField(null=True, blank=True)
     salutation = models.CharField(max_length=20, null=True, blank=True)
     first_name = models.CharField(max_length=100)
     middle_name = models.CharField(max_length=100, null=True, blank=True)
@@ -350,6 +351,7 @@ class PaperCoAuthor(models.Model):
     organisation = models.CharField(max_length=255, null=True, blank=True)
     author_order = models.IntegerField(default=1)
     is_corresponding = models.BooleanField(default=False)
+    invitation_token = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
 
 

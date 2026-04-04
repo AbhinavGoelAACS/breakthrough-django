@@ -20,6 +20,7 @@ import { SignupPage } from './pages/SignupPage/SignupPage';
 import { DashboardPage } from './pages/DashboardPage/DashboardPage';
 import { SubmitPage } from './pages/SubmitPage/SubmitPage';
 import InvitationPage from './pages/InvitationPage/InvitationPage';
+import CompleteProfilePage from './pages/CompleteProfilePage/CompleteProfilePage';
 // Journal pages (accessed via /j/:shortForm route)
 import JournalHomePage from './pages/JournalHomePage/JournalHomePage';
 import JournalAboutPage from './pages/JournalAboutPage/JournalAboutPage';
@@ -226,6 +227,7 @@ function AppContent() {
           <Route path="/paper/:id" element={<ProtectedRoute><PaperDetailsPage /></ProtectedRoute>} />
           <Route path="/submit" element={<ProtectedRoute><SubmitPage /></ProtectedRoute>} />
           <Route path="/invitations/:token" element={<InvitationPage />} />
+          <Route path="/complete-profile/:token" element={<CompleteProfilePage />} />
 
           {/* Admin routes */}
           <Route path="/admin/*" element={<ProtectedAdminRoute />}>

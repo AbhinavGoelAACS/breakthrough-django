@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import uuid
 from pathlib import Path
 
 from django.http import FileResponse
@@ -22,6 +23,7 @@ from .models import (
     PaperVersion,
 )
 from .auth import JWTAuthentication
+from .jwt_utils import hash_password
 from django.db.models import Q
 
 
@@ -538,20 +540,71 @@ class SubmitPaperView(APIView):
             paper.save()
 
             for idx, ca in enumerate(co_authors_data):
+                ca_email = (ca.get("email") or "").strip().lower()
+                ca_user_id = None
+                invitation_token = None
+                is_new_user = False
+
+                if ca_email:
+                    # Check if user already exists
+                    existing_user = User.objects.filter(email=ca_email).first()
+                    if existing_user:
+                        ca_user_id = existing_user.id
+                    else:
+                        # Auto-register co-author with a random unusable password
+                        random_password = uuid.uuid4().hex
+                        from django.utils import timezone as tz
+                        new_user = User.objects.create(
+                            email=ca_email,
+                            password=hash_password(random_password),
+                            fname=ca.get("first_name", ""),
+                            lname=ca.get("last_name", ""),
+                            mname=ca.get("middle_name") or "",
+                            salutation=ca.get("salutation") or "",
+                            designation=ca.get("designation") or "",
+                            department=ca.get("department") or "",
+                            organisation=ca.get("organisation") or "",
+                            role="author",
+                            added_on=tz.now(),
+                        )
+                        ca_user_id = new_user.id
+                        is_new_user = True
+
+                    # Generate invitation token for profile completion link
+                    invitation_token = uuid.uuid4().hex
+
                 PaperCoAuthor.objects.create(
                     paper_id=paper.id,
+                    user_id=ca_user_id,
                     salutation=ca.get("salutation"),
                     first_name=ca.get("first_name", ""),
                     middle_name=ca.get("middle_name"),
                     last_name=ca.get("last_name", ""),
-                    email=ca.get("email"),
+                    email=ca_email or ca.get("email"),
                     designation=ca.get("designation"),
                     department=ca.get("department"),
                     organisation=ca.get("organisation"),
                     author_order=ca.get("author_order", idx + 2),
                     is_corresponding=ca.get("is_corresponding", False),
+                    invitation_token=invitation_token,
                     created_at=datetime.utcnow(),
                 )
+
+        # Send co-author notification emails (best-effort, outside transaction)
+        try:
+            from .services.email_service import send_coauthor_notification_email
+            for ca in co_authors_data:
+                ca_email = (ca.get("email") or "").strip().lower()
+                if ca_email:
+                    coauthor_record = PaperCoAuthor.objects.filter(
+                        paper_id=paper.id, email=ca_email
+                    ).first()
+                    if coauthor_record and coauthor_record.invitation_token:
+                        send_coauthor_notification_email(
+                            coauthor_record, paper, user
+                        )
+        except Exception:
+            pass
 
         # Send submission confirmation email (best-effort)
         email_sent = False
