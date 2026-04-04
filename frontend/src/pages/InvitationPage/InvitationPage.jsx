@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import acsApi from '../../api/apiService.js';
 import Header from '../../components/header/Header';
 import Footer from '../../components/footer/Footer';
+import OrganizationAutocomplete from '../../components/OrganizationAutocomplete';
 import { formatDateIST } from '../../utils/dateUtils';
 import './InvitationPage.css';
 
@@ -312,12 +313,11 @@ const InvitationPage = () => {
                       
                       <div className="form-group">
                         <label htmlFor="organization">Organization/Institution</label>
-                        <input
-                          type="text"
+                        <OrganizationAutocomplete
                           id="organization"
                           value={regForm.organization}
-                          onChange={(e) => setRegForm({...regForm, organization: e.target.value})}
-                          placeholder="Enter your organization"
+                          onChange={(value) => setRegForm({...regForm, organization: value})}
+                          placeholder="Search for your organization..."
                         />
                       </div>
                       

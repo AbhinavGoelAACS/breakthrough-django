@@ -1608,18 +1608,21 @@ class RegisterAcceptInvitationView(APIView):
 
         if invitation.status != "pending":
             return Response({"detail": f"Invitation already {invitation.status}"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        fname = request.data.get("fname")
-        lname = request.data.get("lname", "")
-        password = request.data.get("password")
-        email = request.data.get("email") # Needs email if ReviewerInvitation model doesn't store it tightly
-        
+
+        # Read from both request.data (POST body) and query_params
+        fname = request.data.get("fname") or request.query_params.get("fname")
+        lname = request.data.get("lname") or request.query_params.get("lname", "")
+        password = request.data.get("password") or request.query_params.get("password")
+        organization = request.data.get("organization") or request.query_params.get("organization", "")
+        # Use email from invitation — do not trust client-supplied email
+        email = invitation.reviewer_email
+
         if not fname or not password or not email:
             return Response({"detail": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
             
         existing_user = User.objects.filter(email=email).first()
         if existing_user:
-            return Response({"detail": "Account. Please login."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Account already exists. Please login."}, status=status.HTTP_400_BAD_REQUEST)
             
         from django.contrib.auth.hashers import make_password
         from django.utils import timezone as tz
@@ -1629,7 +1632,7 @@ class RegisterAcceptInvitationView(APIView):
             email=email,
             password=make_password(password),
             role="reviewer",
-            status="active",
+            organisation=organization,
             added_on=tz.now(),
         )
         
@@ -1654,6 +1657,7 @@ class RegisterAcceptInvitationView(APIView):
         return Response({
             "status": "registered_and_accepted",
             "user_id": new_user.id,
+            "user_email": new_user.email,
             "invitation_id": invitation.id,
         }, status=status.HTTP_200_OK)
 
