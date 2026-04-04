@@ -30,7 +30,9 @@ const EditorPublishing = () => {
     page_start: '',
     page_end: '',
     doi_suffix: '',
-    publication_date: new Date().toISOString().split('T')[0]
+    publication_date: new Date().toISOString().split('T')[0],
+    access_type: 'open',
+    references: ''
   });
   const [publishing, setPublishing] = useState(false);
   const [finalPaperFile, setFinalPaperFile] = useState(null);
@@ -77,7 +79,9 @@ const EditorPublishing = () => {
       page_start: '',
       page_end: '',
       doi_suffix: paper.paperCode || paper.paper_code || `paper-${paper.id}`,
-      publication_date: new Date().toISOString().split('T')[0]
+      publication_date: new Date().toISOString().split('T')[0],
+      access_type: 'open',
+      references: ''
     });
     setFinalPaperFile(null);
     setShowPublishModal(true);
@@ -92,7 +96,9 @@ const EditorPublishing = () => {
       page_start: '',
       page_end: '',
       doi_suffix: '',
-      publication_date: new Date().toISOString().split('T')[0]
+      publication_date: new Date().toISOString().split('T')[0],
+      access_type: 'open',
+      references: ''
     });
     setFinalPaperFile(null);
   };
@@ -120,6 +126,8 @@ const EditorPublishing = () => {
       if (publishData.page_end) formData.append('page_end', publishData.page_end);
       if (publishData.doi_suffix) formData.append('doi_suffix', publishData.doi_suffix);
       if (publishData.publication_date) formData.append('publication_date', publishData.publication_date);
+      formData.append('access_type', publishData.access_type || 'open');
+      if (publishData.references) formData.append('references', publishData.references);
       
       await acsApi.editor.publishPaperWithFile(selectedPaper.id, formData);
       
@@ -545,6 +553,56 @@ const EditorPublishing = () => {
                     onChange={(e) => setPublishData({...publishData, publication_date: e.target.value})}
                     disabled={publishing}
                   />
+                </div>
+
+                <div className={styles.formGroupFull}>
+                  <label htmlFor="access_type">Access Type *</label>
+                  <div className={styles.accessTypeOptions}>
+                    <label className={`${styles.accessTypeOption} ${publishData.access_type === 'open' ? styles.accessTypeSelected : ''}`}>
+                      <input
+                        type="radio"
+                        name="access_type"
+                        value="open"
+                        checked={publishData.access_type === 'open'}
+                        onChange={(e) => setPublishData({...publishData, access_type: e.target.value})}
+                        disabled={publishing}
+                      />
+                      <span className="material-symbols-rounded">lock_open</span>
+                      <div>
+                        <strong>Open Access</strong>
+                        <p>Freely available to all readers</p>
+                      </div>
+                    </label>
+                    <label className={`${styles.accessTypeOption} ${publishData.access_type === 'subscription' ? styles.accessTypeSelected : ''}`}>
+                      <input
+                        type="radio"
+                        name="access_type"
+                        value="subscription"
+                        checked={publishData.access_type === 'subscription'}
+                        onChange={(e) => setPublishData({...publishData, access_type: e.target.value})}
+                        disabled={publishing}
+                      />
+                      <span className="material-symbols-rounded">lock</span>
+                      <div>
+                        <strong>Subscription</strong>
+                        <p>Requires subscription to access</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className={styles.formGroupFull}>
+                  <label htmlFor="references">References</label>
+                  <textarea
+                    id="references"
+                    value={publishData.references}
+                    onChange={(e) => setPublishData({...publishData, references: e.target.value})}
+                    placeholder="Enter references, one per line..."
+                    rows="6"
+                    className={styles.referencesTextarea}
+                    disabled={publishing}
+                  />
+                  <p className={styles.hint}>Enter each reference on a new line. These will appear on the published article page.</p>
                 </div>
               </div>
             </div>

@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count, Q
 
-from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor, PaperVersion, CopyrightForm
+from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor, PaperVersion, CopyrightForm, PaperCoAuthor
 
 
 def _is_admin(user):
@@ -1087,12 +1087,42 @@ class EditorPublishPaperView(APIView):
 
         author_user = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by else None
 
+        access_type = request.data.get("access_type", "subscription")
+        if access_type not in ("open", "subscription"):
+            access_type = "subscription"
+        p_reference = request.data.get("references", "") or ""
+
+        # Build co_authors_json from submission data
+        import json
+        authors_list = []
+        if author_user:
+            authors_list.append({
+                "name": f"{author_user.fname or ''} {author_user.lname or ''}".strip() or "Unknown",
+                "email": author_user.email,
+                "affiliation": author_user.affiliation or author_user.organisation or "",
+                "is_primary": True,
+                "is_corresponding": True,
+            })
+        co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).defer('user_id', 'invitation_token')
+        for ca in co_authors:
+            authors_list.append({
+                "name": f"{ca.first_name or ''} {ca.middle_name or ''} {ca.last_name or ''}".strip(),
+                "email": ca.email or "",
+                "affiliation": ca.organisation or "",
+                "is_primary": False,
+                "is_corresponding": bool(ca.is_corresponding),
+            })
+
+        # Build full author string
+        author_str = ", ".join(a["name"] for a in authors_list) if authors_list else (paper.author or "")
+
         # Publish Paper
         published = PaperPublished.objects.create(
             paper_submission_id=paper.id,
             title=paper.title or "",
             abstract=paper.abstract or "",
-            author=paper.author or "",
+            p_reference=p_reference,
+            author=author_str,
             journal=journal.fld_journal_name or "",
             journal_id=journal.fld_id,
             volume=str(volume),
@@ -1101,11 +1131,12 @@ class EditorPublishPaperView(APIView):
             pages=pages,
             keyword=paper.keyword or "",
             language="English",
-            access_type="subscription",
+            access_type=access_type,
             doi=doi,
             doi_status="pending",
             email=author_user.email if author_user else "",
             affiliation=author_user.affiliation if author_user else "",
+            co_authors_json=json.dumps(authors_list) if authors_list else None,
         )
         
         paper.status = "published"
@@ -1425,11 +1456,41 @@ class EditorPublishPaperWithFileView(APIView):
 
         author_user = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by else None
 
+        access_type = request.data.get("access_type", "subscription")
+        if access_type not in ("open", "subscription"):
+            access_type = "subscription"
+        p_reference = request.data.get("references", "") or ""
+
+        # Build co_authors_json from submission data
+        import json
+        authors_list = []
+        if author_user:
+            authors_list.append({
+                "name": f"{author_user.fname or ''} {author_user.lname or ''}".strip() or "Unknown",
+                "email": author_user.email,
+                "affiliation": author_user.affiliation or author_user.organisation or "",
+                "is_primary": True,
+                "is_corresponding": True,
+            })
+        co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).defer('user_id', 'invitation_token')
+        for ca in co_authors:
+            authors_list.append({
+                "name": f"{ca.first_name or ''} {ca.middle_name or ''} {ca.last_name or ''}".strip(),
+                "email": ca.email or "",
+                "affiliation": ca.organisation or "",
+                "is_primary": False,
+                "is_corresponding": bool(ca.is_corresponding),
+            })
+
+        # Build full author string
+        author_str = ", ".join(a["name"] for a in authors_list) if authors_list else (paper.author or "")
+
         published = PaperPublished.objects.create(
             paper_submission_id=paper.id,
             title=paper.title or "",
             abstract=paper.abstract or "",
-            author=paper.author or "",
+            p_reference=p_reference,
+            author=author_str,
             journal=journal.fld_journal_name or "",
             journal_id=journal.fld_id,
             volume=str(volume),
@@ -1438,12 +1499,13 @@ class EditorPublishPaperWithFileView(APIView):
             pages=pages,
             keyword=paper.keyword or "",
             language="English",
-            access_type="subscription",
+            access_type=access_type,
             doi=doi,
             doi_status="pending",
             paper=relative_path,
             email=author_user.email if author_user else "",
             affiliation=author_user.affiliation if author_user else "",
+            co_authors_json=json.dumps(authors_list) if authors_list else None,
         )
         
         paper.status = "published"
