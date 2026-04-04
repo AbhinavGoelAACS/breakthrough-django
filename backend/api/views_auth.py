@@ -187,6 +187,46 @@ class MeView(APIView):
             "specialization", "contact", "address", "salutation",
             "designation", "department", "organisation",
         ]
+
+        # Handle profile picture file upload
+        profile_pic = request.FILES.get("profile_picture")
+        if profile_pic:
+            import os
+            from pathlib import Path as FilePath
+            from django.conf import settings
+
+            # Validate file type
+            allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+            if profile_pic.content_type not in allowed_types:
+                return Response(
+                    {"detail": "Invalid image type. Allowed: JPEG, PNG, GIF, WebP"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # Max 5MB
+            if profile_pic.size > 5 * 1024 * 1024:
+                return Response(
+                    {"detail": "Image size must not exceed 5MB"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            upload_dir = settings.MEDIA_ROOT / "profile_pictures"
+            upload_dir.mkdir(parents=True, exist_ok=True)
+
+            # Delete old profile picture if it exists
+            if user.profile_picture:
+                old_path = settings.MEDIA_ROOT.parent / user.profile_picture
+                if old_path.exists():
+                    old_path.unlink()
+
+            ext = FilePath(profile_pic.name).suffix.lower()
+            filename = f"user_{user.id}{ext}"
+            dest = upload_dir / filename
+            with dest.open("wb") as f:
+                for chunk in profile_pic.chunks():
+                    f.write(chunk)
+
+            user.profile_picture = f"media/profile_pictures/{filename}"
+            updated.append("profile_picture")
         updated = []
         for field in allowed_fields:
             if field in request.data:

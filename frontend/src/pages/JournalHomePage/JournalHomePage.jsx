@@ -170,10 +170,14 @@ const JournalHomePage = () => {
               {/* Chief Editor */}
               {editorialBoard.chief_editor && (
                 <div className="editorial-member-card chief">
-                  <div className="editorial-member-badge">Editor-in-Chief</div>
                   <div className="editorial-member-avatar">
-                    <span className="material-symbols-rounded">person</span>
+                    {editorialBoard.chief_editor.profile_picture ? (
+                      <img src={`/${editorialBoard.chief_editor.profile_picture}`} alt={editorialBoard.chief_editor.name} />
+                    ) : (
+                      <span className="material-symbols-rounded">person</span>
+                    )}
                   </div>
+                  <div className="editorial-member-badge">Editor-in-Chief</div>
                   <h3 className="editorial-member-name">{editorialBoard.chief_editor.name}</h3>
                   {editorialBoard.chief_editor.designation && (
                     <p className="editorial-member-designation">{editorialBoard.chief_editor.designation}</p>
@@ -183,7 +187,6 @@ const JournalHomePage = () => {
                   )}
                   {(editorialBoard.chief_editor.organisation || editorialBoard.chief_editor.affiliation) && (
                     <p className="editorial-member-org">
-                      <span className="material-symbols-rounded">business</span>
                       {editorialBoard.chief_editor.organisation || editorialBoard.chief_editor.affiliation}
                     </p>
                   )}
@@ -193,10 +196,14 @@ const JournalHomePage = () => {
               {/* Co-Editors */}
               {editorialBoard.co_editors?.map((editor, idx) => (
                 <div key={`co-${idx}`} className="editorial-member-card co-editor">
-                  <div className="editorial-member-badge co">Co-Editor</div>
                   <div className="editorial-member-avatar">
-                    <span className="material-symbols-rounded">person</span>
+                    {editor.profile_picture ? (
+                      <img src={`/${editor.profile_picture}`} alt={editor.name} />
+                    ) : (
+                      <span className="material-symbols-rounded">person</span>
+                    )}
                   </div>
+                  <div className="editorial-member-badge co">Co-Editor</div>
                   <h3 className="editorial-member-name">{editor.name}</h3>
                   {editor.designation && (
                     <p className="editorial-member-designation">{editor.designation}</p>
@@ -206,7 +213,6 @@ const JournalHomePage = () => {
                   )}
                   {(editor.organisation || editor.affiliation) && (
                     <p className="editorial-member-org">
-                      <span className="material-symbols-rounded">business</span>
                       {editor.organisation || editor.affiliation}
                     </p>
                   )}
@@ -216,10 +222,14 @@ const JournalHomePage = () => {
               {/* Section Editors */}
               {editorialBoard.section_editors?.map((editor, idx) => (
                 <div key={`sec-${idx}`} className="editorial-member-card section-editor">
-                  <div className="editorial-member-badge section">Section Editor</div>
                   <div className="editorial-member-avatar">
-                    <span className="material-symbols-rounded">person</span>
+                    {editor.profile_picture ? (
+                      <img src={`/${editor.profile_picture}`} alt={editor.name} />
+                    ) : (
+                      <span className="material-symbols-rounded">person</span>
+                    )}
                   </div>
+                  <div className="editorial-member-badge section">Section Editor</div>
                   <h3 className="editorial-member-name">{editor.name}</h3>
                   {editor.designation && (
                     <p className="editorial-member-designation">{editor.designation}</p>
@@ -229,7 +239,6 @@ const JournalHomePage = () => {
                   )}
                   {(editor.organisation || editor.affiliation) && (
                     <p className="editorial-member-org">
-                      <span className="material-symbols-rounded">business</span>
                       {editor.organisation || editor.affiliation}
                     </p>
                   )}

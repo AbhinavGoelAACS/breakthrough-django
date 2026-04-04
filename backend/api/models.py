@@ -23,6 +23,7 @@ class User(models.Model):
     designation = models.CharField(max_length=100, null=True, blank=True)
     department = models.CharField(max_length=200, null=True, blank=True)
     organisation = models.CharField(max_length=255, null=True, blank=True)
+    profile_picture = models.CharField(max_length=500, null=True, blank=True)
 
     @property
     def is_authenticated(self):

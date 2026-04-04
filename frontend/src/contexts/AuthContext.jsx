@@ -137,6 +137,7 @@ export const AuthProvider = ({ children }) => {
         role: response.role || response.user?.role,
         fname: response.fname || response.user?.fname,
         lname: response.lname || response.user?.lname,
+        profile_picture: response.profile_picture || response.user?.profile_picture || null,
       };
 
       authService.storeUser(userData);
@@ -172,6 +173,7 @@ export const AuthProvider = ({ children }) => {
         role: response.role || response.user?.role,
         fname: response.fname || response.user?.fname,
         lname: response.lname || response.user?.lname,
+        profile_picture: response.profile_picture || response.user?.profile_picture || null,
       };
 
       authService.storeUser(userData);
@@ -226,6 +228,7 @@ export const AuthProvider = ({ children }) => {
         role: response.role,
         fname: response.fname,
         lname: response.lname,
+        profile_picture: response.profile_picture || null,
       };
 
       authService.storeUser(userData);

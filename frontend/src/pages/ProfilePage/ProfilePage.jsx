@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { apiService } from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 import styles from './ProfilePage.module.css';
 
 const ProfilePage = () => {
   const { success, error: showError } = useToast();
+  const { refreshUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [saving, setSaving] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -55,10 +59,42 @@ const ProfilePage = () => {
       setEditData(data);
       setIsEditing(false);
       success('Profile updated successfully');
+      refreshUser();
     } catch (err) {
       showError(err.response?.data?.detail || 'Failed to update profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleProfilePicUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showError('Please select a valid image (JPEG, PNG, GIF, or WebP)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Image size must not exceed 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPic(true);
+      const formData = new FormData();
+      formData.append('profile_picture', file);
+      const data = await apiService.put('/api/v1/auth/me', formData);
+      setProfile(data);
+      setEditData(data);
+      success('Profile picture updated');
+      refreshUser();
+    } catch (err) {
+      showError(err.response?.data?.detail || 'Failed to upload profile picture');
+    } finally {
+      setUploadingPic(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -95,8 +131,35 @@ const ProfilePage = () => {
           {/* Profile Card */}
           <div className={styles.profileCard}>
             <div className={styles.profileHeader}>
-              <div className={styles.profileAvatar}>
-                {(profile.fname?.charAt(0) || profile.email?.charAt(0) || 'U').toUpperCase()}
+              <div className={styles.profileAvatarWrapper}>
+                {profile.profile_picture ? (
+                  <img 
+                    src={`/${profile.profile_picture}`} 
+                    alt={fullName} 
+                    className={styles.profileAvatarImg}
+                  />
+                ) : (
+                  <div className={styles.profileAvatar}>
+                    {(profile.fname?.charAt(0) || profile.email?.charAt(0) || 'U').toUpperCase()}
+                  </div>
+                )}
+                <button 
+                  className={styles.avatarUploadBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPic}
+                  title="Change profile picture"
+                >
+                  <span className="material-symbols-rounded">
+                    {uploadingPic ? 'hourglass_empty' : 'photo_camera'}
+                  </span>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleProfilePicUpload}
+                  style={{ display: 'none' }}
+                />
               </div>
               <div className={styles.profileInfo}>
                 <h2>{fullName}</h2>

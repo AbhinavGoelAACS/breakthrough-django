@@ -95,9 +95,9 @@ const CollapsibleSidebar = ({ sections = [], onLogout, user, portalName = "Porta
           )}
           {user && (
             <div className={styles.userInfo}>
-              {user.avatar ? (
+              {user.profile_picture ? (
                 <img 
-                  src={user.avatar} 
+                  src={`/${user.profile_picture}`} 
                   alt={user.name || 'User'} 
                   className={styles.avatar}
                 />
@@ -134,8 +134,8 @@ const CollapsibleSidebar = ({ sections = [], onLogout, user, portalName = "Porta
         <div className={styles.mobileUserSection}>
           {user && (
             <div className={styles.mobileUserInfo}>
-              {user.avatar ? (
-                <img src={user.avatar} alt={user.name} className={styles.avatar} />
+              {user.profile_picture ? (
+                <img src={`/${user.profile_picture}`} alt={user.name} className={styles.avatar} />
               ) : (
                 <div className={styles.avatarPlaceholder}>
                   <span className="material-symbols-rounded">person</span>

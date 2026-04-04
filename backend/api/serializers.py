@@ -69,6 +69,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "designation",
             "department",
             "organisation",
+            "profile_picture",
         ]
 
 
