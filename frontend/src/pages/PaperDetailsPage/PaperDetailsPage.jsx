@@ -917,7 +917,7 @@ const PaperDetailsPage = () => {
               </div>
               <div className={styles.metaItem}>
                 <p className={styles.metaLabel}>Submitted</p>
-                <p className={styles.metaValue}>{formatDateTime(paper.submittedDate)}</p>
+                <p className={styles.metaValue}>{formatDate(paper.submittedDate)}</p>
               </div>
               <div className={styles.metaItem}>
                 <p className={styles.metaLabel}>Primary Author</p>
