@@ -135,10 +135,20 @@ const EditorPublishing = () => {
     }
   };
 
-  const handleViewPaper = (paperId) => {
+  // PDF Viewer state
+  const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
+  const [pdfViewerTitle, setPdfViewerTitle] = useState('');
+
+  const handleViewPaper = (paperId, paperTitle) => {
     const token = localStorage.getItem('authToken');
-    window.open(`${API_BASE_URL}/api/v1/editor/papers/${paperId}/view?token=${token}`, '_blank');
-    info('Opening paper in new tab...', 2000);
+    const url = `${API_BASE_URL}/api/v1/editor/papers/${paperId}/view?token=${token}`;
+    setPdfViewerUrl(url);
+    setPdfViewerTitle(paperTitle || 'Paper');
+  };
+
+  const closePdfViewer = () => {
+    setPdfViewerUrl(null);
+    setPdfViewerTitle('');
   };
 
   return (
@@ -242,7 +252,7 @@ const EditorPublishing = () => {
                   </button>
                   <button
                     className={`${styles.btn} ${styles.btnSecondary}`}
-                    onClick={() => handleViewPaper(paper.id)}
+                    onClick={() => handleViewPaper(paper.id, paper.title)}
                   >
                     <span className="material-symbols-rounded">visibility</span>
                     View Paper
@@ -435,6 +445,41 @@ const EditorPublishing = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {pdfViewerUrl && (
+        <div className={styles.modalOverlay} onClick={closePdfViewer}>
+          <div className={styles.pdfViewerModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>
+                <span className="material-symbols-rounded">description</span>
+                {pdfViewerTitle}
+              </h2>
+              <div className={styles.pdfViewerActions}>
+                <a
+                  href={pdfViewerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${styles.btn} ${styles.btnOutline}`}
+                  title="Open in new tab"
+                >
+                  <span className="material-symbols-rounded">open_in_new</span>
+                </a>
+                <button className={styles.closeBtn} onClick={closePdfViewer}>
+                  <span className="material-symbols-rounded">close</span>
+                </button>
+              </div>
+            </div>
+            <div className={styles.pdfViewerBody}>
+              <iframe
+                src={pdfViewerUrl}
+                title="Paper PDF Viewer"
+                className={styles.pdfIframe}
+              />
             </div>
           </div>
         </div>

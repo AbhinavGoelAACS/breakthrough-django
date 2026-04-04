@@ -70,6 +70,9 @@ const PaperDetailsPage = () => {
   const [showRevisions, setShowRevisions] = useState(false);
   // Copyright form trigger (admin only)
   const [triggeringCopyright, setTriggeringCopyright] = useState(false);
+  // PDF Viewer state
+  const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
+  const [pdfViewerTitle, setPdfViewerTitle] = useState('');
 
   // Generate alerts based on paper status and data
   const getAlerts = () => {
@@ -650,12 +653,20 @@ const PaperDetailsPage = () => {
     }
   };
 
+  const openPdfViewer = (url, title) => {
+    setPdfViewerUrl(url);
+    setPdfViewerTitle(title || 'Document');
+  };
+
+  const closePdfViewer = () => {
+    setPdfViewerUrl(null);
+    setPdfViewerTitle('');
+  };
+
   const handleViewPaper = () => {
     if (paper?.id) {
-      // Get token for authentication (stored as 'authToken' in localStorage)
       const token = localStorage.getItem('authToken');
       
-      // Use different endpoint based on role
       let viewUrl;
       if (isAdmin()) {
         viewUrl = `${API_BASE_URL}/api/v1/admin/papers/${paper.id}/view`;
@@ -665,43 +676,36 @@ const PaperDetailsPage = () => {
         viewUrl = `${API_BASE_URL}/api/v1/author/submissions/${paper.id}/view`;
       }
       
-      // Open with token in URL for authentication
-      window.open(`${viewUrl}?token=${token}`, '_blank');
-      info('Opening file in new tab...', 2000);
+      openPdfViewer(`${viewUrl}?token=${token}`, paper.title || 'Paper');
     }
   };
 
   const handleViewTitlePage = () => {
     if (paper?.id) {
       const token = localStorage.getItem('authToken');
-      // Authors use author endpoint, editors/admins use editor endpoint
       const viewUrl = isAuthor() 
         ? `${API_BASE_URL}/api/v1/author/submissions/${paper.id}/view-title-page`
         : `${API_BASE_URL}/api/v1/editor/papers/${paper.id}/view-title-page`;
-      window.open(`${viewUrl}?token=${token}`, '_blank');
-      info('Opening title page in new tab...', 2000);
+      openPdfViewer(`${viewUrl}?token=${token}`, 'Title Page');
     }
   };
 
   const handleViewBlindedManuscript = () => {
     if (paper?.id) {
       const token = localStorage.getItem('authToken');
-      // Authors use author endpoint, editors/admins use editor endpoint
       const viewUrl = isAuthor() 
         ? `${API_BASE_URL}/api/v1/author/submissions/${paper.id}/view-blinded-manuscript`
         : `${API_BASE_URL}/api/v1/editor/papers/${paper.id}/view-blinded-manuscript`;
-      window.open(`${viewUrl}?token=${token}`, '_blank');
-      info('Opening blinded manuscript in new tab...', 2000);
+      openPdfViewer(`${viewUrl}?token=${token}`, 'Blinded Manuscript');
     }
   };
 
   const handleViewReviewReport = (reviewId, e) => {
-    e.stopPropagation(); // Prevent expanding/collapsing the review card
+    e.stopPropagation();
     if (paper?.id) {
       const token = localStorage.getItem('authToken');
       const viewUrl = `${API_BASE_URL}/api/v1/author/submissions/${paper.id}/reviews/${reviewId}/view-report`;
-      window.open(`${viewUrl}?token=${token}`, '_blank');
-      info('Opening review report in new tab...', 2000);
+      openPdfViewer(`${viewUrl}?token=${token}`, 'Review Report');
     }
   };
 
@@ -1797,6 +1801,41 @@ const PaperDetailsPage = () => {
           paperCode={paper.paperCode || paper.paper_code || `#${paper.id}`}
           paperTitle={paper.title}
         />
+      )}
+
+      {/* PDF Viewer Modal */}
+      {pdfViewerUrl && (
+        <div className={styles.pdfOverlay} onClick={closePdfViewer}>
+          <div className={styles.pdfViewerModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.pdfViewerHeader}>
+              <h2>
+                <span className="material-symbols-rounded">description</span>
+                {pdfViewerTitle}
+              </h2>
+              <div className={styles.pdfViewerActions}>
+                <a
+                  href={pdfViewerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.pdfNewTabBtn}
+                  title="Open in new tab"
+                >
+                  <span className="material-symbols-rounded">open_in_new</span>
+                </a>
+                <button className={styles.pdfCloseBtn} onClick={closePdfViewer}>
+                  <span className="material-symbols-rounded">close</span>
+                </button>
+              </div>
+            </div>
+            <div className={styles.pdfViewerBody}>
+              <iframe
+                src={pdfViewerUrl}
+                title="Document Viewer"
+                className={styles.pdfIframe}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

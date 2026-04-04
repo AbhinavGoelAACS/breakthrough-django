@@ -652,3 +652,51 @@
   color: #64748b;
   margin: 8px 0 0 0;
 }
+
+/* PDF Viewer Modal */
+.pdfViewerModal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1100px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pdfViewerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pdfViewerActions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: #ffffff;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.pdfViewerActions a:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pdfViewerBody {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pdfIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}

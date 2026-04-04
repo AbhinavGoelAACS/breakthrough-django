@@ -2053,3 +2053,118 @@
     flex-wrap: wrap;
   }
 }
+
+/* PDF Viewer Modal */
+.pdfOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.pdfViewerModal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1100px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pdfViewerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  border-radius: 16px 16px 0 0;
+}
+
+.pdfViewerHeader h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+.pdfViewerHeader h2 span {
+  font-size: 22px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.pdfViewerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pdfNewTabBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pdfNewTabBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pdfCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pdfCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pdfCloseBtn span {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.pdfViewerBody {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pdfIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}

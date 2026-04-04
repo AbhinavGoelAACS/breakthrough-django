@@ -1218,6 +1218,16 @@ class EditorPaperViewTitlePage(APIView):
         return _get_editor_paper_file(request, paper_id, "title_page")
 
 
+class EditorPaperViewFile(APIView):
+    """View the main paper file (paper.file field)."""
+    from api.auth import JWTQueryParamAuthentication
+    authentication_classes = [JWTQueryParamAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id: int):
+        return _get_editor_paper_file(request, paper_id, "file")
+
+
 class EditorPaperViewBlindedManuscript(APIView):
     from api.auth import JWTQueryParamAuthentication
     authentication_classes = [JWTQueryParamAuthentication]
