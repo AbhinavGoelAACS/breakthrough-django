@@ -9,6 +9,7 @@ const AuthorGuidelines = () => {
     { id: 'preparation', label: 'Manuscript Preparation', icon: 'edit_document' },
     { id: 'formatting', label: 'Formatting Guidelines', icon: 'format_align_left' },
     { id: 'submission', label: 'Submission Process', icon: 'upload_file' },
+    { id: 'access', label: 'Access & Fees', icon: 'lock_open' },
     { id: 'ethics', label: 'Publication Ethics', icon: 'verified' },
     { id: 'faq', label: 'FAQ', icon: 'help' },
   ];
@@ -47,8 +48,8 @@ const AuthorGuidelines = () => {
           </div>
           <div className={styles.overviewCard}>
             <span className="material-symbols-rounded">public</span>
-            <h3>Open Access</h3>
-            <p>Immediate open access publication</p>
+            <h3>Access Options</h3>
+            <p>Open Access &amp; Subscription models available</p>
           </div>
         </div>
       </div>
@@ -593,6 +594,191 @@ const AuthorGuidelines = () => {
                 Start Submission
               </Link>
             </div>
+          </div>
+        )}
+
+        {/* Access & Fees Tab */}
+        {activeTab === 'access' && (
+          <div className={styles.tabPane}>
+            <h2>Access Models & Fees</h2>
+            <p className={styles.intro}>
+              BreakThrough Publishers India offers two publication models to suit different author and institutional needs. Choose the option that works best for your research and funding situation.
+            </p>
+
+            <section className={styles.section}>
+              <h3>Open Access</h3>
+              <div className={styles.accessCard}>
+                <div className={styles.accessCardHeader}>
+                  <span className="material-symbols-rounded">lock_open</span>
+                  <div>
+                    <h4>Gold Open Access</h4>
+                    <span className={styles.accessBadge}>Recommended</span>
+                  </div>
+                </div>
+                <div className={styles.accessCardBody}>
+                  <p>Your article is freely available to everyone worldwide immediately upon publication, with no subscription or paywall required.</p>
+                  <div className={styles.accessFeatures}>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">public</span>
+                      <span>Immediate free access for all readers globally</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">copyright</span>
+                      <span>Published under Creative Commons CC BY 4.0 license</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">trending_up</span>
+                      <span>Higher visibility, citations, and societal impact</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">share</span>
+                      <span>Authors and readers may freely share and reuse the work with attribution</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">verified</span>
+                      <span>Compliant with most funder open access mandates (UGC, DST, ICMR, etc.)</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">speed</span>
+                      <span>Immediate indexing in databases and search engines</span>
+                    </div>
+                  </div>
+                  <div className={styles.feeInfo}>
+                    <h5>Article Processing Charges (APC)</h5>
+                    <p>Open access articles incur a one-time APC to cover editorial processing, peer review management, typesetting, hosting, and long-term archiving. The APC is payable only after your paper is accepted — there is no charge for submission or peer review.</p>
+                    <ul>
+                      <li>APC varies by journal — check the specific journal's page for current fees</li>
+                      <li>No submission or peer review fees</li>
+                      <li>Fee waivers and discounts available for authors from low-income and lower-middle-income countries</li>
+                      <li>Institutional and multi-article discount agreements available</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.section}>
+              <h3>Subscription Access</h3>
+              <div className={styles.accessCard}>
+                <div className={styles.accessCardHeader}>
+                  <span className="material-symbols-rounded">lock</span>
+                  <div>
+                    <h4>Subscription-Based Access</h4>
+                    <span className={styles.accessBadgeSub}>Traditional</span>
+                  </div>
+                </div>
+                <div className={styles.accessCardBody}>
+                  <p>Your article is published in a subscription journal. Readers access it through institutional or personal subscriptions. There is no cost to the author.</p>
+                  <div className={styles.accessFeatures}>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">money_off</span>
+                      <span>No article processing charges for authors</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">apartment</span>
+                      <span>Access available through institutional/library subscriptions</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">schedule</span>
+                      <span>Embargo period of 12 months, after which the article becomes freely accessible</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">description</span>
+                      <span>Authors retain the right to share accepted manuscript (post-print) on personal or institutional repositories after the embargo period</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">group</span>
+                      <span>Publisher holds exclusive distribution rights during the subscription period</span>
+                    </div>
+                    <div className={styles.accessFeature}>
+                      <span className="material-symbols-rounded">print</span>
+                      <span>Includes both print and online editions where available</span>
+                    </div>
+                  </div>
+                  <div className={styles.feeInfo}>
+                    <h5>Author Costs</h5>
+                    <p>There are no fees for authors under the subscription model. All costs are covered through institutional and individual subscriptions.</p>
+                    <ul>
+                      <li>No submission, review, or publication fees</li>
+                      <li>Optional paid extras: colour figures in print, reprints, or expedited processing</li>
+                      <li>Authors may request individual articles be made open access by paying the APC (hybrid open access)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.section}>
+              <h3>Comparison at a Glance</h3>
+              <div className={styles.comparisonTable}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Feature</th>
+                      <th>Open Access</th>
+                      <th>Subscription</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Reader access</td>
+                      <td>Free and immediate</td>
+                      <td>Via subscription or after embargo</td>
+                    </tr>
+                    <tr>
+                      <td>Cost to author</td>
+                      <td>APC (after acceptance)</td>
+                      <td>Free</td>
+                    </tr>
+                    <tr>
+                      <td>License</td>
+                      <td>Creative Commons CC BY 4.0</td>
+                      <td>Publisher copyright agreement</td>
+                    </tr>
+                    <tr>
+                      <td>Funder compliance</td>
+                      <td>Meets most OA mandates</td>
+                      <td>May require additional steps</td>
+                    </tr>
+                    <tr>
+                      <td>Visibility & citations</td>
+                      <td>Typically higher</td>
+                      <td>Dependent on subscriber base</td>
+                    </tr>
+                    <tr>
+                      <td>Embargo period</td>
+                      <td>None</td>
+                      <td>12 months</td>
+                    </tr>
+                    <tr>
+                      <td>Self-archiving</td>
+                      <td>Immediate (published version)</td>
+                      <td>After embargo (accepted manuscript)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className={styles.section}>
+              <h3>Fee Waivers & Discounts</h3>
+              <div className={styles.infoBox}>
+                <span className="material-symbols-rounded">redeem</span>
+                <div>
+                  <h4>We believe financial constraints should not prevent the publication of quality research.</h4>
+                  <ul>
+                    <li><strong>Full waivers:</strong> Available for corresponding authors from <a href="https://datahelpdesk.worldbank.org/knowledgebase/articles/906519" target="_blank" rel="noopener noreferrer">World Bank low-income countries</a></li>
+                    <li><strong>50% discount:</strong> For corresponding authors from lower-middle-income countries</li>
+                    <li><strong>Institutional agreements:</strong> Institutions with existing agreements may have pre-arranged waivers or discounts</li>
+                    <li><strong>Hardship waivers:</strong> Case-by-case consideration for authors who can demonstrate genuine financial hardship</li>
+                  </ul>
+                  <p className={styles.note}>
+                    <span className="material-symbols-rounded">info</span>
+                    Waiver decisions are made independently of editorial decisions. Apply for a waiver during submission — it will not affect the peer review process.
+                  </p>
+                </div>
+              </div>
+            </section>
           </div>
         )}
 

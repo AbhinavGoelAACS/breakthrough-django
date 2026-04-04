@@ -187,6 +187,9 @@ function AppContent() {
   // Check if we're on a journal route
   const isJournalRoute = location.pathname.startsWith('/j/');
 
+  // Check if we're on the invitation page (has its own Header/Footer)
+  const isInvitationRoute = location.pathname.startsWith('/invitations');
+
   const handleModalConfirm = () => {
     if (onConfirm) onConfirm();
     closeModal();
@@ -202,7 +205,7 @@ function AppContent() {
   return (
     <div className="App">
       {/* Only show global Navbar for non-portal and non-journal routes */}
-      {!isPortalRoute && !isJournalRoute && <Navbar sections={[]} portalName="" />}
+      {!isPortalRoute && !isJournalRoute && !isInvitationRoute && <Navbar sections={[]} portalName="" />}
       <main className={`app-main ${isPortalRoute ? 'portal-main' : ''}`}>
         <Routes>
           {/* Journal routes - using /j/:shortForm prefix */}
