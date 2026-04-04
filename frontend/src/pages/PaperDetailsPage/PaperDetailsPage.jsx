@@ -191,7 +191,7 @@ const PaperDetailsPage = () => {
         iconColor: 'iconBlue',
         title: 'Paper Submitted',
         description: 'Initial manuscript submitted',
-        date: new Date(paper.submittedDate),
+        date: formatDateTimeIST(paper.submittedDate),
         showToAll: true
       });
     }
@@ -209,7 +209,7 @@ const PaperDetailsPage = () => {
           description: (isEditor() || isAdmin()) 
             ? `${reviewer.reviewer_name || 'Reviewer'} assigned to review`
             : 'A reviewer has been assigned',
-          date: new Date(reviewer.assigned_on),
+          date: formatDateTimeIST(reviewer.assigned_on),
           showToAll: false, // Hide specific names from authors
           reviewerId: reviewer.reviewer_id,
           reviewerName: reviewer.reviewer_name
@@ -229,7 +229,7 @@ const PaperDetailsPage = () => {
           description: (isEditor() || isAdmin())
             ? `${reviewer.reviewer_name || 'Reviewer'} submitted their review`
             : 'A review has been submitted',
-          date: new Date(reviewer.submitted_at),
+          date: formatDateTimeIST(reviewer.submitted_at),
           showToAll: false,
           reviewerId: reviewer.reviewer_id,
           reviewerName: reviewer.reviewer_name
@@ -251,7 +251,7 @@ const PaperDetailsPage = () => {
         description: paper.editorComments 
           ? paper.editorComments.substring(0, 80) + (paper.editorComments.length > 80 ? '...' : '')
           : 'Please address the reviewer feedback',
-        date: new Date(paper.revisionRequestedDate),
+        date: formatDateTimeIST(paper.revisionRequestedDate),
         showToAll: true
       });
     }
@@ -267,7 +267,7 @@ const PaperDetailsPage = () => {
             iconColor: 'iconTeal',
             title: `Version ${version.version_number} Submitted`,
             description: version.change_summary || 'Revised manuscript submitted',
-            date: new Date(version.uploaded_on),
+            date: formatDateTimeIST(version.uploaded_on),
             showToAll: true,
             versionNumber: version.version_number
           });
@@ -284,7 +284,7 @@ const PaperDetailsPage = () => {
         iconColor: 'iconGreen',
         title: 'Paper Accepted',
         description: 'Your paper has been accepted for publication',
-        date: paper.acceptedOn || paper.accepted_on || paper._raw?.accepted_on || null,
+        date: formatDateTimeIST(paper.acceptedOn || paper.accepted_on || paper._raw?.accepted_on || null),
         showToAll: true
       });
     } else if (paper.status === 'rejected') {
