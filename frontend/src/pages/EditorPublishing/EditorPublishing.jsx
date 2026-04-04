@@ -144,8 +144,25 @@ const EditorPublishing = () => {
   const [docLoading, setDocLoading] = useState(false);
   const [docType, setDocType] = useState(null); // 'pdf' | 'docx'
   const [docBlobUrl, setDocBlobUrl] = useState(null);
+  const [docArrayBuffer, setDocArrayBuffer] = useState(null);
   const [docError, setDocError] = useState(null);
   const docxContainerRef = useRef(null);
+
+  // Render DOCX when arrayBuffer and container are ready
+  useEffect(() => {
+    if (docType === 'docx' && docArrayBuffer && docxContainerRef.current) {
+      docxContainerRef.current.innerHTML = '';
+      renderAsync(docArrayBuffer, docxContainerRef.current, null, {
+        className: styles.docxWrapper,
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: true,
+      }).catch((err) => {
+        console.error('DOCX render error:', err);
+        setDocError('Failed to render document');
+      });
+    }
+  }, [docType, docArrayBuffer]);
 
   const fetchAndDisplayDoc = async (apiUrl) => {
     setDocLoading(true);
@@ -178,22 +195,8 @@ const EditorPublishing = () => {
         setDocType('pdf');
       } else if (contentType.includes('word') || contentType.includes('openxmlformats')) {
         const arrayBuffer = await blob.arrayBuffer();
+        setDocArrayBuffer(arrayBuffer);
         setDocType('docx');
-        // Render after React paints the container
-        requestAnimationFrame(() => {
-          if (docxContainerRef.current) {
-            docxContainerRef.current.innerHTML = '';
-            renderAsync(arrayBuffer, docxContainerRef.current, null, {
-              className: styles.docxWrapper,
-              inWrapper: true,
-              ignoreWidth: false,
-              ignoreHeight: true,
-            }).catch((err) => {
-              console.error('DOCX render error:', err);
-              setDocError('Failed to render document');
-            });
-          }
-        });
       } else {
         // Fallback: try as PDF
         const blobUrl = URL.createObjectURL(blob);
@@ -240,6 +243,7 @@ const EditorPublishing = () => {
     setDocLoading(false);
     setDocType(null);
     setDocBlobUrl(null);
+    setDocArrayBuffer(null);
     setDocError(null);
   };
 
