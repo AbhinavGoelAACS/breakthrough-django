@@ -1625,7 +1625,26 @@ class RegisterAcceptInvitationView(APIView):
 
         existing_user = User.objects.filter(email=email).first()
         if existing_user:
-            # User already exists — link them to this invitation instead of rejecting
+            # User already exists — update their credentials and link to this invitation
+            existing_user.password = hash_password(password)
+            existing_user.fname = fname
+            existing_user.lname = lname
+            if organization:
+                existing_user.organisation = organization
+            if existing_user.role != "reviewer":
+                existing_user.role = "reviewer"
+            existing_user.save()
+
+            # Ensure reviewer role exists
+            from django.utils import timezone as tz2
+            if not UserRole.objects.filter(user=existing_user, role="reviewer").exists():
+                UserRole.objects.create(
+                    user=existing_user,
+                    role="reviewer",
+                    status="approved",
+                    requested_at=tz2.now(),
+                )
+
             new_user = existing_user
         else:
             new_user = User.objects.create(
