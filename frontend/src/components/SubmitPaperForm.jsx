@@ -797,7 +797,7 @@ export const SubmitPaperForm = () => {
                   </button>
                   
                   {journalDropdownOpen && (
-                    <div className={styles.journalDropdownMenu}>
+                    <div className={styles.journalDropdownMenu} onMouseDown={(e) => e.preventDefault()}>
                       <div 
                         className={styles.journalDropdownOption}
                         onClick={() => {
