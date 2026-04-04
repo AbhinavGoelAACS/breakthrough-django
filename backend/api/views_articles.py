@@ -146,55 +146,15 @@ class ArticleDetailView(APIView):
                         "icon": "upload_file",
                     })
 
-                # Under review (first reviewer assigned)
-                first_review = OnlineReview.objects.filter(
-                    paper_id=str(paper_for_timeline.id)
-                ).order_by('assigned_on').first()
-                if first_review and first_review.assigned_on:
-                    timeline.append({
-                        "event": "Under Review",
-                        "date": first_review.assigned_on.isoformat(),
-                        "icon": "rate_review",
-                    })
-
-                # Revision requested
-                if paper_for_timeline.revision_requested_date:
-                    rev_label = "Revision Requested"
-                    if paper_for_timeline.revision_type:
-                        rev_label = f"{paper_for_timeline.revision_type.title()} Revision Requested"
-                    timeline.append({
-                        "event": rev_label,
-                        "date": paper_for_timeline.revision_requested_date.isoformat(),
-                        "icon": "edit_note",
-                    })
-
-                # Revision submitted (latest version upload after v1)
-                if paper_for_timeline.version_number and paper_for_timeline.version_number > 1:
-                    latest_version = PaperVersion.objects.filter(
-                        paper_id=paper_for_timeline.id,
-                        version_number=paper_for_timeline.version_number
-                    ).first()
-                    if latest_version and latest_version.uploaded_on:
-                        timeline.append({
-                            "event": "Revised Manuscript Submitted",
-                            "date": latest_version.uploaded_on.isoformat(),
-                            "icon": "description",
-                        })
-
-                # Accepted — use the last review completion or revision_requested_date as proxy
-                # For accepted papers, the acceptance date is typically just before publish date
+                # Accepted — use the last review completion as proxy
                 last_completed_review = ReviewSubmission.objects.filter(
                     paper_id=paper_for_timeline.id,
                     status="submitted"
                 ).order_by('-submitted_at').first()
-                accepted_date = None
                 if last_completed_review and last_completed_review.submitted_at:
-                    accepted_date = last_completed_review.submitted_at.isoformat()
-
-                if accepted_date:
                     timeline.append({
                         "event": "Accepted",
-                        "date": accepted_date,
+                        "date": last_completed_review.submitted_at.isoformat(),
                         "icon": "check_circle",
                     })
 

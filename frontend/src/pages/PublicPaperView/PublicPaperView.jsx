@@ -133,40 +133,46 @@ const PublicPaperView = () => {
 
         <h1 className={styles.title}>{article?.title}</h1>
 
-        {/* Authors with Affiliations */}
+        {/* Authors — numbered names, hover to expand */}
         {structuredAuthors && structuredAuthors.length > 0 ? (
           <div className={styles.authorsSection}>
-            {structuredAuthors.map((author, idx) => (
-              <div key={idx} className={`${styles.authorCard} ${author.is_primary ? styles.primaryAuthor : styles.coAuthor}`}>
-                <div className={styles.authorName}>
-                  <span className="material-icons">{author.is_primary ? 'person' : 'group'}</span>
-                  <span>{author.name}</span>
+            <div className={styles.authorChips}>
+              {structuredAuthors.map((author, idx) => (
+                <span key={idx} className={styles.authorChip}>
+                  <span className={styles.authorNumber}>{idx + 1}</span>
+                  <span className={styles.authorNameText}>{author.name}</span>
                   {author.is_corresponding && (
-                    <span className={styles.correspondingBadge} title="Corresponding Author">*</span>
+                    <span className={styles.corrStar} title="Corresponding Author">*</span>
                   )}
-                </div>
-                {author.email && (
-                  <div className={styles.authorEmail}>
-                    <span className="material-icons">email</span>
-                    <span>{author.email}</span>
-                  </div>
-                )}
-                {author.affiliation && (
-                  <div className={styles.authorAffiliation}>
-                    <span className="material-icons">business</span>
-                    <span>{author.affiliation}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-            <p className={styles.correspondingNote}>* Corresponding Author</p>
+                  {/* Hover detail card */}
+                  <span className={styles.authorDetail}>
+                    <span className={styles.detailName}>{author.name}</span>
+                    {author.email && (
+                      <span className={styles.detailRow}>
+                        <span className="material-icons">email</span>
+                        <a href={`mailto:${author.email}`}>{author.email}</a>
+                      </span>
+                    )}
+                    {author.affiliation && (
+                      <span className={styles.detailRow}>
+                        <span className="material-icons">business</span>
+                        {author.affiliation}
+                      </span>
+                    )}
+                    {author.is_corresponding && (
+                      <span className={styles.detailCorr}>Corresponding Author</span>
+                    )}
+                  </span>
+                </span>
+              ))}
+            </div>
           </div>
         ) : authors.length > 0 ? (
-          <div className={styles.authors}>
+          <div className={styles.authorChips}>
             {authors.map((author, idx) => (
-              <span key={idx} className={styles.author}>
-                <span className="material-icons">person</span>
-                {author}
+              <span key={idx} className={styles.authorChip}>
+                <span className={styles.authorNumber}>{idx + 1}</span>
+                <span className={styles.authorNameText}>{author}</span>
               </span>
             ))}
           </div>
@@ -174,8 +180,7 @@ const PublicPaperView = () => {
 
         {/* Legacy Affiliation (if no structured authors) */}
         {!structuredAuthors && article?.affiliation && (
-          <p className={styles.affiliation}>
-            <span className="material-icons">business</span>
+          <p className={styles.legacyAffiliation}>
             {article.affiliation}
           </p>
         )}
