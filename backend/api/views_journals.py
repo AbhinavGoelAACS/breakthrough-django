@@ -616,8 +616,8 @@ class IssuePapersView(APIView):
         papers = (
             PaperPublished.objects.filter(
                 journal_id=journal_id,
-                volume=str(volume.id),
-                issue=str(issue.id),
+                volume=str(volume.volume_no),
+                issue=str(issue.issue_no),
             )
             .order_by("pages")
             .all()

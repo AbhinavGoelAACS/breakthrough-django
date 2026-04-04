@@ -156,7 +156,7 @@ const JournalArchivesPage = () => {
                         {issues[volume.volume_no].map((issue) => (
                           <Link
                             key={issue.issue_no}
-                            to={`/volume/${volume.volume_no}/issue/${issue.issue_no}`}
+                            to={`../volume/${volume.volume_no}/issue/${issue.issue_no}`}
                             className="issue-card"
                           >
                             <div className="issue-cover">

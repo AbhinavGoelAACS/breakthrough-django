@@ -97,8 +97,8 @@ const JournalHomePage = () => {
               )}
             </div>
             <div className="journal-hero-actions">
-              <Link to="/submit" className="btn-primary">Submit Manuscript</Link>
-              <Link to="/archives" className="btn-secondary">Browse Archives</Link>
+              <Link to="submit" className="btn-primary">Submit Manuscript</Link>
+              <Link to="archives" className="btn-secondary">Browse Archives</Link>
             </div>
           </div>
           {currentJournal.journal_image && (
@@ -150,7 +150,7 @@ const JournalHomePage = () => {
         <div className="section-container">
           <div className="section-header">
             <h2 className="section-title">Latest Articles</h2>
-            <Link to="/archives" className="view-all-link">View All</Link>
+            <Link to="archives" className="view-all-link">View All</Link>
           </div>
           
           {articlesLoading ? (
@@ -163,7 +163,7 @@ const JournalHomePage = () => {
               {latestArticles.map((article) => (
                 <article key={article.id} className="article-card">
                   <h3 className="article-title">
-                    <Link to={`/article/${article.id}`}>
+                    <Link to={`article/${article.id}`}>
                       {stripHtmlTags(article.title)}
                     </Link>
                   </h3>
@@ -181,7 +181,7 @@ const JournalHomePage = () => {
           ) : (
             <div className="no-articles">
               <p>No articles published yet. Be the first to submit!</p>
-              <Link to="/submit" className="btn-primary">Submit Manuscript</Link>
+              <Link to="submit" className="btn-primary">Submit Manuscript</Link>
             </div>
           )}
         </div>
@@ -193,13 +193,13 @@ const JournalHomePage = () => {
           <div className="section-container">
             <div className="section-header">
               <h2 className="section-title">Browse by Volume</h2>
-              <Link to="/archives" className="view-all-link">All Volumes</Link>
+            <Link to="archives" className="view-all-link">All Volumes</Link>
             </div>
             <div className="volumes-grid">
               {volumes.slice(0, 6).map((volume) => (
                 <Link 
                   key={volume.volume_no}
-                  to={`/archives?volume=${volume.volume_no}`}
+                  to={`archives?volume=${volume.volume_no}`}
                   className="volume-card"
                 >
                   <span className="volume-number">Volume {volume.volume_no}</span>
@@ -242,8 +242,8 @@ const JournalHomePage = () => {
             <h2>Ready to Contribute?</h2>
             <p>Submit your research to {currentJournal.short_form} and join our community of scholars.</p>
             <div className="cta-actions">
-              <Link to="/submit" className="btn-primary">Submit Manuscript</Link>
-              <Link to="/guidelines" className="btn-outline">View Guidelines</Link>
+              <Link to="submit" className="btn-primary">Submit Manuscript</Link>
+              <Link to="guidelines" className="btn-outline">View Guidelines</Link>
             </div>
           </div>
         </div>
