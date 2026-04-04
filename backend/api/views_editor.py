@@ -1228,9 +1228,13 @@ class EditorReadyToPublishView(APIView):
                 "id": paper.id,
                 "paper_code": paper.paper_code,
                 "title": paper.title,
+                "abstract": paper.abstract or "",
                 "author": author_name,
+                "authorName": author_name,
                 "journal": journal_name,
+                "journalName": journal_name,
                 "journal_id": paper.journal,
+                "submitted_date": paper.added_on.isoformat() if paper.added_on else None,
                 "accepted_date": paper.added_on.isoformat() if paper.added_on else None,
                 "copyright_status": copyright_status,
             })
@@ -1618,13 +1622,15 @@ class RegisterAcceptInvitationView(APIView):
             return Response({"detail": "Account. Please login."}, status=status.HTTP_400_BAD_REQUEST)
             
         from django.contrib.auth.hashers import make_password
+        from django.utils import timezone as tz
         new_user = User.objects.create(
             fname=fname,
             lname=lname,
             email=email,
             password=make_password(password),
             role="reviewer",
-            status="active"
+            status="active",
+            added_on=tz.now(),
         )
         
         UserRole.objects.create(

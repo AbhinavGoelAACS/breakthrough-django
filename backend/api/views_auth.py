@@ -88,6 +88,7 @@ class SignupView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        from django.utils import timezone
         user = User.objects.create(
             email=data["email"],
             password=hash_password(data["password"]),
@@ -100,6 +101,7 @@ class SignupView(APIView):
             contact=data.get("contact"),
             address=data.get("address"),
             role="author",
+            added_on=timezone.now(),
         )
 
         access_token_expires = timedelta(hours=24)

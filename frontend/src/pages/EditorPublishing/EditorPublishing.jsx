@@ -332,7 +332,7 @@ const EditorPublishing = () => {
                   </div>
                   <div className={styles.infoItem}>
                     <span className="material-symbols-rounded">calendar_today</span>
-                    <span>Submitted: {formatDateIST(paper.submitted_date || paper.submittedDate || paper.acceptedDate || paper.updated_at)}</span>
+                    <span>Submitted: {formatDateIST(paper.submitted_date || paper.accepted_date)}</span>
                   </div>
                 </div>
 
