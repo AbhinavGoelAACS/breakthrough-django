@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count, Q
 
-from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor, PaperVersion
+from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor, PaperVersion, CopyrightForm
 
 
 def _is_admin(user):
@@ -971,6 +971,43 @@ class EditorPaperDecisionView(APIView):
         except Exception:
             pass
 
+        # Auto-create copyright form and send email when paper is accepted
+        copyright_created = False
+        if decision == "accepted":
+            try:
+                author = None
+                if paper.added_by and paper.added_by.isdigit():
+                    author = User.objects.filter(id=int(paper.added_by)).first()
+                if author:
+                    from .models import CopyrightForm as CopyrightFormModel
+                    existing = CopyrightFormModel.objects.filter(paper_id=paper.id, author_id=author.id).first()
+                    if not existing or existing.status != "completed":
+                        deadline = timezone.now() + timedelta(hours=48)
+                        if existing:
+                            existing.status = "pending"
+                            existing.deadline = deadline
+                            existing.reminder_count = 0
+                            existing.save()
+                        else:
+                            CopyrightFormModel.objects.create(
+                                paper_id=paper.id,
+                                author_id=author.id,
+                                status="pending",
+                                deadline=deadline,
+                                author_name=f"{author.fname or ''} {author.lname or ''}".strip(),
+                                author_affiliation="",
+                                created_at=timezone.now(),
+                            )
+                        copyright_created = True
+                        # Send copyright form email
+                        try:
+                            from .services.email_service import send_copyright_form_email
+                            send_copyright_form_email(paper, author, deadline)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
         return Response({
             "success": True,
             "paper_id": paper.id,
@@ -980,7 +1017,8 @@ class EditorPaperDecisionView(APIView):
             "editor_comments": paper.editor_comments,
             "revision_type": revision_type if decision == "correction" else None,
             "revision_deadline": paper.revision_deadline.isoformat() if getattr(paper, 'revision_deadline', None) else None,
-            "email_notification_queued": email_sent
+            "email_notification_queued": email_sent,
+            "copyright_form_created": copyright_created
         }, status=status.HTTP_200_OK)
 
 
@@ -1002,6 +1040,11 @@ class EditorPublishPaperView(APIView):
                 
         if paper.status != "accepted":
             return Response({"detail": f"Only accepted papers can be published. Current status: {paper.status}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check copyright form is completed
+        copyright_form = CopyrightForm.objects.filter(paper_id=paper.id, status="completed").first()
+        if not copyright_form:
+            return Response({"detail": "Cannot publish: Copyright transfer form has not been completed by the author."}, status=status.HTTP_400_BAD_REQUEST)
             
         existing_published = PaperPublished.objects.filter(paper_submission_id=paper.id).first()
         if existing_published:
@@ -1151,11 +1194,20 @@ class EditorReadyToPublishView(APIView):
         for paper in papers:
             journal_name = Journal.objects.filter(fld_id=paper.journal).values_list('fld_journal_name', flat=True).first() if paper.journal else "Unknown"
             author_name = paper.author or "Unknown"
+            author_id = None
             if paper.added_by and paper.added_by.isdigit():
-                author = User.objects.filter(id=int(paper.added_by)).first()
-                if author:
-                    author_name = f"{author.fname} {author.lname or ''}".strip()
-                    
+                author_id = int(paper.added_by)
+                author_obj = User.objects.filter(id=author_id).first()
+                if author_obj:
+                    author_name = f"{author_obj.fname} {author_obj.lname or ''}".strip()
+
+            # Check copyright form status
+            copyright_status = "not_created"
+            if author_id:
+                copyright_form = CopyrightForm.objects.filter(paper_id=paper.id, author_id=author_id).first()
+                if copyright_form:
+                    copyright_status = copyright_form.status
+
             papers_list.append({
                 "id": paper.id,
                 "paper_code": paper.paper_code,
@@ -1164,6 +1216,7 @@ class EditorReadyToPublishView(APIView):
                 "journal": journal_name,
                 "journal_id": paper.journal,
                 "accepted_date": paper.added_on.isoformat() if paper.added_on else None,
+                "copyright_status": copyright_status,
             })
             
         return Response({
@@ -1283,6 +1336,11 @@ class EditorPublishPaperWithFileView(APIView):
                 
         if paper.status != "accepted":
             return Response({"detail": f"Only accepted papers can be published. Current status: {paper.status}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check copyright form is completed
+        copyright_form = CopyrightForm.objects.filter(paper_id=paper.id, status="completed").first()
+        if not copyright_form:
+            return Response({"detail": "Cannot publish: Copyright transfer form has not been completed by the author."}, status=status.HTTP_400_BAD_REQUEST)
             
         existing_published = PaperPublished.objects.filter(paper_submission_id=paper.id).first()
         if existing_published:

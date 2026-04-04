@@ -269,3 +269,45 @@ def notify_editors_new_submission(paper, author, journal):
             any_sent = True
 
     return any_sent
+
+
+def send_copyright_form_email(paper, author, deadline):
+    """
+    Send an email to the author notifying them to complete the copyright transfer form.
+    """
+    if not author or not author.email:
+        return False
+
+    author_name = f"{author.fname or ''} {author.lname or ''}".strip() or "Author"
+    paper_id_display = paper.paper_code or paper.id
+    dashboard_url = f"{_get_frontend_url()}/author"
+    deadline_str = deadline.strftime("%B %d, %Y at %I:%M %p") if deadline else "48 hours from now"
+
+    subject = f"Action Required: Copyright Transfer Form – {paper.title}"
+
+    plain_body = (
+        f"Dear {author_name},\n\n"
+        f"Congratulations! Your manuscript \"{paper.title}\" (ID: {paper_id_display}) "
+        f"has been accepted for publication.\n\n"
+        f"To proceed with publication, you must complete the Copyright Transfer Form "
+        f"within the specified deadline.\n\n"
+        f"Deadline: {deadline_str}\n\n"
+        f"Please log in to your Author Dashboard to complete the form:\n"
+        f"{dashboard_url}\n\n"
+        f"The form requires you to:\n"
+        f"  - Confirm that the work is original\n"
+        f"  - Declare no conflicts of interest\n"
+        f"  - Transfer copyright to the publisher\n"
+        f"  - Confirm all co-authors have consented\n"
+        f"  - Provide your digital signature\n\n"
+        f"If the form is not completed by the deadline, your publication may be delayed.\n\n"
+        "Best regards,\n"
+        "BreakThrough Publishers"
+    )
+
+    success, _ = send_email(
+        recipient_email=author.email,
+        subject=subject,
+        plain_body=plain_body,
+    )
+    return success

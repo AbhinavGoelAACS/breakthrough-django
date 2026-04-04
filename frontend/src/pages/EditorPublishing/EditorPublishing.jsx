@@ -264,10 +264,37 @@ const EditorPublishing = () => {
                   </p>
                 )}
 
+                {/* Copyright Status */}
+                <div className={styles.copyrightStatus}>
+                  {paper.copyright_status === 'completed' ? (
+                    <span className={styles.copyrightCompleted}>
+                      <span className="material-symbols-rounded">check_circle</span>
+                      Copyright Form Signed
+                    </span>
+                  ) : paper.copyright_status === 'pending' ? (
+                    <span className={styles.copyrightPending}>
+                      <span className="material-symbols-rounded">schedule</span>
+                      Copyright Form Pending
+                    </span>
+                  ) : paper.copyright_status === 'expired' ? (
+                    <span className={styles.copyrightExpired}>
+                      <span className="material-symbols-rounded">warning</span>
+                      Copyright Form Expired
+                    </span>
+                  ) : (
+                    <span className={styles.copyrightNotSent}>
+                      <span className="material-symbols-rounded">error_outline</span>
+                      Copyright Form Not Sent
+                    </span>
+                  )}
+                </div>
+
                 <div className={styles.paperActions}>
                   <button
                     className={`${styles.btn} ${styles.btnPrimary}`}
                     onClick={() => openPublishModal(paper)}
+                    disabled={paper.copyright_status !== 'completed'}
+                    title={paper.copyright_status !== 'completed' ? 'Copyright form must be completed before publishing' : ''}
                   >
                     <span className="material-symbols-rounded">publish</span>
                     Publish Paper

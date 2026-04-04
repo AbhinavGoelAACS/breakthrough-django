@@ -225,6 +225,45 @@
   border-radius: 8px;
 }
 
+/* Copyright Status */
+.copyrightStatus {
+  margin-bottom: 12px;
+}
+
+.copyrightStatus span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.copyrightStatus .material-symbols-rounded {
+  font-size: 16px;
+}
+
+.copyrightCompleted {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.copyrightPending {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.copyrightExpired {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.copyrightNotSent {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
 .paperActions {
   display: flex;
   gap: 12px;
