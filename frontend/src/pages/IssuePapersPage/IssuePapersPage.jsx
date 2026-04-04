@@ -177,11 +177,11 @@ const IssuePapersPage = () => {
             <div className="papers-list">
               {papers.map((paper, index) => (
                 <Link 
-                  key={paper.id} 
-                  to={`/article/${paper.id}`}
+                  key={paper.paperCode || paper.id} 
+                  to={`/article/${paper.paperCode || paper.id}`}
                   className="paper-card"
                 >
-                  <div className="paper-number">{index + 1}</div>
+                  <div className="paper-number">{paper.paperCode || (index + 1)}</div>
                   <div className="paper-content">
                     <h3 className="paper-title">{paper.title}</h3>
                     <AuthorChips

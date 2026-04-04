@@ -5,7 +5,7 @@ import { useToast } from '../../hooks/useToast';
 import { useModal } from '../../hooks/useModal';
 import { useRole } from '../../hooks/useRole';
 import { acsApi } from '../../api/apiService';
-import Breadcrumbs from '../../components/breadcrumbs/Breadcrumbs';
+// import Breadcrumbs from '../../components/breadcrumbs/Breadcrumbs';
 import './JournalDetailPage.css';
 
 // Searchable Dropdown Component for Editor Selection
@@ -677,7 +677,7 @@ const JournalDetailPage = () => {
 
   return (
     <div className="journal-detail-page">
-      <Breadcrumbs items={breadcrumbItems} />
+      {/* <Breadcrumbs items={breadcrumbItems} /> */}
       
       {/* Edit Mode */}
       {isEditMode ? (

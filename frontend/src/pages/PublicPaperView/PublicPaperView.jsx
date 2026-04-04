@@ -6,7 +6,7 @@ import { formatDateIST } from '../../utils/dateUtils';
 import styles from './PublicPaperView.module.css';
 
 const PublicPaperView = () => {
-  const { id } = useParams();
+  const { id: paperCode } = useParams();
   const navigate = useNavigate();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,7 @@ const PublicPaperView = () => {
   const fetchArticle = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await acsApi.articles.getDetail(id);
+      const data = await acsApi.articles.getDetail(paperCode);
       setArticle(data);
       setError(null);
     } catch (err) {
@@ -24,7 +24,7 @@ const PublicPaperView = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [paperCode]);
 
   useEffect(() => {
     fetchArticle();

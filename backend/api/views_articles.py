@@ -90,14 +90,22 @@ class LatestArticlesView(APIView):
 class ArticleDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request, article_id: int):
-        try:
-            article = PaperPublished.objects.get(id=article_id)
-        except PaperPublished.DoesNotExist:
-            return Response(
-                {"detail": f"Article with ID {article_id} not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+    def get(self, request, article_id):
+        # Try to fetch by numeric ID, then by paper_code
+        article = None
+        if str(article_id).isdigit():
+            try:
+                article = PaperPublished.objects.get(id=int(article_id))
+            except PaperPublished.DoesNotExist:
+                pass
+        if not article:
+            try:
+                article = PaperPublished.objects.get(paper_code=article_id)
+            except PaperPublished.DoesNotExist:
+                return Response(
+                    {"detail": f"Article with ID or code '{article_id}' not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
         # Build co_authors_json dynamically if not stored
         co_authors_json = article.co_authors_json

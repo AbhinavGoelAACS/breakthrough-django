@@ -258,6 +258,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
         model = PaperPublished
         fields = [
             "id",
+            "paper_code",
             "title",
             "abstract",
             "author",
@@ -279,6 +280,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         model = PaperPublished
         fields = [
             "id",
+            "paper_code",
             "title",
             "abstract",
             "p_reference",

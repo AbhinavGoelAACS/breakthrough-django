@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useJournals } from '../../hooks/useJournals';
 import JournalCard from '../../components/journal-list/JournalCard';
 import Pagination from '../../components/pagination/Pagination';
-import Breadcrumbs from '../../components/breadcrumbs/Breadcrumbs';
+// import Breadcrumbs from '../../components/breadcrumbs/Breadcrumbs';
 import './JournalsPage.css';
 
 export const JournalsPage = () => {
@@ -59,7 +59,7 @@ export const JournalsPage = () => {
 
   return (
     <div className="journals-page">
-      <Breadcrumbs items={breadcrumbItems} />
+      {/* <Breadcrumbs items={breadcrumbItems} /> */}
       <div className="journals-header-wrapper">
         <div className="journals-page-header">
           <h1>All Journals</h1>

@@ -107,6 +107,11 @@ body {
   min-height: calc(100vh - 60px);
 }
 
+.app-main.journal-main {
+  margin-top: 0; /* Journal navbar is sticky, not fixed */
+  min-height: 100vh;
+}
+
 .app-main.portal-main {
   margin-top: 0; /* Portal layouts handle their own spacing */
 }
