@@ -129,6 +129,9 @@ const PublicPaperView = () => {
             <span className="material-icons">{isOpenAccess ? 'lock_open' : 'lock'}</span>
             {isOpenAccess ? 'Open Access' : 'Subscription'}
           </span>
+          {article?.paper_code && (
+            <span className={styles.paperCodeBadge}>{article.paper_code}</span>
+          )}
         </div>
 
         <h1 className={styles.title}>{article?.title}</h1>

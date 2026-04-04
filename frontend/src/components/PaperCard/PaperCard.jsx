@@ -18,6 +18,7 @@ const PaperCard = ({ paper, actions = 'minimal', onManage, onView, role }) => {
   if (!paper) return null;
 
   const title = paper.title || paper.name || 'Untitled Paper';
+  const paperCode = paper.paper_code || paper.paperCode || '';
   const dateValue = paper.added_on || paper.submitted_date;
   const date = formatDateIST(dateValue);
   const paperType = paper.paper_type || 'Full Length Article';
@@ -56,6 +57,7 @@ const PaperCard = ({ paper, actions = 'minimal', onManage, onView, role }) => {
     <div className={styles.paperCard}>
       <div className={styles.cardContent}>
         <div className={styles.titleSection}>
+          {paperCode && <span className={styles.paperCode}>{paperCode}</span>}
           <h3 className={styles.title}>{title}</h3>
         </div>
 

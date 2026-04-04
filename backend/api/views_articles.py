@@ -8,7 +8,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import News, PaperPublished, Journal, Paper, User, PaperCoAuthor, OnlineReview, ReviewSubmission, PaperVersion
+from .models import News, PaperPublished, Journal, Paper, User, PaperCoAuthor, OnlineReview, ReviewSubmission, PaperVersion, CopyrightForm
 from .serializers import ArticleDetailSerializer, ArticleListSerializer, NewsSerializer
 
 
@@ -138,30 +138,33 @@ class ArticleDetailView(APIView):
         if article.paper_submission_id:
             paper_for_timeline = paper if 'paper' in dir() and paper else Paper.objects.filter(id=article.paper_submission_id).first()
             if paper_for_timeline:
-                # Submitted
-                if paper_for_timeline.added_on:
-                    timeline.append({
-                        "event": "Submitted",
-                        "date": paper_for_timeline.added_on.isoformat(),
-                        "icon": "upload_file",
-                    })
-
-                # Accepted — use the last review completion as proxy
+                # Reviewed On — last review submission date
                 last_completed_review = ReviewSubmission.objects.filter(
                     paper_id=paper_for_timeline.id,
                     status="submitted"
                 ).order_by('-submitted_at').first()
                 if last_completed_review and last_completed_review.submitted_at:
                     timeline.append({
-                        "event": "Accepted",
+                        "event": "Reviewed On",
                         "date": last_completed_review.submitted_at.isoformat(),
+                        "icon": "rate_review",
+                    })
+
+                # Accepted On — use copyright form creation as proxy for acceptance date
+                copyright_form = CopyrightForm.objects.filter(
+                    paper_id=paper_for_timeline.id
+                ).order_by('created_at').first()
+                if copyright_form and hasattr(copyright_form, 'created_at') and copyright_form.created_at:
+                    timeline.append({
+                        "event": "Accepted On",
+                        "date": copyright_form.created_at.isoformat(),
                         "icon": "check_circle",
                     })
 
-                # Published
+                # Published On
                 if article.date:
                     timeline.append({
-                        "event": "Published",
+                        "event": "Published On",
                         "date": article.date.isoformat(),
                         "icon": "publish",
                     })
@@ -187,6 +190,7 @@ class ArticleDetailView(APIView):
             "doi": strip_html_tags(article.doi),
             "co_authors_json": co_authors_json,
             "timeline": timeline,
+            "paper_code": paper.paper_code if 'paper' in dir() and paper else None,
         }
         return Response(data, status=status.HTTP_200_OK)
 

@@ -359,6 +359,7 @@ class EditorPapersPendingDecisionView(APIView):
                     
             papers_with_reviews.append({
                 "id": paper.id,
+                "paper_code": paper.paper_code,
                 "title": paper.title,
                 "author": author_name,
                 "journal": journal_name,
