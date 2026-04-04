@@ -85,14 +85,14 @@ const formatTime12h = (hours, minutes) => {
  */
 export const formatDateIST = (dateStr) => {
   const utcDate = parseDate(dateStr);
-  if (!utcDate) return 'N/A';
-  
-  const istDate = toIST(utcDate);
-  const day = istDate.getDate();
-  const month = getMonthShort(istDate.getMonth());
-  const year = istDate.getFullYear();
-  
-  return `${day} ${month} ${year}`;
+  if (!utcDate) return "N/A";
+
+  return utcDate.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
 };
 
 /**
@@ -102,10 +102,14 @@ export const formatDateIST = (dateStr) => {
  */
 export const formatTimeIST = (dateStr) => {
   const utcDate = parseDate(dateStr);
-  if (!utcDate) return '';
-  
-  const istDate = toIST(utcDate);
-  return formatTime12h(istDate.getHours(), istDate.getMinutes());
+  if (!utcDate) return "";
+
+  return utcDate.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).replace("AM", "am").replace("PM", "pm");
 };
 
 /**
