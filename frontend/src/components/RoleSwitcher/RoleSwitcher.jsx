@@ -56,6 +56,9 @@ const RoleSwitcher = () => {
   }, []);
 
   const approvedRoles = roles.filter(r => r.status === 'approved');
+  const uniqueApprovedRoles = approvedRoles.filter((r, i, arr) =>
+    arr.findIndex(x => x.role?.toLowerCase() === r.role?.toLowerCase()) === i
+  );
   const currentRoleConfig = ROLE_CONFIG[activeRole?.toLowerCase()] || ROLE_CONFIG.author;
   
   // Check if user has all available roles
@@ -112,7 +115,7 @@ const RoleSwitcher = () => {
             <span>Switch Role</span>
           </div>
           <div className="dropdown-options">
-            {approvedRoles.map((roleItem) => {
+            {uniqueApprovedRoles.map((roleItem) => {
               const roleName = roleItem.role?.toLowerCase();
               const config = ROLE_CONFIG[roleName];
               if (!config) return null;
