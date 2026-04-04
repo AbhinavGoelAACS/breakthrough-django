@@ -21,6 +21,17 @@ const AdminUsers = () => {
   const [loadingRoles, setLoadingRoles] = useState(false);
   const [savingRoles, setSavingRoles] = useState(false);
 
+  // Create user modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    fname: '',
+    lname: '',
+    role: 'author',
+  });
+
   const roles = ['admin', 'author', 'editor', 'reviewer'];
 
   // Fetch all users once on mount
@@ -180,6 +191,41 @@ const AdminUsers = () => {
     }
   };
 
+  // Create user handlers
+  const openCreateModal = () => {
+    setNewUser({ email: '', password: '', fname: '', lname: '', role: 'author' });
+    setShowCreateModal(true);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setNewUser({ email: '', password: '', fname: '', lname: '', role: 'author' });
+  };
+
+  const handleNewUserChange = (e) => {
+    const { name, value } = e.target;
+    setNewUser(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    if (!newUser.email || !newUser.password || !newUser.fname) {
+      showError('Email, password, and first name are required');
+      return;
+    }
+    setCreatingUser(true);
+    try {
+      await acsApi.admin.createUser(newUser);
+      showSuccess(`User ${newUser.email} created successfully`);
+      closeCreateModal();
+      fetchUsers();
+    } catch (err) {
+      showError(err.response?.data?.detail || 'Failed to create user');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
   // Get role badge color class
   const getRoleBadgeClass = (role) => {
     return styles[role] || '';
@@ -188,8 +234,16 @@ const AdminUsers = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>User Management</h1>
-        <p>Manage system users and their roles</p>
+        <div className={styles.headerTop}>
+          <div>
+            <h1>User Management</h1>
+            <p>Manage system users and their roles</p>
+          </div>
+          <button className={styles.addUserBtn} onClick={openCreateModal}>
+            <span className="material-symbols-rounded">person_add</span>
+            Add User
+          </button>
+        </div>
       </div>
 
       <div className={styles.filters}>
@@ -427,6 +481,105 @@ const AdminUsers = () => {
                 {savingRoles ? 'Saving...' : 'Save Roles'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Create User Modal */}
+      {showCreateModal && (
+        <div className={styles.modalOverlay} onClick={closeCreateModal}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Create New User</h2>
+              <button className={styles.closeBtn} onClick={closeCreateModal}>&times;</button>
+            </div>
+            
+            <form onSubmit={handleCreateUser}>
+              <div className={styles.modalBody}>
+                <div className={styles.formGrid}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>First Name *</label>
+                    <input
+                      type="text"
+                      name="fname"
+                      value={newUser.fname}
+                      onChange={handleNewUserChange}
+                      className={styles.formInput}
+                      placeholder="First name"
+                      required
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Last Name</label>
+                    <input
+                      type="text"
+                      name="lname"
+                      value={newUser.lname}
+                      onChange={handleNewUserChange}
+                      className={styles.formInput}
+                      placeholder="Last name"
+                    />
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Email *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={newUser.email}
+                    onChange={handleNewUserChange}
+                    className={styles.formInput}
+                    placeholder="user@example.com"
+                    required
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Password *</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={newUser.password}
+                    onChange={handleNewUserChange}
+                    className={styles.formInput}
+                    placeholder="Enter password"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Role</label>
+                  <select
+                    name="role"
+                    value={newUser.role}
+                    onChange={handleNewUserChange}
+                    className={styles.formSelect}
+                  >
+                    {roles.map(role => (
+                      <option key={role} value={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className={styles.modalFooter}>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={closeCreateModal}
+                  disabled={creatingUser}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.saveBtn}
+                  disabled={creatingUser}
+                >
+                  {creatingUser ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

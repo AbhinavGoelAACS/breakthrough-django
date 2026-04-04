@@ -10,6 +10,13 @@
   margin-bottom: 32px;
 }
 
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .header h1 {
   font-size: 30px;
   font-weight: 700;
@@ -21,6 +28,32 @@
   color: #64748b;
   margin: 4px 0 0 0;
   font-size: 14px;
+}
+
+.addUserBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.addUserBtn:hover {
+  background: linear-gradient(135deg, #0052a3 0%, #003377 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 102, 204, 0.35);
+}
+
+.addUserBtn span {
+  font-size: 20px;
 }
 
 .filters {
@@ -704,6 +737,68 @@
   
   .cancelBtn,
   .saveBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Create User Form Styles */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.formInput,
+.formSelect {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background: white;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.formInput::placeholder {
+  color: #9ca3af;
+}
+
+.formSelect {
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .headerTop {
+    flex-direction: column;
+  }
+
+  .addUserBtn {
     width: 100%;
     justify-content: center;
   }
