@@ -16,6 +16,7 @@ from .views_journals import (
     JournalAllIssuesView,
     JournalByShortFormView,
     JournalDetailView,
+    JournalEditorialBoardView,
     JournalExtendedDetailsView,
     JournalListView,
     JournalRecommendationView,
@@ -182,6 +183,11 @@ urlpatterns = [
         "api/v1/journals/by-subdomain/<str:short_form>",
         JournalByShortFormView.as_view(),
         name="journals-by-short-form",
+    ),
+    path(
+        "api/v1/journals/by-subdomain/<str:short_form>/editorial-board",
+        JournalEditorialBoardView.as_view(),
+        name="journals-editorial-board",
     ),
     path(
         "api/v1/journals/<int:journal_id>",

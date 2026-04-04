@@ -149,9 +149,10 @@ const IssuePapersPage = () => {
   const journalName = journal?.name || journal?.fld_journal_name || journal?.short_form || 'Journal';
 
   // Breadcrumbs - different for journal page vs main site
+  const journalBasePath = `/j/${currentJournal?.short_form || ''}`;
   const breadcrumbItems = isJournalSite ? [
-    { label: 'Home', path: '/' },
-    { label: 'Archives', path: '/archives' },
+    { label: 'Home', path: journalBasePath },
+    { label: 'Archives', path: `${journalBasePath}/archives` },
     { label: `Vol. ${volumeNo}, Issue ${issueNo}` },
   ] : [
     { label: 'Home', path: '/' },

@@ -860,3 +860,58 @@ class JournalRecommendationView(APIView):
             )
 
 
+class JournalEditorialBoardView(APIView):
+    """
+    GET /api/v1/journals/{short_form}/editorial-board
+    Public endpoint returning the editorial board for a journal.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, short_form: str):
+        try:
+            journal = Journal.objects.get(short_form__iexact=short_form)
+        except Journal.DoesNotExist:
+            return Response(
+                {"detail": f"Journal with short_form '{short_form}' not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        roles = (
+            UserRole.objects.filter(
+                journal_id=journal.fld_id,
+                role="editor",
+                status="approved",
+            )
+            .select_related("user")
+            .order_by("editor_type", "user__fname")
+        )
+
+        chief_editor = None
+        co_editors = []
+        section_editors = []
+
+        for ur in roles:
+            u = ur.user
+            entry = {
+                "name": f"{u.fname or ''} {u.lname or ''}".strip() or u.email,
+                "email": u.email,
+                "designation": u.designation,
+                "department": u.department,
+                "affiliation": u.affiliation,
+                "organisation": u.organisation,
+                "editor_type": ur.editor_type or "section_editor",
+            }
+            if ur.editor_type == "chief_editor":
+                chief_editor = entry
+            elif ur.editor_type == "co_editor":
+                co_editors.append(entry)
+            else:
+                section_editors.append(entry)
+
+        return Response({
+            "chief_editor": chief_editor,
+            "co_editors": co_editors,
+            "section_editors": section_editors,
+        })
+
+
