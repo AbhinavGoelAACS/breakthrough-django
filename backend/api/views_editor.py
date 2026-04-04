@@ -1619,40 +1619,50 @@ class RegisterAcceptInvitationView(APIView):
 
         if not fname or not password or not email:
             return Response({"detail": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        existing_user = User.objects.filter(email=email).first()
-        if existing_user:
-            return Response({"detail": "Account already exists. Please login."}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         from django.contrib.auth.hashers import make_password
         from django.utils import timezone as tz
-        new_user = User.objects.create(
-            fname=fname,
-            lname=lname,
-            email=email,
-            password=make_password(password),
-            role="reviewer",
-            organisation=organization,
-            added_on=tz.now(),
-        )
+
+        existing_user = User.objects.filter(email=email).first()
+        if existing_user:
+            # User already exists — link them to this invitation instead of rejecting
+            new_user = existing_user
+        else:
+            new_user = User.objects.create(
+                fname=fname,
+                lname=lname,
+                email=email,
+                password=make_password(password),
+                role="reviewer",
+                organisation=organization,
+                added_on=tz.now(),
+            )
+
+            UserRole.objects.create(
+                user=new_user,
+                role="reviewer",
+                status="approved",
+                requested_at=tz.now(),
+            )
         
-        UserRole.objects.create(
-            user=new_user,
-            role="reviewer",
-            status="approved"
-        )
-        
+        # Check for duplicate review assignment
+        existing_review = OnlineReview.objects.filter(
+            paper_id=str(invitation.paper_id),
+            reviewer_id=str(new_user.id)
+        ).first()
+
         invitation.status = "accepted"
         invitation.reviewer_id = new_user.id
         invitation.save()
         
         from datetime import date
-        online_review = OnlineReview.objects.create(
-            paper_id=str(invitation.paper_id),
-            reviewer_id=str(new_user.id),
-            review_status="pending",
-            assigned_on=date.today()
-        )
+        if not existing_review:
+            online_review = OnlineReview.objects.create(
+                paper_id=str(invitation.paper_id),
+                reviewer_id=str(new_user.id),
+                review_status="pending",
+                assigned_on=date.today()
+            )
         
         return Response({
             "status": "registered_and_accepted",
