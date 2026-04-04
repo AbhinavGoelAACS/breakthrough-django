@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { renderAsync } from 'docx-preview';
 import { useToast } from '../hooks/useToast';
 import acsApi from '../api/apiService.js';
 import OrganizationAutocomplete from './OrganizationAutocomplete';
@@ -69,9 +70,11 @@ export const SubmitPaperForm = () => {
   const [keywordChips, setKeywordChips] = useState([]);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
-  const [pdfPreviewFile, setPdfPreviewFile] = useState(null);
-  const [pdfPreviewLabel, setPdfPreviewLabel] = useState('');
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewLabel, setPreviewLabel] = useState('');
+  const [previewType, setPreviewType] = useState(null); // 'pdf' | 'docx'
   const [pdfObjectUrl, setPdfObjectUrl] = useState(null);
+  const docxContainerRef = useRef(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [touched, setTouched] = useState({});
   
@@ -146,16 +149,41 @@ export const SubmitPaperForm = () => {
     loadInitialData();
   }, []);
 
-  // Manage PDF object URL lifecycle
+  // Manage preview file lifecycle
   useEffect(() => {
-    if (pdfPreviewFile) {
-      const url = URL.createObjectURL(pdfPreviewFile);
+    if (!previewFile) {
+      setPdfObjectUrl(null);
+      setPreviewType(null);
+      return;
+    }
+    const isDocx = previewFile.name?.match(/\.docx?$/i) ||
+      previewFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      previewFile.type === 'application/msword';
+    if (isDocx) {
+      setPreviewType('docx');
+      setPdfObjectUrl(null);
+    } else {
+      setPreviewType('pdf');
+      const url = URL.createObjectURL(previewFile);
       setPdfObjectUrl(url);
       return () => URL.revokeObjectURL(url);
-    } else {
-      setPdfObjectUrl(null);
     }
-  }, [pdfPreviewFile]);
+  }, [previewFile]);
+
+  // Render DOCX when ready
+  useEffect(() => {
+    if (previewType === 'docx' && previewFile && docxContainerRef.current) {
+      docxContainerRef.current.innerHTML = '';
+      previewFile.arrayBuffer().then((buf) => {
+        renderAsync(buf, docxContainerRef.current, null, {
+          className: styles.docxWrapper,
+          inWrapper: true,
+          ignoreWidth: false,
+          ignoreHeight: true,
+        }).catch((err) => console.error('DOCX render error:', err));
+      });
+    }
+  }, [previewType, previewFile]);
 
   // Validation helper functions
   const validateEmail = (email) => {
@@ -1456,13 +1484,13 @@ export const SubmitPaperForm = () => {
                       <p className={styles.fileCardLabel}>Title Page</p>
                       <p className={styles.fileCardName}>{formData.titlePagePreview || 'Not uploaded'}</p>
                     </div>
-                    {formData.titlePageFile && formData.titlePageFile.type === 'application/pdf' && (
+                    {formData.titlePageFile && (
                       <button
                         type="button"
                         className={styles.fileCardPreviewBtn}
                         onClick={() => {
-                          setPdfPreviewFile(formData.titlePageFile);
-                          setPdfPreviewLabel('Title Page');
+                          setPreviewFile(formData.titlePageFile);
+                          setPreviewLabel('Title Page');
                         }}
                       >
                         <span className="material-symbols-rounded">visibility</span>
@@ -1478,13 +1506,13 @@ export const SubmitPaperForm = () => {
                       <p className={styles.fileCardLabel}>Blinded Manuscript</p>
                       <p className={styles.fileCardName}>{formData.blindedManuscriptPreview || 'Not uploaded'}</p>
                     </div>
-                    {formData.blindedManuscriptFile && formData.blindedManuscriptFile.type === 'application/pdf' && (
+                    {formData.blindedManuscriptFile && (
                       <button
                         type="button"
                         className={styles.fileCardPreviewBtn}
                         onClick={() => {
-                          setPdfPreviewFile(formData.blindedManuscriptFile);
-                          setPdfPreviewLabel('Blinded Manuscript');
+                          setPreviewFile(formData.blindedManuscriptFile);
+                          setPreviewLabel('Blinded Manuscript');
                         }}
                       >
                         <span className="material-symbols-rounded">visibility</span>
@@ -1576,29 +1604,34 @@ export const SubmitPaperForm = () => {
 
       {loading && <div className={styles.loadingOverlay}>Processing your submission...</div>}
 
-      {/* PDF Preview Modal */}
-      {pdfPreviewFile && (
-        <div className={styles.modalOverlay} onClick={() => { setPdfPreviewFile(null); setPdfPreviewLabel(''); }}>
+      {/* File Preview Modal (PDF + DOCX) */}
+      {previewFile && (
+        <div className={styles.modalOverlay} onClick={() => { setPreviewFile(null); setPreviewLabel(''); }}>
           <div className={styles.pdfViewerModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.pdfViewerHeader}>
               <div className={styles.pdfViewerTitle}>
-                <span className="material-symbols-rounded">picture_as_pdf</span>
-                <h3>{pdfPreviewLabel}</h3>
+                <span className="material-symbols-rounded">{previewType === 'docx' ? 'description' : 'picture_as_pdf'}</span>
+                <h3>{previewLabel}</h3>
               </div>
               <button
                 className={styles.modalClose}
-                onClick={() => { setPdfPreviewFile(null); setPdfPreviewLabel(''); }}
+                onClick={() => { setPreviewFile(null); setPreviewLabel(''); }}
                 aria-label="Close preview"
               >
                 ×
               </button>
             </div>
             <div className={styles.pdfViewerBody}>
-              <iframe
-                src={pdfObjectUrl}
-                title={pdfPreviewLabel}
-                className={styles.pdfIframe}
-              />
+              {previewType === 'pdf' && (
+                <iframe
+                  src={pdfObjectUrl}
+                  title={previewLabel}
+                  className={styles.pdfIframe}
+                />
+              )}
+              {previewType === 'docx' && (
+                <div ref={docxContainerRef} className={styles.docxContainer} />
+              )}
             </div>
           </div>
         </div>

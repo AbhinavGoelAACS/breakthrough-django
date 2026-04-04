@@ -500,6 +500,8 @@ class SubmitPaperView(APIView):
         upload_dir = backend_root / "uploads" / "papers" / f"user_{user.id}"
         upload_dir.mkdir(parents=True, exist_ok=True)
 
+        from django.utils import timezone as tz
+
         def _save_file(django_file, paper_id: int, kind: str) -> str:
             timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
             ext = Path(django_file.name).suffix
@@ -522,7 +524,7 @@ class SubmitPaperView(APIView):
                 added_by=str(user.id),
                 status="submitted",
                 mailstatus="0",
-                added_on=datetime.utcnow(),
+                added_on=tz.now(),
                 research_area=research_area or None,
                 message_to_editor=message_to_editor or None,
                 terms_accepted=True,
@@ -553,7 +555,6 @@ class SubmitPaperView(APIView):
                     else:
                         # Auto-register co-author with a random unusable password
                         random_password = uuid.uuid4().hex
-                        from django.utils import timezone as tz
                         new_user = User.objects.create(
                             email=ca_email,
                             password=hash_password(random_password),
@@ -573,9 +574,8 @@ class SubmitPaperView(APIView):
                     # Generate invitation token for profile completion link
                     invitation_token = uuid.uuid4().hex
 
-                PaperCoAuthor.objects.create(
+                coauthor_kwargs = dict(
                     paper_id=paper.id,
-                    user_id=ca_user_id,
                     salutation=ca.get("salutation"),
                     first_name=ca.get("first_name", ""),
                     middle_name=ca.get("middle_name"),
@@ -586,9 +586,18 @@ class SubmitPaperView(APIView):
                     organisation=ca.get("organisation"),
                     author_order=ca.get("author_order", idx + 2),
                     is_corresponding=ca.get("is_corresponding", False),
-                    invitation_token=invitation_token,
-                    created_at=datetime.utcnow(),
+                    created_at=tz.now(),
                 )
+                # Add new fields if the DB migration has been applied
+                try:
+                    PaperCoAuthor.objects.create(
+                        **coauthor_kwargs,
+                        user_id=ca_user_id,
+                        invitation_token=invitation_token,
+                    )
+                except TypeError:
+                    # Fallback: migration not yet applied, create without new fields
+                    PaperCoAuthor.objects.create(**coauthor_kwargs)
 
         # Send co-author notification emails (best-effort, outside transaction)
         try:
