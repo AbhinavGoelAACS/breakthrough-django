@@ -139,11 +139,18 @@ def send_status_update_notification(paper, old_status, new_status, author):
     subject = f"Status Update: {paper.title}"
     plain_body = (
         f"Dear {author_name},\n\n"
-        f"The status of your manuscript \"{paper.title}\" (ID: {paper_id_display}) "
-        f"has been updated from \"{old_status}\" to \"{new_status}\".\n\n"
-        f"You can check the latest status in your author dashboard.\n\n"
+        f"This is to inform you that the status of your manuscript has changed.\n\n"
+        f"Title: {paper.title}\n"
+        f"Manuscript ID: {paper_id_display}\n"
+        f"Previous Status: {old_status}\n"
+        f"Current Status: {new_status}\n\n"
+        f"You can view the latest status and respond to any requests by logging in to your author dashboard: {_get_frontend_url()}/login\n\n"
+        "If you have any questions, please contact the editorial office.\n\n"
         "Best regards,\n"
-        "BreakThrough Publishers"
+        "The Editorial Team\n"
+        "BreakThrough Publishers\n"
+        "\nThis letter contains confidential information for the author only.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
     )
 
     success, _ = send_email(
@@ -165,13 +172,20 @@ def send_submission_confirmation(paper, author):
 
     paper_id_display = paper.paper_code or paper.id
 
-    subject = f"Submission Received: {paper.title}"
+    subject = f"Submission Confirmation: {paper.title}"
     plain_body = (
         f"Dear {author_name},\n\n"
-        f"Your manuscript \"{paper.title}\" (ID: {paper_id_display}) has been successfully submitted.\n\n"
-        f"Our editorial team will review your submission and get back to you shortly.\n\n"
+        f"Thank you for submitting your manuscript to BreakThrough Publishers.\n\n"
+        f"Title: {paper.title}\n"
+        f"Manuscript ID: {paper_id_display}\n\n"
+        "Our editorial team will review your submission and notify you of the next steps.\n\n"
+        f"You can track your submission and respond to editorial requests by logging in to your author dashboard: {_get_frontend_url()}/login\n\n"
+        "If you have any questions, please contact the editorial office.\n\n"
         "Best regards,\n"
-        "BreakThrough Publishers"
+        "The Editorial Team\n"
+        "BreakThrough Publishers\n"
+        "\nThis letter contains confidential information for the author only.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
     )
 
     success, _ = send_email(
@@ -199,32 +213,25 @@ def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=
     plain_body = (
         f"Dear {reviewer_name},\n\n"
         f"You have been invited to review a manuscript for {journal_name}.\n\n"
-        f"Paper Title: {paper.title}\n"
-        f"Paper ID: {paper_id_display}\n"
+        f"Title: {paper.title}\n"
+        f"Manuscript ID: {paper_id_display}\n"
+        f"Abstract: {paper.abstract or 'N/A'}\n\n"
+        f"To accept or decline this invitation, please use the following link:\n{invitation_url}\n\n"
     )
-
-    if paper.abstract:
-        plain_body += f"\nAbstract:\n{paper.abstract}\n"
-
     if invitation.token_expiry:
-        deadline = invitation.token_expiry.strftime("%B %d, %Y")
-        plain_body += f"\nPlease respond by: {deadline}\n"
-
-    plain_body += f"\nTo accept or decline this invitation, please visit:\n{invitation_url}\n\n"
-
+        plain_body += f"Please respond by: {invitation.token_expiry.strftime('%B %d, %Y')}\n\n"
     if is_external:
-        plain_body += (
-            "Since you do not yet have an account with BreakThrough Publishers, "
-            "you will be asked to create one when you accept the invitation.\n\n"
-        )
-
+        plain_body += "Since you do not yet have an account with BreakThrough Publishers, you will be asked to create one when you accept the invitation.\n\n"
     plain_body += (
-        "If you are unable to review this manuscript, please decline the invitation "
-        "using the link above so we can find an alternative reviewer.\n\n"
+        "By accepting this invitation, you agree to provide a fair, confidential, and timely review. If you are unable to review, please decline promptly so we can find an alternative reviewer.\n\n"
+        "If you have any questions or require additional information, please contact the editorial office.\n\n"
         "Thank you for your contribution to the peer review process.\n\n"
         "Best regards,\n"
+        "The Editorial Team\n"
         f"{journal_name}\n"
-        "BreakThrough Publishers"
+        "BreakThrough Publishers\n"
+        "\nThis invitation and manuscript details are confidential.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
     )
 
     success, error = send_email(
@@ -262,7 +269,7 @@ def notify_editors_new_submission(paper, author, journal):
 
     paper_id_display = paper.paper_code or paper.id
 
-    subject = f"New Submission: {paper.title}"
+    subject = f"New Manuscript Submitted: {paper.title}"
 
     any_sent = False
     for editor in editors:
@@ -270,20 +277,18 @@ def notify_editors_new_submission(paper, author, journal):
             f"Dear {editor.editor_name or 'Editor'},\n\n"
             f"A new manuscript has been submitted to {journal_name}.\n\n"
             f"Title: {paper.title}\n"
-            f"Paper ID: {paper_id_display}\n"
+            f"Manuscript ID: {paper_id_display}\n"
             f"Author: {author_name}\n"
-        )
-
-        if paper.abstract:
-            plain_body += f"\nAbstract:\n{paper.abstract}\n"
-
-        plain_body += (
-            f"\nPlease log in to your editor dashboard to review this submission.\n"
-            f"{_get_frontend_url()}/editor/papers/{paper.id}\n\n"
+            f"Abstract: {paper.abstract or 'N/A'}\n\n"
+            f"To review this submission, please log in to your editor dashboard: {_get_frontend_url()}/editor/papers/{paper.id}\n\n"
+            "If you have any questions or require additional information, please contact the managing editor.\n\n"
             "Best regards,\n"
-            "BreakThrough Publishers"
+            "The Editorial Team\n"
+            f"{journal_name}\n"
+            "BreakThrough Publishers\n"
+            "\nThis notification and manuscript details are confidential.\n"
+            "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
         )
-
         success, _ = send_email(
             recipient_email=editor.editor_email,
             subject=subject,
@@ -308,25 +313,27 @@ def send_copyright_form_email(paper, author, deadline):
     deadline_str = deadline.strftime("%B %d, %Y at %I:%M %p") if deadline else "48 hours from now"
 
     subject = f"Action Required: Copyright Transfer Form – {paper.title}"
-
     plain_body = (
         f"Dear {author_name},\n\n"
-        f"Congratulations! Your manuscript \"{paper.title}\" (ID: {paper_id_display}) "
-        f"has been accepted for publication.\n\n"
-        f"To proceed with publication, you must complete the Copyright Transfer Form "
-        f"within the specified deadline.\n\n"
+        f"Congratulations! Your manuscript has been accepted for publication.\n\n"
+        f"Title: {paper.title}\n"
+        f"Manuscript ID: {paper_id_display}\n"
+        f"To proceed with publication, you must complete the Copyright Transfer Form by the deadline below.\n\n"
         f"Deadline: {deadline_str}\n\n"
-        f"Please log in to your Author Dashboard to complete the form:\n"
-        f"{dashboard_url}\n\n"
-        f"The form requires you to:\n"
-        f"  - Confirm that the work is original\n"
-        f"  - Declare no conflicts of interest\n"
-        f"  - Transfer copyright to the publisher\n"
-        f"  - Confirm all co-authors have consented\n"
-        f"  - Provide your digital signature\n\n"
-        f"If the form is not completed by the deadline, your publication may be delayed.\n\n"
+        f"Please log in to your Author Dashboard to complete the form: {dashboard_url}\n\n"
+        "The form requires you to:\n"
+        "  - Confirm that the work is original\n"
+        "  - Declare no conflicts of interest\n"
+        "  - Transfer copyright to the publisher\n"
+        "  - Confirm all co-authors have consented\n"
+        "  - Provide your digital signature\n\n"
+        "If the form is not completed by the deadline, your publication may be delayed.\n\n"
+        "If you have any questions, please contact the editorial office.\n\n"
         "Best regards,\n"
-        "BreakThrough Publishers"
+        "The Editorial Team\n"
+        "BreakThrough Publishers\n"
+        "\nThis letter contains confidential information for the author only.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
     )
 
     success, _ = send_email(
@@ -370,18 +377,19 @@ def send_coauthor_notification_email(coauthor_record, paper, submitting_author):
 
     plain_body = (
         f"Dear {ca_name},\n\n"
-        f"You have been added as the {role_label} on the following manuscript submitted to BreakThrough Publishers:\n\n"
-        f"Paper Title: {paper.title}\n"
-        f"Paper ID: {paper_id_display}\n"
+        f"You have been added as the {role_label} on the following manuscript submitted to BreakThrough Publishers.\n\n"
+        f"Title: {paper.title}\n"
+        f"Manuscript ID: {paper_id_display}\n"
         f"Submitted by: {submitter_name}\n\n"
         f"{corresponding_note}"
-        f"An account has been created for you on our platform. "
-        f"Please visit the link below to set your password and complete your profile:\n\n"
-        f"{profile_url}\n\n"
-        f"Once your profile is complete, you can log in to view the submission and track its progress.\n\n"
-        "If you believe this was sent in error, please contact the editorial office.\n\n"
+        "An account has been created for you on our platform. Please use the link below to set your password and complete your profile:\n{profile_url}\n\n"
+        "Once your profile is complete, you can log in to view the submission and track its progress.\n\n"
+        "If you have any questions or believe this was sent in error, please contact the editorial office.\n\n"
         "Best regards,\n"
-        "BreakThrough Publishers"
+        "The Editorial Team\n"
+        "BreakThrough Publishers\n"
+        "\nThis letter contains confidential information for the recipient only.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
     )
 
     html_body = (
