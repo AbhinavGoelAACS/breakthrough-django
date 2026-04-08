@@ -175,13 +175,13 @@ class AcceptInvitationAuthView(APIView):
         invitation.reviewer_id = user.id
         invitation.save()
         
-        from datetime import date, timedelta
+        from datetime import datetime, timedelta
         online_review = OnlineReview.objects.create(
             paper_id=str(invitation.paper_id),
             reviewer_id=str(user.id),
             review_status="pending",
-            assigned_on=date.today(),
-            due_date=date.today() + timedelta(days=14),
+            assigned_on=datetime.now(),
+            due_date=datetime.now() + timedelta(days=14),
         )
         
         # NOTE: Skipping email background task translation for brevity initially.
