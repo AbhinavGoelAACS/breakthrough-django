@@ -209,7 +209,7 @@ const PaperDetailsPage = () => {
           description: (isEditor() || isAdmin()) 
             ? `${reviewer.reviewer_name || 'Reviewer'} assigned to review`
             : 'A reviewer has been assigned',
-          date: formatDateTimeIST(reviewer.assigned_on),
+          date: reviewer.assigned_on,
           showToAll: false, // Hide specific names from authors
           reviewerId: reviewer.reviewer_id,
           reviewerName: reviewer.reviewer_name
@@ -229,7 +229,7 @@ const PaperDetailsPage = () => {
           description: (isEditor() || isAdmin())
             ? `${reviewer.reviewer_name || 'Reviewer'} submitted their review`
             : 'A review has been submitted',
-          date: formatDateTimeIST(reviewer.submitted_at),
+          date: reviewer.submitted_at,
           showToAll: false,
           reviewerId: reviewer.reviewer_id,
           reviewerName: reviewer.reviewer_name
@@ -251,7 +251,7 @@ const PaperDetailsPage = () => {
         description: paper.editorComments 
           ? paper.editorComments.substring(0, 80) + (paper.editorComments.length > 80 ? '...' : '')
           : 'Please address the reviewer feedback',
-        date: formatDateTimeIST(paper.revisionRequestedDate),
+        date: paper.revisionRequestedDate,
         showToAll: true
       });
     }
@@ -267,7 +267,7 @@ const PaperDetailsPage = () => {
             iconColor: 'iconTeal',
             title: `Version ${version.version_number} Submitted`,
             description: version.change_summary || 'Revised manuscript submitted',
-            date: formatDateTimeIST(version.uploaded_on),
+            date: version.uploaded_on,
             showToAll: true,
             versionNumber: version.version_number
           });
@@ -284,7 +284,7 @@ const PaperDetailsPage = () => {
         iconColor: 'iconGreen',
         title: 'Paper Accepted',
         description: 'Your paper has been accepted for publication',
-        date: formatDateTimeIST(paper.acceptedOn || paper.accepted_on || paper._raw?.accepted_on || null),
+        date: paper.acceptedOn || paper.accepted_on || paper._raw?.accepted_on || null,
         showToAll: true
       });
     } else if (paper.status === 'rejected') {
@@ -318,7 +318,10 @@ const PaperDetailsPage = () => {
       if (a.type === 'submitted') return -1;
       if (b.type === 'submitted') return 1;
       // Then sort by date (oldest first)
-      return a.date - b.date;
+      // Handle null/undefined dates by treating them as end of timeline
+      const dateA = a.date ? new Date(a.date).getTime() : Infinity;
+      const dateB = b.date ? new Date(b.date).getTime() : Infinity;
+      return dateA - dateB;
     });
 
     return events;
