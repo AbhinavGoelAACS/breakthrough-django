@@ -72,11 +72,41 @@ To verify migrations are working:
 
 If migrations don't run automatically:
 
-1. **Check permissions**: Ensure the app server has write access to the database
-2. **Check database connection**: Verify DB credentials in `.env`
-3. **Manual fix**: SSH and run:
+1. **Check migration status via SSH**:
+   ```bash
+   cd /home2/aacsjour/BreakThrough/backend
+   source /home2/aacsjour/virtualenv/BreakThrough/3.10/bin/activate
+   python manage.py showmigrations api
+   ```
+
+2. **Manually run migrations with verbose output**:
    ```bash
    python manage.py migrate api --verbosity 2
+   ```
+
+3. **Check if column was added**:
+   ```bash
+   python manage.py dbshell
+   DESCRIBE paper;  # Look for 'accepted_on' column
+   ```
+
+4. **Fake all legacy migrations and run new ones**:
+   ```bash
+   # Mark legacy migrations as applied without running them
+   python manage.py migrate api 0001 --fake
+   python manage.py migrate api 0002 --fake
+   python manage.py migrate api 0003 --fake
+   
+   # Then run the new migration
+   python manage.py migrate api 0004
+   ```
+
+5. **Force re-run of all migrations**:
+   ```bash
+   # Clear migration history (CAUTION - only if stuck)
+   python manage.py migrate api zero
+   python manage.py migrate api --fake-initial
+   python manage.py migrate api
    ```
 
 ## What Changed
