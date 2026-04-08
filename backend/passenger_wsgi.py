@@ -46,12 +46,22 @@ def run_migrations():
         
         # Only run migrations if we can connect to the database
         with connection.cursor() as cursor:
-            # Run migrations
+            # First, mark initial migrations as applied (fake) since we have legacy tables
+            try:
+                call_command('migrate', 'api', '0001', '--fake-initial', verbosity=0)
+            except:
+                pass  # Already applied
+            
+            # Then run remaining migrations for new schema changes
             call_command('migrate', 'api', verbosity=0)
             print("[BreakThrough] Database migrations completed successfully")
     except Exception as e:
         # Log but don't fail - the app might still work or migrations might already be applied
-        print("[BreakThrough] Warning: Migration check failed: {0}".format(str(e)))
+        error_msg = str(e)
+        if "already exists" in error_msg.lower():
+            print("[BreakThrough] Note: Database tables already exist (legacy DB)")
+        else:
+            print("[BreakThrough] Warning: Migration check failed: {0}".format(error_msg))
         # Don't raise - let the app continue
 
 # Run migrations before loading the WSGI application
