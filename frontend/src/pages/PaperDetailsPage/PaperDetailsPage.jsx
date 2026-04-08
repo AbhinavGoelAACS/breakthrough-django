@@ -277,16 +277,19 @@ const PaperDetailsPage = () => {
 
     // 6. Final Decision - based on status
     if (paper.status === 'accepted') {
-      events.push({
-        id: 'accepted',
-        type: 'accepted',
-        icon: 'check_circle',
-        iconColor: 'iconGreen',
-        title: 'Paper Accepted',
-        description: 'Your paper has been accepted for publication',
-        date: new Date(paper.acceptedOn || paper.accepted_on || paper._raw?.accepted_on || null),
-        showToAll: true
-      });
+      const acceptedDate = paper.acceptedOn || paper.accepted_on || paper._raw?.accepted_on;
+      if (acceptedDate) {
+        events.push({
+          id: 'accepted',
+          type: 'accepted',
+          icon: 'check_circle',
+          iconColor: 'iconGreen',
+          title: 'Paper Accepted',
+          description: 'Your paper has been accepted for publication',
+          date: new Date(acceptedDate),
+          showToAll: true
+        });
+      }
     } else if (paper.status === 'rejected') {
       events.push({
         id: 'rejected',
@@ -295,7 +298,7 @@ const PaperDetailsPage = () => {
         iconColor: 'iconRed',
         title: 'Paper Rejected',
         description: 'See feedback for details',
-        date: new Date(), // No specific date available, use current
+        date: null, // No specific date available
         showToAll: true
       });
     } else if (paper.status === 'published') {
@@ -306,7 +309,7 @@ const PaperDetailsPage = () => {
         iconColor: 'iconGreen',
         title: 'Paper Published',
         description: 'Your paper is now publicly available',
-        date: new Date(),
+        date: null,
         showToAll: true
       });
     }
@@ -317,11 +320,16 @@ const PaperDetailsPage = () => {
       // Paper Submitted always comes first
       if (a.type === 'submitted') return -1;
       if (b.type === 'submitted') return 1;
-      // Then sort by date (oldest first)
-      // Handle null/undefined dates by treating them as end of timeline
-      const dateA = a.date ? new Date(a.date).getTime() : Infinity;
-      const dateB = b.date ? new Date(b.date).getTime() : Infinity;
-      return dateA - dateB;
+      
+      // Handle null dates - put them at the end
+      if (!a.date && b.date) return 1;
+      if (a.date && !b.date) return -1;
+      if (!a.date && !b.date) return 0;
+      
+      // Both have dates - sort chronologically (oldest first)
+      const timeA = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime();
+      const timeB = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime();
+      return timeA - timeB;
     });
 
     return events;
@@ -1251,10 +1259,12 @@ const PaperDetailsPage = () => {
                       </div>
                       <div className={styles.timelineInfo}>
                         <p className={styles.timelineEvent}>{event.title}</p>
-                        <p className={styles.timelineDate}>
-                          {event.date ? formatDateTimeIST(event.date) : event.description}
-                        </p>
-                        {event.description && event.date && (
+                        {event.date && (
+                          <p className={styles.timelineDate}>
+                            {formatDateTimeIST(event.date)}
+                          </p>
+                        )}
+                        {event.description && (
                           <p className={styles.timelineDescription}>{event.description}</p>
                         )}
                       </div>
