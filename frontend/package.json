@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tiptap/pm": "^3.22.3",
+    "@tiptap/react": "^3.22.3",
+    "@tiptap/starter-kit": "^3.22.3",
     "axios": "^1.13.5",
     "docx-preview": "^0.3.7",
     "jwt-decode": "^4.0.0",

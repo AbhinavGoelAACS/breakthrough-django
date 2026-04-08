@@ -4,6 +4,7 @@ import { renderAsync } from 'docx-preview';
 import { useToast } from '../hooks/useToast';
 import acsApi from '../api/apiService.js';
 import OrganizationAutocomplete from './OrganizationAutocomplete';
+import RichTextEditor from './RichTextEditor/RichTextEditor';
 import styles from './SubmitPaperForm.module.css';
 
 const SALUTATION_OPTIONS = [
@@ -896,15 +897,12 @@ export const SubmitPaperForm = () => {
 
             <div className={styles.field}>
               <label htmlFor="paper_references">References (Optional)</label>
-              <textarea
-                id="paper_references"
-                placeholder="Enter your paper references, one per line..."
+              <RichTextEditor
                 value={formData.paper_references}
-                onChange={(e) => handleInputChange('paper_references', e.target.value)}
-                rows={6}
-                className={styles.textarea}
+                onChange={(html) => handleInputChange('paper_references', html)}
+                placeholder="Enter your paper references with formatting..."
               />
-              <small className={styles.helperText}>List the references cited in your paper</small>
+              <small className={styles.helperText}>List the references cited in your paper. Use formatting tools for citations.</small>
             </div>
           </div>
         )}
@@ -1358,7 +1356,16 @@ export const SubmitPaperForm = () => {
               {formData.paper_references && (
                 <div className={styles.reviewSection}>
                   <h3>References</h3>
-                  <p style={{ whiteSpace: 'pre-wrap' }}>{formData.paper_references}</p>
+                  <div 
+                    style={{ 
+                      lineHeight: '1.6',
+                      color: '#333',
+                      '& ul': { marginLeft: '20px' },
+                      '& ol': { marginLeft: '20px' },
+                      '& a': { color: '#0066cc', textDecoration: 'underline' }
+                    }}
+                    dangerouslySetInnerHTML={{ __html: formData.paper_references }}
+                  />
                 </div>
               )}
 
