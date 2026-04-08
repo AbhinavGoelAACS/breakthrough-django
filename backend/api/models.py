@@ -236,6 +236,7 @@ class Paper(models.Model):
     message_to_editor = models.TextField(null=True, blank=True)
     paper_references = models.TextField(null=True, blank=True)
     terms_accepted = models.BooleanField(default=False)
+    accepted_on = models.DateTimeField(null=True, blank=True)
 
 
 class PaperComment(models.Model):

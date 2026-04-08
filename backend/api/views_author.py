@@ -393,6 +393,9 @@ class AuthorSubmissionDetailView(APIView):
                 else None,
                 "revision_type": paper.revision_type,
                 "editor_comments": paper.editor_comments,
+                "accepted_on": paper.accepted_on.isoformat()
+                if paper.accepted_on
+                else None,
                 "author": author_info,
                 "co_authors": co_authors_list,
             },

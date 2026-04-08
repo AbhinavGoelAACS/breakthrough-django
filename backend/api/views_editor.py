@@ -958,6 +958,9 @@ class EditorPaperDecisionView(APIView):
                 paper.revision_deadline = timezone.now() + timedelta(days=14)
             paper.revision_notes = editor_comments.strip()
             paper.revision_type = revision_type or "minor"
+        elif decision == "accepted":
+            # Set accepted timestamp when paper is accepted
+            paper.accepted_on = timezone.now()
             
         paper.save()
         
