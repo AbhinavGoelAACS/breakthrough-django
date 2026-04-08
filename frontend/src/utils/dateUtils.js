@@ -121,13 +121,25 @@ export const formatDateTimeIST = (dateStr) => {
   const utcDate = parseDate(dateStr);
   if (!utcDate) return 'N/A';
   
-  const istDate = toIST(utcDate);
-  const day = istDate.getDate();
-  const month = getMonthShort(istDate.getMonth());
-  const year = istDate.getFullYear();
-  const time = formatTime12h(istDate.getHours(), istDate.getMinutes());
+  // Use toLocaleString with Asia/Kolkata timezone for correct IST conversion
+  const dateFormatter = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
   
-  return `${day} ${month} ${year}, ${time}`;
+  const timeFormatter = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+  
+  const dateStr2 = dateFormatter.format(utcDate);
+  const timeStr = timeFormatter.format(utcDate).replace("AM", "am").replace("PM", "pm");
+  
+  return `${dateStr2}, ${timeStr}`;
 };
 
 /**
@@ -139,12 +151,12 @@ export const formatDateUS = (dateStr) => {
   const utcDate = parseDate(dateStr);
   if (!utcDate) return 'N/A';
   
-  const istDate = toIST(utcDate);
-  const month = getMonthShort(istDate.getMonth());
-  const day = istDate.getDate();
-  const year = istDate.getFullYear();
-  
-  return `${month} ${day}, ${year}`;
+  return utcDate.toLocaleDateString("en-US", {
+    timeZone: "Asia/Kolkata",
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
 };
 
 /**
@@ -156,13 +168,13 @@ export const formatDateWithWeekday = (dateStr) => {
   const utcDate = parseDate(dateStr);
   if (!utcDate) return 'N/A';
   
-  const istDate = toIST(utcDate);
-  const weekday = getWeekday(istDate.getDay());
-  const month = getMonthShort(istDate.getMonth());
-  const day = istDate.getDate();
-  const year = istDate.getFullYear();
-  
-  return `${weekday}, ${month} ${day}, ${year}`;
+  return utcDate.toLocaleDateString("en-US", {
+    timeZone: "Asia/Kolkata",
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
 };
 
 /**
@@ -174,15 +186,25 @@ export const formatRelativeDate = (dateStr) => {
   const utcDate = parseDate(dateStr);
   if (!utcDate) return '';
   
-  // Get current time in IST
-  const nowIST = toIST(new Date());
-  const dateIST = toIST(utcDate);
+  // Get today's date in IST timezone for comparison
+  const now = new Date();
+  const istCurrentDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(now);
   
-  // Compare dates (day only)
-  const todayStart = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate());
-  const dateStart = new Date(dateIST.getFullYear(), dateIST.getMonth(), dateIST.getDate());
+  const istDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(utcDate);
   
-  const diffDays = Math.floor((todayStart - dateStart) / (1000 * 60 * 60 * 24));
+  const currentDate = new Date(istCurrentDate);
+  const compareDate = new Date(istDate);
+  const diffDays = Math.floor((currentDate - compareDate) / (1000 * 60 * 60 * 24));
   
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
@@ -199,12 +221,12 @@ export const formatDateShort = (dateStr) => {
   const utcDate = parseDate(dateStr);
   if (!utcDate) return 'N/A';
   
-  const istDate = toIST(utcDate);
-  const day = pad(istDate.getDate());
-  const month = pad(istDate.getMonth() + 1);
-  const year = istDate.getFullYear();
-  
-  return `${day}/${month}/${year}`;
+  return utcDate.toLocaleDateString("en-GB", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
 };
 
 /**
