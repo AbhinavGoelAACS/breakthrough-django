@@ -34,5 +34,28 @@ if os.path.exists(env_path):
 # Set Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bp_backend.settings')
 
+# Run database migrations automatically on startup
+def run_migrations():
+    """Run pending database migrations automatically."""
+    try:
+        import django
+        django.setup()
+        
+        from django.core.management import call_command
+        from django.db import connection
+        
+        # Only run migrations if we can connect to the database
+        with connection.cursor() as cursor:
+            # Run migrations
+            call_command('migrate', 'api', verbosity=0)
+            print("[BreakThrough] ✓ Database migrations completed successfully")
+    except Exception as e:
+        # Log but don't fail - the app might still work or migrations might already be applied
+        print(f"[BreakThrough] ⚠ Warning: Migration check failed: {str(e)}")
+        # Don't raise - let the app continue
+
+# Run migrations before loading the WSGI application
+run_migrations()
+
 # Import Django WSGI application
 from bp_backend.wsgi import application
