@@ -48,10 +48,10 @@ def run_migrations():
         with connection.cursor() as cursor:
             # Run migrations
             call_command('migrate', 'api', verbosity=0)
-            print("[BreakThrough] ✓ Database migrations completed successfully")
+            print("[BreakThrough] Database migrations completed successfully")
     except Exception as e:
         # Log but don't fail - the app might still work or migrations might already be applied
-        print(f"[BreakThrough] ⚠ Warning: Migration check failed: {str(e)}")
+        print("[BreakThrough] Warning: Migration check failed: {0}".format(str(e)))
         # Don't raise - let the app continue
 
 # Run migrations before loading the WSGI application
