@@ -259,7 +259,7 @@ class OnlineReview(models.Model):
     id = models.AutoField(primary_key=True)
     paper_id = models.IntegerField(null=True, blank=True)
     reviewer_id = models.CharField(max_length=100, null=True, blank=True)
-    assigned_on = models.DateField(null=True, blank=True)
+    assigned_on = models.DateTimeField(null=True, blank=True)
     submitted_on = models.DateTimeField(null=True, blank=True)
     date_submitted = models.DateTimeField(null=True, blank=True)
     review_status = models.CharField(max_length=50, default="pending")
