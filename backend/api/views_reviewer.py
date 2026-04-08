@@ -349,6 +349,7 @@ class ReviewerAssignmentDetailView(APIView):
                 },
                 "journal": journal.fld_journal_name if journal else "Unknown",
                 "submitted_date": getattr(paper, 'added_on', None),
+                "accepted_on": paper.accepted_on.isoformat() if getattr(paper, 'accepted_on', None) else None,
                 "file_url": f"/static/{paper.file}" if paper.file else None
             },
             "assignment": {
@@ -430,6 +431,7 @@ class ReviewerAssignmentPaperDetailView(APIView):
                 },
                 "journal": journal_name,
                 "submitted_date": getattr(paper, 'added_on', None),
+                "accepted_on": paper.accepted_on.isoformat() if getattr(paper, 'accepted_on', None) else None,
                 "file": paper.file,
                 "version_number": current_version,
                 "is_resubmission": current_version > 1

@@ -278,18 +278,36 @@ const PaperDetailsPage = () => {
     // 6. Final Decision - based on status
     if (paper.status === 'accepted') {
       const acceptedDate = paper.acceptedOn || paper.accepted_on || paper._raw?.accepted_on;
+      
+      // Always show accepted event - use provided date, or latest review date, or today
+      let eventDate = null;
       if (acceptedDate) {
-        events.push({
-          id: 'accepted',
-          type: 'accepted',
-          icon: 'check_circle',
-          iconColor: 'iconGreen',
-          title: 'Paper Accepted',
-          description: 'Your paper has been accepted for publication',
-          date: new Date(acceptedDate),
-          showToAll: true
-        });
+        eventDate = new Date(acceptedDate);
+      } else {
+        // Fallback: Use latest review submission date if available, otherwise use today
+        const reviewDates = reviewers
+          .filter(r => r.submitted_at && r.has_submitted)
+          .map(r => new Date(r.submitted_at).getTime())
+          .sort((a, b) => b - a);
+        
+        if (reviewDates.length > 0) {
+          // Add 1 day after the latest review for realistic timeline
+          eventDate = new Date(reviewDates[0] + 24 * 60 * 60 * 1000);
+        } else {
+          eventDate = new Date();
+        }
       }
+      
+      events.push({
+        id: 'accepted',
+        type: 'accepted',
+        icon: 'check_circle',
+        iconColor: 'iconGreen',
+        title: 'Paper Accepted',
+        description: 'Your paper has been accepted for publication',
+        date: eventDate,
+        showToAll: true
+      });
     } else if (paper.status === 'rejected') {
       events.push({
         id: 'rejected',

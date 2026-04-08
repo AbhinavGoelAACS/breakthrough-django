@@ -423,6 +423,7 @@ class EditorPaperDetailView(APIView):
             "file": paper.file,
             "status": paper.status,
             "submitted_date": paper.added_on.isoformat() if paper.added_on else None,
+            "accepted_on": paper.accepted_on.isoformat() if getattr(paper, 'accepted_on', None) else None,
             "author": {
                 "id": author.id if author else None,
                 "name": f"{author.fname} {author.lname or ''}".strip() if author else (paper.author or "Unknown"),
