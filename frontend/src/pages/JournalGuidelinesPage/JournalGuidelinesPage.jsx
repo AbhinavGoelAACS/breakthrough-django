@@ -74,7 +74,10 @@ const JournalGuidelinesPage = () => {
           <div className="gl-help-card">
             <p className="gl-help-title">Need assistance?</p>
             <p className="gl-help-text">Our editorial office is available for queries regarding technical submission hurdles.</p>
-            <a href="mailto:breakthroughpublishers@gmail.com" className="gl-help-link">Contact Support</a>
+            <p className="gl-help-email">
+              <span className="material-symbols-rounded">mail</span>
+              breakthroughpublishers@gmail.com
+            </p>
           </div>
         </div>
       </aside>

@@ -106,12 +106,10 @@ const JournalEditorialBoardPage = () => {
                         )}
                       </div>
                       <div className="eb-chief-actions">
-                        {chiefEditor.email && (
-                          <a href={`mailto:${chiefEditor.email}`} className="eb-chief-link">
-                            <span className="material-symbols-rounded">mail</span>
-                            <span>Contact Editor</span>
-                          </a>
-                        )}
+                        <span className="eb-chief-email">
+                          <span className="material-symbols-rounded">mail</span>
+                          <span>{chiefEditor.email || 'breakthroughpublishers@gmail.com'}</span>
+                        </span>
                       </div>
                     </div>
                   </div>

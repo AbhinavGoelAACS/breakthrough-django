@@ -15,6 +15,7 @@ const JournalHomePage = () => {
   const { currentJournal, journalDetails, journalShortForm, loading: contextLoading } = useJournalContext();
   const [latestArticles, setLatestArticles] = useState([]);
   const [editorialBoard, setEditorialBoard] = useState([]);
+  const [chiefEditorEmail, setChiefEditorEmail] = useState(null);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
   useEffect(() => {
@@ -44,7 +45,15 @@ const JournalHomePage = () => {
   const fetchEditorialBoard = async () => {
     try {
       const response = await acsApi.journals.getEditorialBoard(journalShortForm);
-      setEditorialBoard(response || []);
+      if (response?.chief_editor) {
+        setChiefEditorEmail(response.chief_editor.email || null);
+      }
+      const members = [
+        ...(response?.chief_editor ? [response.chief_editor] : []),
+        ...(response?.co_editors || []),
+        ...(response?.section_editors || []),
+      ];
+      setEditorialBoard(members);
     } catch (err) {
       console.error('Failed to fetch editorial board:', err);
     }
@@ -279,9 +288,15 @@ const JournalHomePage = () => {
             ))}
           </div>
           <div className="jhp-board-link-wrapper">
-            <Link to={`${journalBasePath}/editorial-board`} className="jhp-board-link">
-              View Full Board &rarr;
-            </Link>
+            {chiefEditorEmail ? (
+              <a href={`mailto:${chiefEditorEmail}`} className="jhp-board-link">
+                Contact Editor-in-Chief &rarr;
+              </a>
+            ) : (
+              <Link to={`${journalBasePath}/editorial-board`} className="jhp-board-link">
+                View Full Board &rarr;
+              </Link>
+            )}
           </div>
         </section>
       )}

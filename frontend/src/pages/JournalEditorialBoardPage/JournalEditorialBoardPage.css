@@ -245,6 +245,25 @@
   color: var(--j-primary, #3a6a27);
   text-decoration: none;
   transition: text-decoration 0.2s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.eb-chief-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--j-primary, #3a6a27);
+  user-select: all;
+}
+
+.eb-chief-email .material-symbols-rounded {
+  font-size: 1.125rem;
 }
 
 .eb-chief-link:hover {
