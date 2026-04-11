@@ -83,6 +83,34 @@ def send_correspondence_email(correspondence):
     return success
 
 
+def _log_correspondence(paper_id, recipient_email, recipient_name, subject, body,
+                        email_type, sender_id=None, sender_role=None,
+                        status_at_send=None, delivery_status="sent"):
+    """
+    Create a PaperCorrespondence record to log an automated email.
+    Fails silently so it never breaks email delivery.
+    """
+    try:
+        from api.models import PaperCorrespondence
+        PaperCorrespondence.objects.create(
+            paper_id=paper_id,
+            sender_id=sender_id,
+            sender_role=sender_role or 'system',
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            subject=subject,
+            body=body,
+            email_type=email_type,
+            status_at_send=status_at_send,
+            is_read=False,
+            delivery_status=delivery_status,
+            created_at=datetime.utcnow(),
+            sent_at=datetime.utcnow() if delivery_status == "sent" else None,
+        )
+    except Exception as e:
+        logger.error("Failed to log correspondence for paper %s: %s", paper_id, e)
+
+
 def send_decision_notification(paper, decision, editor_comments, author):
     """
     Send an email to the author notifying them of an editor decision.
@@ -156,6 +184,17 @@ def send_decision_notification(paper, decision, editor_comments, author):
         subject=subject,
         plain_body=plain_body,
     )
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=author.email,
+        recipient_name=author_name,
+        subject=subject,
+        body=plain_body,
+        email_type='decision_notification',
+        sender_role='editor',
+        status_at_send=decision,
+        delivery_status='sent' if success else 'failed',
+    )
     return success
 
 
@@ -192,6 +231,17 @@ def send_status_update_notification(paper, old_status, new_status, author):
         subject=subject,
         plain_body=plain_body,
     )
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=author.email,
+        recipient_name=author_name,
+        subject=subject,
+        body=plain_body,
+        email_type='status_update',
+        sender_role='system',
+        status_at_send=new_status,
+        delivery_status='sent' if success else 'failed',
+    )
     return success
 
 
@@ -226,6 +276,17 @@ def send_submission_confirmation(paper, author):
         recipient_email=author.email,
         subject=subject,
         plain_body=plain_body,
+    )
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=author.email,
+        recipient_name=author_name,
+        subject=subject,
+        body=plain_body,
+        email_type='submission_confirmation',
+        sender_role='system',
+        status_at_send=getattr(paper, 'status', None),
+        delivery_status='sent' if success else 'failed',
     )
     return success
 
@@ -275,6 +336,17 @@ def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=
     )
     if not success:
         logger.error("Failed to send reviewer invitation email to %s: %s", invitation.reviewer_email, error)
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=invitation.reviewer_email,
+        recipient_name=reviewer_name,
+        subject=subject,
+        body=plain_body,
+        email_type='reviewer_invitation',
+        sender_role='editor',
+        status_at_send=getattr(paper, 'status', None),
+        delivery_status='sent' if success else 'failed',
+    )
     return success
 
 
@@ -328,6 +400,17 @@ def notify_editors_new_submission(paper, author, journal):
             subject=subject,
             plain_body=plain_body,
         )
+        _log_correspondence(
+            paper_id=paper.id,
+            recipient_email=editor.editor_email,
+            recipient_name=editor.editor_name or 'Editor',
+            subject=subject,
+            body=plain_body,
+            email_type='editor_notification',
+            sender_role='system',
+            status_at_send=getattr(paper, 'status', None),
+            delivery_status='sent' if success else 'failed',
+        )
         if success:
             any_sent = True
 
@@ -374,6 +457,17 @@ def send_copyright_form_email(paper, author, deadline):
         recipient_email=author.email,
         subject=subject,
         plain_body=plain_body,
+    )
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=author.email,
+        recipient_name=author_name,
+        subject=subject,
+        body=plain_body,
+        email_type='copyright_form',
+        sender_role='system',
+        status_at_send=getattr(paper, 'status', None),
+        delivery_status='sent' if success else 'failed',
     )
     return success
 
@@ -454,4 +548,15 @@ def send_coauthor_notification_email(coauthor_record, paper, submitting_author):
     )
     if not success:
         logger.error("Failed to send co-author notification to %s: %s", coauthor_record.email, error)
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=coauthor_record.email,
+        recipient_name=ca_name,
+        subject=subject,
+        body=plain_body,
+        email_type='coauthor_notification',
+        sender_role='system',
+        status_at_send=getattr(paper, 'status', None),
+        delivery_status='sent' if success else 'failed',
+    )
     return success
