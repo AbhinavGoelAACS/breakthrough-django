@@ -204,9 +204,6 @@ const JournalArchivesPage = () => {
                             to={`../volume/${volume.volume_no}/issue/${issue.issue_no}`}
                             className="issue-card"
                           >
-                            <div className="issue-cover">
-                              <span className="material-symbols-rounded">menu_book</span>
-                            </div>
                             <div className="issue-info">
                               <h4>Issue {issue.issue_no}</h4>
                               {issue.month && <p className="issue-month">{issue.month}</p>}
