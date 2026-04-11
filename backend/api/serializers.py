@@ -4,14 +4,20 @@ from .models import User, Journal, JournalDetails, PaperPublished, News
 
 
 def _build_journal_media_url(value, request=None):
-    """Build a full URL for journal image/logo fields.
-    Handles both new uploads (journals/SHORT/file.png) and legacy filenames (JOURNAL.png).
+    """Build a full absolute URL for journal image/logo fields.
+    Always rebuilds using the current request host so URLs are correct
+    in both local dev and production.
     """
     if not value:
         return None
-    # Already a full URL
+    # If already a full URL, extract the relative media path first
     if value.startswith(('http://', 'https://')):
-        return value
+        import re
+        match = re.search(r'/media/(.*)', value)
+        if match:
+            value = match.group(1)  # strip to relative path, rebuild below
+        else:
+            return value  # external URL, return as-is
     # New upload path (contains a slash, e.g. journals/IJMA/image_abc.png)
     if '/' in value:
         if request:
