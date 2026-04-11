@@ -272,6 +272,12 @@ class JournalDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"[JOURNAL PUT] Content-Type: {request.content_type}")
+        logger.warning(f"[JOURNAL PUT] request.FILES keys: {list(request.FILES.keys())}")
+        logger.warning(f"[JOURNAL PUT] request.data keys: {list(request.data.keys())}")
+
         serializer = JournalCreateUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
