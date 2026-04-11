@@ -72,6 +72,7 @@ const JournalNavbar = ({ journal }) => {
             {isAuthenticated && displayRole && (
               <Link className={styles.navLink} to={getDashboardPath()}>Dashboard</Link>
             )}
+            <Link className={styles.navLink} to="/">BPI Home</Link>
           </nav>
         </div>
 
