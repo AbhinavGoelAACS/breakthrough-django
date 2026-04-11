@@ -176,7 +176,10 @@ const JournalEditorialBoardPage = () => {
             We are currently accepting nominations for associate editorial positions. If you are a specialist in the fields covered by this journal, we invite your application.
           </p>
           <p className="eb-cta-contact">
-            Contact us at <a href="mailto:breakthroughpublishers@gmail.com">breakthroughpublishers@gmail.com</a>
+            Contact us at{' '}
+            <a href={`mailto:${chiefEditor?.email || 'breakthroughpublishers@gmail.com'}`}>
+              {chiefEditor?.email || 'breakthroughpublishers@gmail.com'}
+            </a>
           </p>
         </div>
       </section>
