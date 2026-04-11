@@ -55,7 +55,9 @@ const JournalNavbar = ({ journal }) => {
         {/* Left: Journal brand + nav */}
         <div className={styles.headerLeft}>
           <Link to={journalBasePath} className={styles.brand}>
-            {journal?.name || journal?.short_form}
+            {journal?.name
+              ? journal.name.split(/\s+/).map(w => w[0]).join('').toUpperCase()
+              : journal?.short_form}
           </Link>
           <nav className={styles.headerNav}>
             {navLinks.map((link) => (
