@@ -88,7 +88,13 @@ const JournalNavbar = ({ journal }) => {
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-expanded={menuOpen}
               >
-                <div className={styles.avatar}>{getInitials()}</div>
+                <div className={styles.avatar}>
+                  {user?.profile_picture ? (
+                    <img src={user.profile_picture} alt={getInitials()} className={styles.avatarImg} />
+                  ) : (
+                    getInitials()
+                  )}
+                </div>
                 <span className="material-symbols-rounded">
                   {menuOpen ? 'expand_less' : 'expand_more'}
                 </span>
