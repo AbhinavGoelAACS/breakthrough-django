@@ -53,6 +53,7 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
           {/* Left: Brand */}
           <div className={styles.headerLeft}>
             <Link className={styles.brand} to="/">
+              <img src="/logo.png" alt="BPI" className={styles.logo} />
               Breakthrough Publishers India
             </Link>
             {sections.length > 0 && (

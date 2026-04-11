@@ -62,6 +62,15 @@
   color: var(--primary);
   text-decoration: none;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.logo {
+  height: 36px;
+  width: auto;
+  border-radius: 50%;
 }
 
 .brand:hover {
