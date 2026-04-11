@@ -99,16 +99,6 @@ const JournalHomePage = () => {
                 </span>
               )}
             </div>
-            <div className="journal-hero-actions">
-              <Link to="submit" className="btn-primary">
-                <span className="material-symbols-rounded">edit_document</span>
-                Submit Manuscript
-              </Link>
-              <Link to="archives" className="btn-secondary">
-                <span className="material-symbols-rounded">library_books</span>
-                Browse Archives
-              </Link>
-            </div>
           </div>
           {currentJournal.journal_image && (
             <div className="journal-hero-image">
@@ -208,8 +198,7 @@ const JournalHomePage = () => {
           ) : (
             <div className="no-articles">
               <span className="material-symbols-rounded">description</span>
-              <p>No articles published yet. Be the first to submit!</p>
-              <Link to="submit" className="btn-primary">Submit Manuscript</Link>
+              <p>No articles published yet.</p>
             </div>
           )}
         </div>
@@ -245,25 +234,6 @@ const JournalHomePage = () => {
         </section>
       )}
 
-      {/* Call to Action */}
-      <section className="journal-cta-section">
-        <div className="section-container">
-          <div className="cta-content">
-            <h2>Ready to Contribute?</h2>
-            <p>Submit your research to {currentJournal.short_form} and join our community of scholars.</p>
-            <div className="cta-actions">
-              <Link to="submit" className="btn-primary">
-                <span className="material-symbols-rounded">edit_document</span>
-                Submit Manuscript
-              </Link>
-              <Link to="guidelines" className="btn-outline-light">
-                <span className="material-symbols-rounded">menu_book</span>
-                View Guidelines
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

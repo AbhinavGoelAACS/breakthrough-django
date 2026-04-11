@@ -21,9 +21,10 @@
 
 /* Page Header */
 .archives-page-header {
-  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
-  color: #fff;
-  padding: 3rem 1.5rem;
+  background: #fff;
+  color: #1a1a2e;
+  padding: 1.5rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .archives-header-content {
@@ -33,14 +34,15 @@
 
 .archives-page-header h1 {
   font-family: 'Crimson Pro', serif;
-  font-size: 2.75rem;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: #0D4715;
 }
 
 .archives-page-header p {
-  font-size: 1.25rem;
-  opacity: 0.9;
+  font-size: 14px;
+  color: #6b7280;
 }
 
 /* Content */
@@ -70,13 +72,13 @@
 
 .no-archives h3 {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.5rem;
+  font-size: 16px;
   color: #333333;
   margin-bottom: 0.5rem;
 }
 
 .no-archives p {
-  font-size: 1rem;
+  font-size: 14px;
   color: #64748b;
 }
 
@@ -123,18 +125,18 @@
 
 .volume-title {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.25rem;
+  font-size: 16px;
   font-weight: 600;
   color: #333333;
 }
 
 .volume-year {
-  font-size: 1rem;
+  font-size: 14px;
   color: #64748b;
 }
 
 .volume-issue-count {
-  font-size: 0.9rem;
+  font-size: 13px;
   color: #94a3b8;
   padding: 0.25rem 0.75rem;
   background: #f1f5f9;
@@ -231,31 +233,31 @@
 
 .issue-info h4 {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.125rem;
+  font-size: 16px;
   font-weight: 600;
   color: #333333;
   margin-bottom: 0.25rem;
 }
 
 .issue-month {
-  font-size: 0.9rem;
+  font-size: 13px;
   color: #64748b;
   margin-bottom: 0.25rem;
 }
 
 .issue-papers {
-  font-size: 0.875rem;
+  font-size: 13px;
   color: #94a3b8;
 }
 
 /* Responsive */
 @media (max-width: 600px) {
   .archives-page-header {
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
   }
 
   .archives-page-header h1 {
-    font-size: 2rem;
+    font-size: 20px;
   }
 
   .volume-header {

@@ -21,9 +21,10 @@
 
 /* Page Header */
 .about-page-header {
-  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
-  color: #fff;
-  padding: 3rem 1.5rem;
+  background: #fff;
+  color: #1a1a2e;
+  padding: 1.5rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .about-header-content {
@@ -33,14 +34,15 @@
 
 .about-page-header h1 {
   font-family: 'Crimson Pro', serif;
-  font-size: 2.75rem;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: #0D4715;
 }
 
 .about-page-header p {
-  font-size: 1.25rem;
-  opacity: 0.9;
+  font-size: 14px;
+  color: #6b7280;
 }
 
 /* Content Container */
@@ -69,11 +71,11 @@
 
 .info-card h3 {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.125rem;
+  font-size: 16px;
   font-weight: 600;
   color: #333333;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -83,13 +85,13 @@
 }
 
 .info-list dt {
-  font-size: 0.9rem;
+  font-size: 13px;
   color: #64748b;
   font-weight: 500;
 }
 
 .info-list dd {
-  font-size: 1rem;
+  font-size: 14px;
   color: #333333;
   font-weight: 500;
   margin-left: 0;
@@ -97,7 +99,7 @@
 }
 
 .indexing-text {
-  font-size: 1rem;
+  font-size: 14px;
   color: #4a5568;
   line-height: 1.6;
 }
@@ -118,17 +120,17 @@
 
 .about-section h2 {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.75rem;
+  font-size: 24px;
   font-weight: 700;
   color: #333333;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 2px solid #e2e8f0;
 }
 
 .section-content {
-  font-size: 1.0625rem;
-  line-height: 1.8;
+  font-size: 14px;
+  line-height: 1.75;
   color: #4a5568;
 }
 
@@ -179,11 +181,11 @@
 
 @media (max-width: 600px) {
   .about-page-header {
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
   }
 
   .about-page-header h1 {
-    font-size: 1.75rem;
+    font-size: 20px;
   }
 
   .about-section {
@@ -191,6 +193,6 @@
   }
 
   .about-section h2 {
-    font-size: 1.25rem;
+    font-size: 20px;
   }
 }

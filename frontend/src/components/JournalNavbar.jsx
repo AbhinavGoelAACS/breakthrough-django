@@ -177,9 +177,6 @@ const JournalNavbar = ({ journal }) => {
           {journal?.issn_print && (
             <span className={styles.infoItem}>ISSN (Print): {journal.issn_print}</span>
           )}
-          {journal?.chief_editor && (
-            <span className={styles.infoItem}>Editor-in-Chief: {journal.chief_editor}</span>
-          )}
         </div>
       </div>
     </header>

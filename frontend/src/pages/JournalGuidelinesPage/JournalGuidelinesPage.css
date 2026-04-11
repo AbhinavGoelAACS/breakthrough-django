@@ -21,9 +21,10 @@
 
 /* Page Header */
 .guidelines-page-header {
-  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
-  color: #fff;
-  padding: 3rem 1.5rem;
+  background: #fff;
+  color: #1a1a2e;
+  padding: 1.5rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .guidelines-header-content {
@@ -33,14 +34,15 @@
 
 .guidelines-page-header h1 {
   font-family: 'Crimson Pro', serif;
-  font-size: 2.75rem;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: #0D4715;
 }
 
 .guidelines-page-header p {
-  font-size: 1.25rem;
-  opacity: 0.9;
+  font-size: 14px;
+  color: #6b7280;
 }
 
 /* Content Container */
@@ -65,12 +67,12 @@
 }
 
 .guidelines-nav h3 {
-  font-size: 1rem;
+  font-size: 13px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .guidelines-nav ul {
@@ -88,7 +90,7 @@
   padding: 0.5rem 0.75rem;
   color: #4a5568;
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 14px;
   border-radius: 6px;
   transition: all 0.2s ease;
 }
@@ -138,27 +140,27 @@
 
 .guidelines-section h2 {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.75rem;
+  font-size: 24px;
   font-weight: 700;
   color: #333333;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 2px solid #e2e8f0;
 }
 
 .section-content {
-  font-size: 1.0625rem;
-  line-height: 1.8;
+  font-size: 14px;
+  line-height: 1.75;
   color: #4a5568;
 }
 
 .section-content h3 {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.25rem;
+  font-size: 16px;
   font-weight: 600;
   color: #333333;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .section-content h3:first-child {
@@ -278,11 +280,11 @@
 
 @media (max-width: 600px) {
   .guidelines-page-header {
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
   }
 
   .guidelines-page-header h1 {
-    font-size: 2rem;
+    font-size: 20px;
   }
 
   .guidelines-section {
@@ -290,6 +292,6 @@
   }
 
   .guidelines-section h2 {
-    font-size: 1.25rem;
+    font-size: 20px;
   }
 }

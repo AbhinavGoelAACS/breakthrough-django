@@ -22,22 +22,10 @@
 
 /* Hero Section */
 .journal-hero {
-  background: linear-gradient(135deg, #0D4715 0%, #1a5c24 50%, #41644A 100%);
-  color: #fff;
-  padding: 5rem 2rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.journal-hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(ellipse at 80% 50%, rgba(255,255,255,0.05) 0%, transparent 60%);
-  pointer-events: none;
+  background: #f0fdf4;
+  color: #1a1a2e;
+  padding: 2.5rem 2rem;
+  border-bottom: 1px solid #d1e7d5;
 }
 
 .journal-hero-content {
@@ -45,9 +33,8 @@
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 3rem;
+  gap: 2.5rem;
   position: relative;
-  z-index: 1;
 }
 
 .journal-hero-text {
@@ -56,18 +43,18 @@
 
 .journal-title {
   font-family: 'Crimson Pro', serif;
-  font-size: 3.25rem;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 0.75rem;
-  line-height: 1.15;
-  letter-spacing: -0.5px;
+  margin-bottom: 0.35rem;
+  line-height: 1.2;
+  color: #0D4715;
 }
 
 .journal-tagline {
-  font-family: 'Crimson Pro', serif;
-  font-size: 1.5rem;
-  opacity: 0.9;
-  margin-bottom: 1.75rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: #4b5563;
+  margin-bottom: 1.25rem;
   font-weight: 400;
 }
 
@@ -82,23 +69,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 1.05rem;
-  opacity: 0.9;
+  font-size: 14px;
+  color: #4b5563;
 }
 
 .meta-icon {
   font-size: 1.1rem;
-  opacity: 0.75;
+  color: #6b7280;
 }
 
 .meta-item strong {
   font-weight: 600;
-}
-
-.journal-hero-actions {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
 }
 
 .journal-hero-image {
@@ -106,83 +87,34 @@
 }
 
 .journal-hero-image img {
-  max-width: 280px;
+  max-width: 240px;
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 /* Buttons */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.85rem 1.75rem;
-  background: #fff;
-  color: #0D4715;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1.05rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.btn-primary .material-symbols-rounded {
-  font-size: 1.2rem;
-}
-
-.btn-primary:hover {
-  background: #f0f0f0;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
 .btn-secondary {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.75rem;
+  padding: 0.6rem 1.25rem;
   background: transparent;
-  color: #fff;
+  color: #0D4715;
   text-decoration: none;
   font-weight: 600;
-  font-size: 1.05rem;
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  border: 1.5px solid #0D4715;
   border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 .btn-secondary .material-symbols-rounded {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #fff;
-}
-
-.btn-outline-light {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.85rem 1.75rem;
-  background: transparent;
+  background: #0D4715;
   color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1.05rem;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.btn-outline-light .material-symbols-rounded {
-  font-size: 1.2rem;
-}
-
-.btn-outline-light:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #fff;
 }
 
 /* Section Styles */
@@ -194,11 +126,10 @@
 
 .section-title {
   font-family: 'Crimson Pro', serif;
-  font-size: 2.25rem;
+  font-size: 24px;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 1.5rem;
-  letter-spacing: -0.3px;
+  margin-bottom: 1rem;
 }
 
 .section-header {
@@ -219,7 +150,7 @@
   color: #0D4715;
   text-decoration: none;
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 14px;
 }
 
 .view-all-link .material-symbols-rounded {
@@ -232,15 +163,15 @@
 
 /* About Section */
 .journal-about-section {
-  padding: 4.5rem 0;
+  padding: 3rem 0;
   background: #fff;
 }
 
 .about-content p {
-  font-size: 1.2rem;
-  line-height: 1.85;
+  font-size: 14px;
+  line-height: 1.75;
   color: #374151;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .read-more-link {
@@ -250,7 +181,7 @@
   color: #0D4715;
   text-decoration: none;
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 14px;
 }
 
 .read-more-link:hover {
@@ -263,42 +194,42 @@
 
 /* Editorial Board Section */
 .journal-editorial-section {
-  padding: 4.5rem 0;
-  background: #f0fdf4;
+  padding: 3rem 0;
+  background: #f8fafc;
 }
 
 .editorial-summary {
-  font-size: 1.1rem;
+  font-size: 14px;
   color: #4b5563;
   line-height: 1.7;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   max-width: 600px;
 }
 
 /* Scope Section */
 .journal-scope-section {
-  padding: 4.5rem 0;
-  background: #f8fafc;
+  padding: 3rem 0;
+  background: #fff;
 }
 
 .scope-content p {
-  font-size: 1.2rem;
-  line-height: 1.8;
+  font-size: 14px;
+  line-height: 1.75;
   color: #374151;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 /* Articles Section */
 .journal-articles-section {
-  padding: 4.5rem 0;
-  background: #fff;
+  padding: 3rem 0;
+  background: #f8fafc;
 }
 
 .articles-loading {
   text-align: center;
   padding: 2rem;
   color: #64748b;
-  font-size: 1.05rem;
+  font-size: 14px;
 }
 
 .spinner-small {
@@ -324,22 +255,21 @@
 .article-card {
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 1.75rem;
+  border-radius: 12px;
+  padding: 1.5rem;
   transition: all 0.25s ease;
 }
 
 .article-card:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   border-color: #cbd5e1;
-  transform: translateY(-2px);
 }
 
 .article-title {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.3rem;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
   line-height: 1.4;
 }
 
@@ -353,50 +283,49 @@
 }
 
 .article-authors {
-  font-size: 1.05rem;
+  font-size: 14px;
   color: #6b7280;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .article-abstract {
-  font-size: 1.05rem;
+  font-size: 14px;
   color: #4b5563;
   line-height: 1.65;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .article-meta {
   display: flex;
   gap: 1rem;
-  font-size: 0.95rem;
+  font-size: 13px;
   color: #9ca3af;
   font-weight: 500;
 }
 
 .no-articles {
   text-align: center;
-  padding: 3.5rem;
+  padding: 3rem;
   background: #f8fafc;
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .no-articles .material-symbols-rounded {
-  font-size: 3rem;
+  font-size: 2.5rem;
   color: #cbd5e1;
   display: block;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .no-articles p {
-  margin-bottom: 1.25rem;
   color: #6b7280;
-  font-size: 1.1rem;
+  font-size: 14px;
 }
 
 /* Volumes Section */
 .journal-volumes-section {
-  padding: 4.5rem 0;
-  background: #f8fafc;
+  padding: 3rem 0;
+  background: #fff;
 }
 
 .volumes-grid {
@@ -431,61 +360,27 @@
 
 .volume-number {
   font-family: 'Crimson Pro', serif;
-  font-size: 1.3rem;
+  font-size: 16px;
   font-weight: 700;
   color: #1a1a2e;
 }
 
 .volume-year {
-  font-size: 1rem;
+  font-size: 14px;
   color: #6b7280;
   margin-top: 0.25rem;
 }
 
 .volume-issues {
-  font-size: 0.9rem;
+  font-size: 13px;
   color: #9ca3af;
   margin-top: 0.3rem;
-}
-
-/* CTA Section */
-.journal-cta-section {
-  padding: 5rem 0;
-  background: linear-gradient(135deg, #0D4715 0%, #1a5c24 50%, #41644A 100%);
-  color: #fff;
-}
-
-.cta-content {
-  text-align: center;
-}
-
-.cta-content h2 {
-  font-family: 'Crimson Pro', serif;
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-}
-
-.cta-content p {
-  font-size: 1.25rem;
-  opacity: 0.9;
-  margin-bottom: 2rem;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.cta-actions {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
 }
 
 /* Responsive */
 @media (max-width: 900px) {
   .journal-hero {
-    padding: 3.5rem 1.5rem;
+    padding: 2rem 1.5rem;
   }
 
   .journal-hero-content {
@@ -493,24 +388,12 @@
     text-align: center;
   }
 
-  .journal-title {
-    font-size: 2.5rem;
-  }
-
   .journal-meta {
     justify-content: center;
   }
 
-  .journal-hero-actions {
-    justify-content: center;
-  }
-
   .journal-hero-image img {
-    max-width: 220px;
-  }
-
-  .section-title {
-    font-size: 1.85rem;
+    max-width: 200px;
   }
 
   .articles-grid {
@@ -520,15 +403,15 @@
 
 @media (max-width: 600px) {
   .journal-hero {
-    padding: 2.5rem 1rem;
+    padding: 1.5rem 1rem;
   }
 
   .journal-title {
-    font-size: 2rem;
+    font-size: 20px;
   }
 
   .journal-tagline {
-    font-size: 1.2rem;
+    font-size: 14px;
   }
 
   .section-container {
@@ -536,92 +419,10 @@
   }
 
   .section-title {
-    font-size: 1.6rem;
-  }
-
-  .about-content p,
-  .scope-content p {
-    font-size: 1.05rem;
+    font-size: 20px;
   }
 
   .volumes-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  }
-
-  .cta-content h2 {
-    font-size: 1.85rem;
-  }
-
-  .cta-content p {
-    font-size: 1.05rem;
-  }
-}
-
-.cta-content {
-  text-align: center;
-}
-
-.cta-content h2 {
-  font-family: 'Crimson Pro', serif;
-  font-size: 2.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.cta-content p {
-  font-size: 1.25rem;
-  opacity: 0.9;
-  margin-bottom: 2rem;
-}
-
-.cta-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Responsive */
-@media (max-width: 900px) {
-  .journal-hero-content {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .journal-hero-image {
-    order: -1;
-  }
-
-  .journal-hero-image img {
-    max-width: 200px;
-  }
-
-  .journal-title {
-    font-size: 2rem;
-  }
-
-  .journal-meta {
-    justify-content: center;
-  }
-
-  .journal-hero-actions {
-    justify-content: center;
-  }
-}
-
-@media (max-width: 600px) {
-  .journal-hero {
-    padding: 2.5rem 1rem;
-  }
-
-  .journal-title {
-    font-size: 1.75rem;
-  }
-
-  .articles-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .section-title {
-    font-size: 1.5rem;
   }
 }
