@@ -1,16 +1,16 @@
-/**
- * JournalAboutPage Styles
- */
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Open+Sans:wght@400;600;700&display=swap');
+/* ============================================
+   Journal About Page — Editorial Design
+   ============================================ */
 
-.journal-about-page {
+.jap-page {
   min-height: 100vh;
-  background: #f8fafc;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--j-surface);
+  font-family: var(--font-body);
+  color: var(--j-on-surface);
 }
 
-.journal-about-loading,
-.journal-about-error {
+.jap-loading,
+.jap-error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -19,180 +19,488 @@
   gap: 1rem;
 }
 
-/* Page Header */
-.about-page-header {
-  background: #fff;
-  color: #1a1a2e;
-  padding: 1.5rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.about-header-content {
-  max-width: 1200px;
+.jap-main {
+  max-width: 1920px;
   margin: 0 auto;
+  padding: 4rem 3rem 8rem;
 }
 
-.about-page-header h1 {
-  font-family: 'Crimson Pro', serif;
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  color: #0D4715;
-}
-
-.about-page-header p {
-  font-size: 14px;
-  color: #6b7280;
-}
-
-/* Content Container */
-.about-content-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
+/* ============================================
+   HERO
+   ============================================ */
+.jap-hero {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 1fr;
   gap: 2rem;
+  margin-bottom: 8rem;
+  align-items: end;
 }
 
-/* Sidebar */
-.journal-info-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.jap-hero-title {
+  font-family: var(--font-headline);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 4.5rem;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--j-primary);
+  margin-bottom: 2rem;
 }
 
-.info-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+.jap-hero-subtitle {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--j-on-surface-variant);
+  max-width: 42rem;
+  margin-bottom: 3rem;
 }
 
-.info-card h3 {
-  font-family: 'Crimson Pro', serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333333;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
+.jap-hero-image-wrap {
+  position: relative;
 }
 
-.info-list {
-  display: grid;
-  gap: 0.75rem;
+.jap-hero-image-box {
+  aspect-ratio: 4 / 5;
+  background: var(--j-surface-low);
+  overflow: hidden;
 }
 
-.info-list dt {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
+.jap-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.8;
+  mix-blend-mode: multiply;
 }
 
-.info-list dd {
-  font-size: 14px;
-  color: #333333;
-  font-weight: 500;
-  margin-left: 0;
+.jap-hero-placeholder {
+  background: var(--j-surface-low);
+}
+
+.jap-hero-overlay-card {
+  position: absolute;
+  bottom: -1.5rem;
+  left: -1.5rem;
+  background: var(--j-primary-fixed);
+  padding: 2rem;
+  max-width: 18rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.jap-hero-overlay-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--j-on-primary-fixed-variant);
   margin-bottom: 0.5rem;
 }
 
-.indexing-text {
-  font-size: 14px;
-  color: #4a5568;
-  line-height: 1.6;
+.jap-hero-overlay-quote {
+  font-family: var(--font-headline);
+  font-style: italic;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  color: var(--j-on-surface);
 }
 
-/* Main Content */
-.about-main-content {
+/* ============================================
+   JOURNAL INFORMATION — BENTO GRID
+   ============================================ */
+.jap-info {
+  margin-bottom: 8rem;
+}
+
+.jap-section-label {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--j-outline);
+  margin-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.jap-label-line {
+  display: inline-block;
+  height: 1px;
+  width: 3rem;
+  background: var(--j-outline-variant);
+}
+
+.jap-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+
+.jap-info-card {
+  padding: 3rem;
+  border: 1px solid rgba(193, 200, 194, 0.15);
+  transition: background 0.5s ease;
+}
+
+.jap-info-card--editor {
+  background: var(--j-surface-lowest);
+}
+
+.jap-info-card--editor:hover {
+  background: var(--j-surface);
+}
+
+.jap-info-card--freq {
+  background: var(--j-surface-low);
+}
+
+.jap-info-card--freq:hover {
+  background: var(--j-surface);
+}
+
+.jap-info-card--access {
+  background: var(--j-primary-container);
+  color: white;
+}
+
+.jap-info-card--access:hover {
+  opacity: 0.95;
+}
+
+.jap-info-card-header {
+  display: block;
+  font-family: var(--font-headline);
+  font-style: italic;
+  font-size: 1.875rem;
+  color: var(--j-primary);
+  margin-bottom: 1.5rem;
+}
+
+.jap-info-card--access .jap-info-card-header {
+  color: var(--j-on-primary-container);
+}
+
+.jap-info-card-title {
+  font-family: var(--font-body);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--j-on-surface);
+  margin-bottom: 0.5rem;
+}
+
+.jap-info-card--access .jap-info-card-title {
+  color: white;
+}
+
+.jap-info-card-body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--j-on-surface-variant);
+}
+
+.jap-info-card--access .jap-info-card-body {
+  color: var(--j-on-primary-container);
+}
+
+/* ============================================
+   ABOUT THE JOURNAL — ASYMMETRIC CONTENT
+   ============================================ */
+.jap-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 8rem;
+}
+
+.jap-content-sidebar {
+  position: relative;
+}
+
+.jap-content-heading {
+  font-family: var(--font-headline);
+  font-style: italic;
+  font-size: 3rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--j-primary);
+  margin-bottom: 1.5rem;
+}
+
+.jap-content-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.jap-badge {
+  display: inline-block;
+  background: var(--j-secondary-container);
+  color: var(--j-on-secondary-container);
+  padding: 0.25rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.jap-content-main {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 3rem;
 }
 
-.about-section {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 2rem;
-}
-
-.about-section h2 {
-  font-family: 'Crimson Pro', serif;
-  font-size: 24px;
-  font-weight: 700;
-  color: #333333;
+.jap-content-block-title {
+  font-family: var(--font-headline);
+  font-size: 1.875rem;
+  font-weight: 400;
+  color: var(--j-on-surface);
   margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #e2e8f0;
+  transition: font-style 0.3s ease;
 }
 
-.section-content {
-  font-size: 14px;
-  line-height: 1.75;
-  color: #4a5568;
+.jap-content-block:hover .jap-content-block-title {
+  font-style: italic;
 }
 
-.section-content p {
+.jap-content-block-body {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--j-on-surface-variant);
+}
+
+.jap-content-block-body p {
   margin-bottom: 1rem;
 }
 
-.section-content ul,
-.section-content ol {
+.jap-content-block-body ul,
+.jap-content-block-body ol {
   margin-left: 1.5rem;
   margin-bottom: 1rem;
 }
 
-.section-content li {
+.jap-content-block-body li {
   margin-bottom: 0.5rem;
 }
 
-.section-content h3,
-.section-content h4 {
-  color: #333333;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
+/* Quote / Editorial Philosophy block */
+.jap-content-quote {
+  background: var(--j-surface-container);
+  padding: 3rem;
+  border-left: 4px solid var(--j-primary);
 }
 
-.chief-say {
+.jap-content-quote-title {
+  font-family: var(--font-headline);
   font-style: italic;
-  border-left: 4px solid #0D4715;
-  padding-left: 1.5rem;
+  font-size: 1.875rem;
+  font-weight: 400;
+  color: var(--j-on-surface);
+  margin-bottom: 1rem;
 }
 
-.chief-signature {
-  margin-top: 1rem;
-  font-weight: 600;
-  color: #333333;
+.jap-content-quote-body {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--j-on-surface-variant);
+}
+
+.jap-content-quote-body p {
+  margin-bottom: 1rem;
+}
+
+.jap-content-quote-cite {
+  display: block;
+  margin-top: 1.5rem;
+  font-family: var(--font-body);
   font-style: normal;
+  font-weight: 700;
+  color: var(--j-primary);
+  letter-spacing: 0.05em;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .about-content-container {
-    grid-template-columns: 1fr;
+/* ============================================
+   STATS / IMPACT STRIP
+   ============================================ */
+.jap-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3rem;
+  background: var(--j-surface-high);
+  padding: 4rem 3rem;
+  margin-bottom: 8rem;
+}
+
+.jap-stat {
+  text-align: center;
+}
+
+.jap-stat-value {
+  display: block;
+  font-family: var(--font-headline);
+  font-style: italic;
+  font-size: 2.25rem;
+  font-weight: 400;
+  color: var(--j-primary);
+  margin-bottom: 0.5rem;
+}
+
+.jap-stat-label {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--j-outline);
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.jap-footer {
+  width: 100%;
+  background: var(--j-primary);
+  border-top: 1px solid rgba(193, 200, 194, 0.15);
+}
+
+.jap-footer-inner {
+  width: 100%;
+  padding: 4rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 1920px;
+  margin: 0 auto;
+}
+
+.jap-footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.jap-footer-name {
+  font-family: var(--font-headline);
+  font-size: 1.25rem;
+  font-style: italic;
+  color: white;
+}
+
+.jap-footer-copyright {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--j-surface);
+  max-width: 24rem;
+}
+
+.jap-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.jap-footer-nav a {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--j-secondary-fixed);
+  opacity: 0.8;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  text-decoration: none;
+}
+
+.jap-footer-nav a:hover {
+  opacity: 1;
+  color: white;
+}
+
+.jap-footer-icons {
+  display: flex;
+  gap: 1rem;
+}
+
+.jap-footer-icon-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(193, 200, 194, 0.15);
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.jap-footer-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.jap-footer-icon-btn .material-symbols-outlined {
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   RESPONSIVE — md: 768px+
+   ============================================ */
+@media (min-width: 768px) {
+  .jap-hero {
+    grid-template-columns: 7fr 5fr;
   }
 
-  .journal-info-sidebar {
-    order: -1;
+  .jap-hero-title {
+    font-size: 6rem;
+  }
+
+  .jap-hero-subtitle {
+    font-size: 1.5rem;
+  }
+
+  .jap-info-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .jap-content {
+    grid-template-columns: 4fr 8fr;
+  }
+
+  .jap-content-sidebar {
+    position: sticky;
+    top: 8rem;
+    align-self: start;
+  }
+
+  .jap-content-main {
+    padding-left: 4rem;
+  }
+
+  .jap-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .jap-footer-inner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 
-@media (max-width: 600px) {
-  .about-page-header {
-    padding: 1.5rem 1rem;
+/* lg: 1024px+ */
+@media (min-width: 1024px) {
+  .jap-main {
+    padding: 4rem 4rem 8rem;
   }
 
-  .about-page-header h1 {
-    font-size: 20px;
-  }
-
-  .about-section {
-    padding: 1.5rem;
-  }
-
-  .about-section h2 {
-    font-size: 20px;
+  .jap-hero-title {
+    font-size: 7rem;
   }
 }
