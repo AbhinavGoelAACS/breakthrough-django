@@ -127,8 +127,8 @@ body {
 
 .app-main {
   flex: 1;
-  margin-top: 60px; /* Space for fixed Navbar header on public pages */
-  min-height: calc(100vh - 60px);
+  margin-top: 84px; /* Space for fixed Navbar header on public pages */
+  min-height: calc(100vh - 84px);
 }
 
 .app-main.journal-main {

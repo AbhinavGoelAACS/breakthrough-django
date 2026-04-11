@@ -2,16 +2,8 @@ import React, { useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleSwitcher } from '../RoleSwitcher';
-import logo from '../../assets/logo.png';
 import styles from './Navbar.module.css';
 
-/**
- * Navbar - Combined header and sidebar navigation component
- * 
- * @param {Object} props
- * @param {Array} props.sections - Navigation sections with items for sidebar
- * @param {string} props.portalName - Name of the current portal (e.g., "Admin Portal")
- */
 const Navbar = ({ sections = [], portalName = "Portal" }) => {
   const { isAuthenticated, user, logout, activeRole, roles } = useAuth();
   const navigate = useNavigate();
@@ -19,14 +11,7 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Use activeRole for display, fall back to user.role
   const displayRole = activeRole || user?.role?.toLowerCase();
-
-  // Check if user has a specific role
-  const hasRoleAccess = (role) => {
-    if (displayRole === role) return true;
-    return roles?.some(r => r.role?.toLowerCase() === role && r.status === 'approved');
-  };
 
   const handleLogout = () => {
     logout();
@@ -57,42 +42,51 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
     return false;
   };
 
+  const navLinks = [
+    { label: 'Journals', path: '/journals' }
+  ];
+
   return (
     <>
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerContainer}>
-          {/* Left: Logo */}
+          {/* Left: Brand */}
           <div className={styles.headerLeft}>
             <Link className={styles.brand} to="/">
-              <img src={logo} alt="Breakthrough Publishers India" className={styles.logo} />
-              <span className={styles.logoText}>Breakthrough Publishers India</span>
-              <span className={styles.logoTextShort}>BPI</span>
+              Breakthrough Publishers India
             </Link>
             {sections.length > 0 && (
               <span className={styles.portalBadge}>{portalName}</span>
             )}
           </div>
 
-          {/* Center: Main nav links */}
+          {/* Center: Nav links */}
           <nav className={styles.headerNav}>
-            <Link className={styles.navLink} to="/">Home</Link>
-            <Link className={styles.navLink} to="/journals">Journals</Link>
-            <Link className={styles.navLink} to="/submit">Submit Paper</Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                className={`${styles.navLink} ${isActive(link.path) ? styles.navLinkActive : ''}`}
+                to={link.path}
+              >
+                {link.label}
+              </Link>
+            ))}
             {isAuthenticated && displayRole && (
-              <Link className={styles.navLink} to={getDashboardPath()}>Dashboard</Link>
+              <Link className={`${styles.navLink} ${isActive(getDashboardPath()) ? styles.navLinkActive : ''}`} to={getDashboardPath()}>Dashboard</Link>
             )}
           </nav>
 
-          {/* Right: User menu */}
+          {/* Right: Actions */}
           <div className={styles.headerRight}>
+            <Link to="/submit" className={styles.submitBtn}>Submit Paper</Link>
+
             {isAuthenticated ? (
               <>
                 <div className={styles.desktopOnly}>
                   <RoleSwitcher />
                 </div>
                 <div className={styles.userMenu}>
-                  <button 
+                  <button
                     className={styles.userButton}
                     onClick={() => setMenuOpen(!menuOpen)}
                     aria-expanded={menuOpen}
@@ -105,9 +99,7 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
                   {menuOpen && (
                     <div className={styles.dropdown}>
                       <div className={styles.dropdownHeader}>
-                        <span className={styles.userName}>
-                          {user?.fname} {user?.lname}
-                        </span>
+                        <span className={styles.userName}>{user?.fname} {user?.lname}</span>
                         <span className={styles.userEmail}>{user?.email}</span>
                         <span className={styles.userRole}>{displayRole}</span>
                       </div>
@@ -121,14 +113,12 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
                 </div>
               </>
             ) : (
-              <div className={styles.authButtons}>
-                <Link to="/login" className={styles.loginBtn}>Login</Link>
-                <Link to="/signup" className={styles.signupBtn}>Sign Up</Link>
-              </div>
+              <button className={styles.personBtn} onClick={() => navigate('/login')}>
+                <span className="material-symbols-outlined">person</span>
+              </button>
             )}
 
-            {/* Mobile menu button */}
-            <button 
+            <button
               className={styles.mobileMenuBtn}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
@@ -140,13 +130,13 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
           </div>
         </div>
 
-        {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
           <div className={styles.mobileMenu}>
             <nav className={styles.mobileNav}>
               <Link className={styles.mobileNavLink} to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-              <Link className={styles.mobileNavLink} to="/journals" onClick={() => setMobileMenuOpen(false)}>Journals</Link>
-              <Link className={styles.mobileNavLink} to="/submit" onClick={() => setMobileMenuOpen(false)}>Submit Paper</Link>
+              {navLinks.map((link) => (
+                <Link key={link.path} className={styles.mobileNavLink} to={link.path} onClick={() => setMobileMenuOpen(false)}>{link.label}</Link>
+              ))}
               {isAuthenticated && displayRole && (
                 <Link className={styles.mobileNavLink} to={getDashboardPath()} onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
               )}
@@ -160,7 +150,6 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
         )}
       </header>
 
-      {/* Sidebar - Icon only with tooltips */}
       {sections.length > 0 && (
         <aside className={styles.sidebar}>
           <nav className={styles.sidebarNav}>
@@ -170,7 +159,7 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
                   <NavLink
                     key={itemIndex}
                     to={item.path}
-                    className={({ isActive }) => 
+                    className={({ isActive }) =>
                       `${styles.sidebarItem} ${isActive ? styles.active : ''}`
                     }
                     data-tooltip={item.label}
