@@ -5,7 +5,7 @@
  * Displays volumes, issues, and published articles.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useJournalContext } from '../../contexts/JournalContext';
 import { acsApi } from '../../api/apiService';
@@ -14,7 +14,7 @@ import './JournalArchivesPage.css';
 const JournalArchivesPage = () => {
   const { currentJournal, loading: contextLoading } = useJournalContext();
   const [searchParams] = useSearchParams();
-  
+
   const [volumes, setVolumes] = useState([]);
   const [selectedVolume, setSelectedVolume] = useState(null);
   const [issues, setIssues] = useState([]);
@@ -28,7 +28,6 @@ const JournalArchivesPage = () => {
   }, [currentJournal]);
 
   useEffect(() => {
-    // Check URL params for pre-selected volume
     const volumeParam = searchParams.get('volume');
     if (volumeParam && volumes.length > 0) {
       const vol = volumes.find(v => v.volume_no === parseInt(volumeParam));
@@ -44,8 +43,6 @@ const JournalArchivesPage = () => {
       setLoading(true);
       const response = await acsApi.journals.getVolumes(currentJournal.id);
       setVolumes(response.volumes || []);
-      
-      // Auto-expand latest volume
       if (response.volumes?.length > 0) {
         const latestVolume = response.volumes[0];
         setExpandedVolumes({ [latestVolume.volume_no]: true });
@@ -67,7 +64,6 @@ const JournalArchivesPage = () => {
       }));
     } catch (err) {
       console.error('Failed to fetch issues:', err);
-      // Set empty array on error to show "No issues available" instead of infinite loader
       setIssues(prev => ({
         ...prev,
         [volumeNo]: []
@@ -77,16 +73,28 @@ const JournalArchivesPage = () => {
 
   const toggleVolume = (volumeNo) => {
     const isExpanded = expandedVolumes[volumeNo];
-    
     setExpandedVolumes(prev => ({
       ...prev,
       [volumeNo]: !isExpanded
     }));
-
     if (!isExpanded && !issues[volumeNo]) {
       fetchIssuesForVolume(volumeNo);
     }
   };
+
+  const totalArticles = useMemo(() => {
+    let count = 0;
+    Object.values(issues).forEach(issueList => {
+      if (Array.isArray(issueList)) {
+        issueList.forEach(issue => {
+          count += issue.paper_count || 0;
+        });
+      }
+    });
+    return count;
+  }, [issues]);
+
+  const journalBasePath = `/j/${currentJournal?.short_form || ''}`;
 
   if (contextLoading || loading) {
     return (
@@ -107,20 +115,57 @@ const JournalArchivesPage = () => {
 
   return (
     <div className="journal-archives-page">
-      {/* Page Header */}
-      <header className="archives-page-header">
-        <div className="archives-header-content">
-          <h1>Archives</h1>
-          <p>Browse all published volumes and issues of {currentJournal.short_form}</p>
-        </div>
-      </header>
 
-      <div className="archives-content">
+      {/* ── Hero Header ── */}
+      <section className="archives-hero">
+        <div className="archives-hero-grid">
+          <div className="archives-hero-left">
+            <h1 className="archives-hero-title">
+              The Records of <span className="archives-hero-italic">Scholarship</span>
+            </h1>
+            <p className="archives-hero-subtitle">
+              Explore our growing collection of open-access research, preserved for the future of {currentJournal.name || currentJournal.short_form}.
+            </p>
+          </div>
+          <div className="archives-hero-right">
+            <div className="archives-stat-card">
+              <span className="archives-stat-number">{totalArticles}</span>
+              <span className="archives-stat-label">Articles Published</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Content: Empty State or Volumes ── */}
+      <section className="archives-body">
         {volumes.length === 0 ? (
-          <div className="no-archives">
-            <span className="material-symbols-rounded">folder_open</span>
-            <h3>No Archives Yet</h3>
-            <p>No volumes have been published yet. Check back soon!</p>
+          <div className="archives-empty">
+            {/* Decorative blurs */}
+            <div className="archives-empty-blur archives-empty-blur-1" />
+            <div className="archives-empty-blur archives-empty-blur-2" />
+
+            <div className="archives-empty-content">
+              <div className="archives-empty-icon-wrap">
+                <span className="material-symbols-rounded archives-empty-icon">folder_open</span>
+              </div>
+              <h2 className="archives-empty-title">No Archives Yet</h2>
+              <p className="archives-empty-text">
+                Our digital ink is still drying. We are currently curating the inaugural issue of <em>{currentJournal.name || currentJournal.short_form}</em>. Be among the first to preserve your research in our collection.
+              </p>
+              <div className="archives-empty-buttons">
+                <Link to={`${journalBasePath}/submit`} className="archives-empty-btn-primary">
+                  Start Your Submission
+                </Link>
+                <Link to={`${journalBasePath}/guidelines`} className="archives-empty-btn-outline">
+                  Author Guidelines
+                </Link>
+              </div>
+            </div>
+
+            <div className="archives-empty-quote">
+              <p className="archives-empty-quote-text">"The archive is not a quiet place of rest; it is the living memory of the future."</p>
+              <span className="archives-empty-quote-attr">— Curatorial Statement v.1.0</span>
+            </div>
           </div>
         ) : (
           <div className="volumes-list">
@@ -179,7 +224,62 @@ const JournalArchivesPage = () => {
             ))}
           </div>
         )}
-      </div>
+      </section>
+
+      {/* ── Bento Feature Grid ── */}
+      <section className="archives-bento">
+        <div className="archives-bento-grid">
+          <div className="bento-card bento-card-light">
+            <div className="bento-icon bento-icon-secondary">
+              <span className="material-symbols-rounded">menu_book</span>
+            </div>
+            <h3 className="bento-title">Open Access</h3>
+            <p className="bento-text">
+              All research is licensed under Creative Commons, ensuring permanent global accessibility without barriers.
+            </p>
+          </div>
+          <div className="bento-card bento-card-dim">
+            <div className="bento-icon bento-icon-primary">
+              <span className="material-symbols-rounded">history_edu</span>
+            </div>
+            <h3 className="bento-title">Rigorous Review</h3>
+            <p className="bento-text">
+              Our double-blind peer review process ensures that every archival entry meets the highest academic standards.
+            </p>
+          </div>
+          <div className="bento-card bento-card-light">
+            <div className="bento-icon bento-icon-tertiary">
+              <span className="material-symbols-rounded">database</span>
+            </div>
+            <h3 className="bento-title">Digital Longevity</h3>
+            <p className="bento-text">
+              We use resilient digital preservation strategies to ensure your research outlives the platforms that hold it.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="archives-footer">
+        <div className="archives-footer-inner">
+          <div className="archives-footer-brand">
+            <span className="archives-footer-name">{currentJournal.name || currentJournal.short_form}</span>
+            <p className="archives-footer-copy">
+              &copy; {new Date().getFullYear()} {currentJournal.name || currentJournal.short_form}. All research licensed under Creative Commons.
+            </p>
+          </div>
+          <div className="archives-footer-links">
+            <Link to="/privacy-policy">Privacy Policy</Link>
+            <Link to="/terms-of-service">Terms of Service</Link>
+            <a href="#">Contact Us</a>
+            <a href="#">Open Access Policy</a>
+          </div>
+          <div className="archives-footer-icons">
+            <span className="material-symbols-rounded">language</span>
+            <span className="material-symbols-rounded">share</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

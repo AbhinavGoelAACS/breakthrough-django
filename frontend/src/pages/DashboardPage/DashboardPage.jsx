@@ -131,7 +131,7 @@ export const DashboardPage = () => {
               to={(GUIDELINES_BY_ROLE[activeRole?.toLowerCase()] || GUIDELINES_BY_ROLE.author).path}
               className={styles.ctaBtnSecondary}
             >
-              Author Guidelines
+              {(GUIDELINES_BY_ROLE[activeRole?.toLowerCase()] || GUIDELINES_BY_ROLE.author).label}
               <span className="material-symbols-rounded">menu_book</span>
             </Link>
           </div>
