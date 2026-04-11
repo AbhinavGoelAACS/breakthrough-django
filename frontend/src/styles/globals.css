@@ -108,8 +108,8 @@ body {
 }
 
 .app-main.journal-main {
-  margin-top: 0; /* Journal navbar is sticky, not fixed */
-  min-height: 100vh;
+  margin-top: 92px; /* Fixed header (60px) + info bar (32px) */
+  min-height: calc(100vh - 92px);
 }
 
 .app-main.portal-main {

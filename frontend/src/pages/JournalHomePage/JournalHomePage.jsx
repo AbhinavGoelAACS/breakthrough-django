@@ -12,10 +12,9 @@ import { acsApi } from '../../api/apiService';
 import './JournalHomePage.css';
 
 const JournalHomePage = () => {
-  const { currentJournal, journalDetails, loading: contextLoading, journalShortForm } = useJournalContext();
+  const { currentJournal, journalDetails, loading: contextLoading } = useJournalContext();
   const [latestArticles, setLatestArticles] = useState([]);
   const [volumes, setVolumes] = useState([]);
-  const [editorialBoard, setEditorialBoard] = useState(null);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
   useEffect(() => {
@@ -24,12 +23,6 @@ const JournalHomePage = () => {
       fetchVolumes();
     }
   }, [currentJournal]);
-
-  useEffect(() => {
-    if (journalShortForm) {
-      fetchEditorialBoard();
-    }
-  }, [journalShortForm]);
 
   const fetchLatestArticles = async () => {
     try {
@@ -52,26 +45,11 @@ const JournalHomePage = () => {
     }
   };
 
-  const fetchEditorialBoard = async () => {
-    try {
-      const response = await acsApi.journals.getEditorialBoard(journalShortForm);
-      setEditorialBoard(response);
-    } catch (err) {
-      console.error('Failed to fetch editorial board:', err);
-    }
-  };
-
   // Strip HTML tags from description
   const stripHtmlTags = (html) => {
     if (!html) return '';
     return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
   };
-
-  const hasEditorialBoard = editorialBoard && (
-    editorialBoard.chief_editor || 
-    editorialBoard.co_editors?.length > 0 || 
-    editorialBoard.section_editors?.length > 0
-  );
 
   if (contextLoading) {
     return (
@@ -161,93 +139,21 @@ const JournalHomePage = () => {
         </div>
       </section>
 
-      {/* Editorial Board Section */}
-      {hasEditorialBoard && (
-        <section className="journal-editorial-section">
-          <div className="section-container">
+      {/* Editorial Board Link */}
+      <section className="journal-editorial-section">
+        <div className="section-container">
+          <div className="section-header">
             <h2 className="section-title">Editorial Board</h2>
-            <div className="editorial-board-grid">
-              {/* Chief Editor */}
-              {editorialBoard.chief_editor && (
-                <div className="editorial-member-card chief">
-                  <div className="editorial-member-avatar">
-                    {editorialBoard.chief_editor.profile_picture ? (
-                      <img src={editorialBoard.chief_editor.profile_picture} alt={editorialBoard.chief_editor.name} />
-                    ) : (
-                      <span className="material-symbols-rounded">person</span>
-                    )}
-                  </div>
-                  <div className="editorial-member-badge">Editor-in-Chief</div>
-                  <h3 className="editorial-member-name">{editorialBoard.chief_editor.name}</h3>
-                  {editorialBoard.chief_editor.designation && (
-                    <p className="editorial-member-designation">{editorialBoard.chief_editor.designation}</p>
-                  )}
-                  {editorialBoard.chief_editor.department && (
-                    <p className="editorial-member-dept">{editorialBoard.chief_editor.department}</p>
-                  )}
-                  {(editorialBoard.chief_editor.organisation || editorialBoard.chief_editor.affiliation) && (
-                    <p className="editorial-member-org">
-                      {editorialBoard.chief_editor.organisation || editorialBoard.chief_editor.affiliation}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Co-Editors */}
-              {editorialBoard.co_editors?.map((editor, idx) => (
-                <div key={`co-${idx}`} className="editorial-member-card co-editor">
-                  <div className="editorial-member-avatar">
-                    {editor.profile_picture ? (
-                      <img src={editor.profile_picture} alt={editor.name} />
-                    ) : (
-                      <span className="material-symbols-rounded">person</span>
-                    )}
-                  </div>
-                  <div className="editorial-member-badge co">Co-Editor</div>
-                  <h3 className="editorial-member-name">{editor.name}</h3>
-                  {editor.designation && (
-                    <p className="editorial-member-designation">{editor.designation}</p>
-                  )}
-                  {editor.department && (
-                    <p className="editorial-member-dept">{editor.department}</p>
-                  )}
-                  {(editor.organisation || editor.affiliation) && (
-                    <p className="editorial-member-org">
-                      {editor.organisation || editor.affiliation}
-                    </p>
-                  )}
-                </div>
-              ))}
-
-              {/* Section Editors */}
-              {editorialBoard.section_editors?.map((editor, idx) => (
-                <div key={`sec-${idx}`} className="editorial-member-card section-editor">
-                  <div className="editorial-member-avatar">
-                    {editor.profile_picture ? (
-                      <img src={editor.profile_picture} alt={editor.name} />
-                    ) : (
-                      <span className="material-symbols-rounded">person</span>
-                    )}
-                  </div>
-                  <div className="editorial-member-badge section">Section Editor</div>
-                  <h3 className="editorial-member-name">{editor.name}</h3>
-                  {editor.designation && (
-                    <p className="editorial-member-designation">{editor.designation}</p>
-                  )}
-                  {editor.department && (
-                    <p className="editorial-member-dept">{editor.department}</p>
-                  )}
-                  {(editor.organisation || editor.affiliation) && (
-                    <p className="editorial-member-org">
-                      {editor.organisation || editor.affiliation}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
-        </section>
-      )}
+          <p className="editorial-summary">
+            Meet the researchers and academics who guide the peer-review process for {currentJournal.short_form}.
+          </p>
+          <Link to="editorial-board" className="btn-secondary">
+            <span className="material-symbols-rounded">groups</span>
+            View Editorial Board
+          </Link>
+        </div>
+      </section>
 
       {/* Scope Section */}
       {journalDetails?.scope && (

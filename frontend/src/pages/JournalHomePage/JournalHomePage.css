@@ -267,101 +267,12 @@
   background: #f0fdf4;
 }
 
-.editorial-board-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-
-.editorial-member-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 2rem 1.75rem;
-  text-align: center;
-  transition: all 0.25s ease;
-  position: relative;
-}
-
-.editorial-member-card:hover {
-  box-shadow: 0 8px 30px rgba(13, 71, 21, 0.1);
-  transform: translateY(-3px);
-}
-
-.editorial-member-card.chief {
-  border-color: #0D4715;
-  border-width: 2px;
-}
-
-.editorial-member-badge {
-  display: inline-block;
-  padding: 0.3rem 0.9rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  background: #0D4715;
-  color: #fff;
-  margin-bottom: 0.75rem;
-}
-
-.editorial-member-badge.co {
-  background: #41644A;
-}
-
-.editorial-member-badge.section {
-  background: #64748b;
-}
-
-.editorial-member-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: #E8F5E9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.75rem;
-  overflow: hidden;
-}
-
-.editorial-member-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.editorial-member-avatar .material-symbols-rounded {
-  font-size: 1.75rem;
-  color: #0D4715;
-}
-
-.editorial-member-name {
-  font-family: 'Crimson Pro', serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin-bottom: 0.35rem;
-}
-
-.editorial-member-designation {
-  font-size: 0.9rem;
+.editorial-summary {
+  font-size: 1.1rem;
   color: #4b5563;
-  margin-bottom: 0.2rem;
-  font-weight: 500;
-}
-
-.editorial-member-dept {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
-}
-
-.editorial-member-org {
-  font-size: 14px;
-  color: #6b7280;
-  text-align: center;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  max-width: 600px;
 }
 
 /* Scope Section */
@@ -602,10 +513,6 @@
     font-size: 1.85rem;
   }
 
-  .editorial-board-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  }
-
   .articles-grid {
     grid-template-columns: 1fr;
   }
@@ -635,10 +542,6 @@
   .about-content p,
   .scope-content p {
     font-size: 1.05rem;
-  }
-
-  .editorial-board-grid {
-    grid-template-columns: 1fr;
   }
 
   .volumes-grid {

@@ -1,130 +1,188 @@
-/**
- * JournalNavbar Component
- * 
- * Navigation bar for journal-specific pages.
- * Displays journal branding and navigation links.
- */
-
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import './JournalNavbar.css';
+import styles from './JournalNavbar.module.css';
 
 const JournalNavbar = ({ journal }) => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, activeRole } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
   const location = useLocation();
-  
-  // Get the base path for this journal
+
   const journalBasePath = `/j/${journal?.short_form}`;
+  const displayRole = activeRole || user?.role?.toLowerCase();
 
   const isActive = (path) => {
     const fullPath = path === '/' ? journalBasePath : `${journalBasePath}${path}`;
     return location.pathname === fullPath;
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
+    setMenuOpen(false);
+    navigate('/');
+  };
+
+  const getInitials = () => {
+    if (user?.fname && user?.lname) {
+      return `${user.fname[0]}${user.lname[0]}`.toUpperCase();
+    }
+    return user?.email?.[0]?.toUpperCase() || 'U';
+  };
+
+  const getDashboardPath = () => {
+    switch (displayRole) {
+      case 'admin': return '/admin';
+      case 'editor': return '/editor';
+      case 'reviewer': return '/reviewer';
+      case 'author': return '/author';
+      default: return '/author';
+    }
   };
 
   const navLinks = [
     { path: '/', label: 'Home' },
     { path: '/about', label: 'About' },
     { path: '/archives', label: 'Archives' },
+    { path: '/editorial-board', label: 'Editorial Board' },
     { path: '/guidelines', label: 'Guidelines' },
     { path: '/submit', label: 'Submit Paper' },
   ];
 
   return (
-    <nav className="journal-navbar">
-      <div className="journal-navbar-container">
-        {/* Journal Logo and Name */}
-        <div className="journal-navbar-brand">
-          <Link to={journalBasePath} className="journal-logo-link">
+    <header className={styles.header}>
+      <div className={styles.headerContainer}>
+        {/* Left: Journal brand */}
+        <div className={styles.headerLeft}>
+          <Link to={journalBasePath} className={styles.brand}>
             {journal?.journal_logo && (
-              <img 
-                src={journal.journal_logo} 
-                alt={journal.name}
-                className="journal-logo-img"
+              <img
+                src={journal.journal_logo}
+                alt={journal?.name}
+                className={styles.logo}
               />
             )}
-            <div className="journal-brand-text">
-              <span className="journal-short-form">{journal?.short_form}</span>
-              <span className="journal-full-name">{journal?.name}</span>
+            <div className={styles.brandText}>
+              <span className={styles.shortForm}>{journal?.short_form}</span>
+              <span className={styles.fullName}>{journal?.name}</span>
             </div>
           </Link>
-        </div>
-
-        {/* Mobile Menu Toggle */}
-        <button 
-          className="journal-mobile-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle navigation"
-        >
-          <span className="material-symbols-rounded">
-            {mobileMenuOpen ? 'close' : 'menu'}
-          </span>
-        </button>
-
-        {/* Navigation Links */}
-        <div className={`journal-navbar-menu ${mobileMenuOpen ? 'open' : ''}`}>
-          <ul className="journal-nav-links">
-            {navLinks.map((link) => (
-              <li key={link.path}>
-                <Link 
-                  to={link.path === '/' ? journalBasePath : `${journalBasePath}${link.path}`}
-                  className={`journal-nav-link ${isActive(link.path) ? 'active' : ''}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          {/* Auth Section */}
-          <div className="journal-navbar-auth">
-            {isAuthenticated ? (
-              <div className="journal-user-menu">
-                <span className="journal-user-name">{user?.fname || user?.email}</span>
-                <button onClick={handleLogout} className="journal-logout-btn">
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="journal-auth-links">
-                <Link to="/login" className="journal-login-link">Login</Link>
-                <Link to="/signup" className="journal-signup-link">Sign Up</Link>
-              </div>
-            )}
-          </div>
-
-          {/* Main Site Link */}
-          <Link 
-            to="/" 
-            className="main-site-link"
-          >
-            <span className="material-symbols-rounded">home</span>
-            Breakthrough Publishers India
+          <Link to="/" className={styles.bpiBadge}>
+            <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>home</span>
+            BPI
           </Link>
         </div>
+
+        {/* Center: Navigation */}
+        <nav className={styles.headerNav}>
+          {navLinks.map((link) => (
+            <Link
+              key={link.path}
+              to={link.path === '/' ? journalBasePath : `${journalBasePath}${link.path}`}
+              className={`${styles.navLink} ${isActive(link.path) ? styles.navLinkActive : ''}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+          {isAuthenticated && displayRole && (
+            <Link className={styles.navLink} to={getDashboardPath()}>Dashboard</Link>
+          )}
+        </nav>
+
+        {/* Right: Auth */}
+        <div className={styles.headerRight}>
+          {isAuthenticated ? (
+            <div className={styles.userMenu}>
+              <button
+                className={styles.userButton}
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-expanded={menuOpen}
+              >
+                <div className={styles.avatar}>{getInitials()}</div>
+                <span className="material-symbols-rounded">
+                  {menuOpen ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+              {menuOpen && (
+                <div className={styles.dropdown}>
+                  <div className={styles.dropdownHeader}>
+                    <span className={styles.userName}>
+                      {user?.fname} {user?.lname}
+                    </span>
+                    <span className={styles.userEmail}>{user?.email}</span>
+                    {displayRole && <span className={styles.userRole}>{displayRole}</span>}
+                  </div>
+                  <div className={styles.dropdownDivider}></div>
+                  <button className={styles.dropdownItem} onClick={handleLogout}>
+                    <span className="material-symbols-rounded">logout</span>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={styles.authButtons}>
+              <Link to="/login" className={styles.loginBtn}>Login</Link>
+              <Link to="/signup" className={styles.signupBtn}>Sign Up</Link>
+            </div>
+          )}
+
+          {/* Mobile menu toggle */}
+          <button
+            className={styles.mobileMenuBtn}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className="material-symbols-rounded">
+              {mobileMenuOpen ? 'close' : 'menu'}
+            </span>
+          </button>
+        </div>
       </div>
 
+      {/* Mobile menu dropdown */}
+      {mobileMenuOpen && (
+        <div className={styles.mobileMenu}>
+          <nav className={styles.mobileNav}>
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                className={styles.mobileNavLink}
+                to={link.path === '/' ? journalBasePath : `${journalBasePath}${link.path}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isAuthenticated && displayRole && (
+              <Link className={styles.mobileNavLink} to={getDashboardPath()} onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+            )}
+          </nav>
+          <div className={styles.mobileFooter}>
+            <Link to="/" className={styles.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>
+              <span className="material-symbols-rounded" style={{ fontSize: '18px' }}>home</span>
+              Breakthrough Publishers India
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Journal Info Bar */}
-      <div className="journal-info-bar">
-        <div className="journal-info-container">
+      <div className={styles.infoBar}>
+        <div className={styles.infoContainer}>
           {journal?.issn_online && (
-            <span className="journal-issn">ISSN (Online): {journal.issn_online}</span>
+            <span className={styles.infoItem}>ISSN (Online): {journal.issn_online}</span>
           )}
           {journal?.issn_print && (
-            <span className="journal-issn">ISSN (Print): {journal.issn_print}</span>
+            <span className={styles.infoItem}>ISSN (Print): {journal.issn_print}</span>
           )}
           {journal?.chief_editor && (
-            <span className="journal-editor">Editor-in-Chief: {journal.chief_editor}</span>
+            <span className={styles.infoItem}>Editor-in-Chief: {journal.chief_editor}</span>
           )}
         </div>
       </div>
-    </nav>
+    </header>
   );
 };
 

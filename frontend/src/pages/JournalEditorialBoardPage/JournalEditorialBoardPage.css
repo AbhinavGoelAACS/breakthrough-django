@@ -1,0 +1,225 @@
+/* Editorial Board Page Styles */
+
+.eb-page {
+  min-height: 100vh;
+}
+
+/* Page Header */
+.eb-page-header {
+  background: linear-gradient(135deg, #0D4715 0%, #41644A 100%);
+  padding: 3rem 0;
+}
+
+.eb-page-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  text-align: center;
+}
+
+.eb-page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.5rem;
+}
+
+.eb-page-header p {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* Page Content */
+.eb-page-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+/* Section */
+.eb-section {
+  margin-bottom: 3rem;
+}
+
+.eb-section:last-child {
+  margin-bottom: 0;
+}
+
+.eb-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #E8F5E9;
+}
+
+/* Grid */
+.eb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.eb-grid-chief {
+  grid-template-columns: 1fr;
+  max-width: 360px;
+}
+
+/* Member Card */
+.eb-member-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 2rem 1.75rem;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+
+.eb-member-card:hover {
+  box-shadow: 0 8px 30px rgba(13, 71, 21, 0.1);
+  transform: translateY(-3px);
+}
+
+.eb-member-card.chief {
+  border-color: #0D4715;
+  border-width: 2px;
+}
+
+/* Avatar */
+.eb-member-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #E8F5E9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  overflow: hidden;
+}
+
+.eb-member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.eb-member-avatar .material-symbols-rounded {
+  font-size: 2rem;
+  color: #0D4715;
+}
+
+/* Badge */
+.eb-member-badge {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  background: #0D4715;
+  color: #fff;
+  margin-bottom: 0.75rem;
+}
+
+.eb-member-badge.co-editor {
+  background: #41644A;
+}
+
+.eb-member-badge.section-editor {
+  background: #64748b;
+}
+
+/* Member Info */
+.eb-member-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 0.35rem;
+}
+
+.eb-member-designation {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin: 0 0 0.2rem;
+  font-weight: 500;
+}
+
+.eb-member-dept {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 0.5rem;
+}
+
+.eb-member-org {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Loading */
+.eb-page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  color: #64748b;
+}
+
+/* Empty State */
+.eb-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+}
+
+.eb-empty-state .material-symbols-rounded {
+  font-size: 3rem;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.eb-empty-state h3 {
+  font-size: 1.1rem;
+  color: #374151;
+  margin: 0 0 0.5rem;
+}
+
+.eb-empty-state p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .eb-page-header {
+    padding: 2rem 0;
+  }
+
+  .eb-page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .eb-page-content {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .eb-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .eb-page-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .eb-member-card {
+    padding: 1.5rem 1.25rem;
+  }
+}

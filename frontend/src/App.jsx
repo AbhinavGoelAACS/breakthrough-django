@@ -26,6 +26,7 @@ import JournalHomePage from './pages/JournalHomePage/JournalHomePage';
 import JournalAboutPage from './pages/JournalAboutPage/JournalAboutPage';
 import JournalArchivesPage from './pages/JournalArchivesPage/JournalArchivesPage';
 import JournalGuidelinesPage from './pages/JournalGuidelinesPage/JournalGuidelinesPage';
+import JournalEditorialBoardPage from './pages/JournalEditorialBoardPage/JournalEditorialBoardPage';
 // Admin layouts and pages
 import AdminLayout from './layouts/AdminLayout/AdminLayout.jsx';
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard.jsx';
@@ -156,6 +157,7 @@ function JournalRouteContent() {
           <Route path="/about" element={<JournalAboutPage />} />
           <Route path="/archives" element={<JournalArchivesPage />} />
           <Route path="/guidelines" element={<JournalGuidelinesPage />} />
+          <Route path="/editorial-board" element={<JournalEditorialBoardPage />} />
           <Route path="/submit" element={<ProtectedRoute><SubmitPage preselectedJournal={currentJournal} /></ProtectedRoute>} />
           <Route path="/volume/:volumeNo/issue/:issueNo" element={<IssuePapersPage />} />
           <Route path="/article/:id" element={<PublicPaperView />} />
