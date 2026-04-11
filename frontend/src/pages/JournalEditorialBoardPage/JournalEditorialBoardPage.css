@@ -2,6 +2,7 @@
 
 .eb-page {
   min-height: 100vh;
+  padding-top: 72px;
 }
 
 /* Page Header */

@@ -132,8 +132,8 @@ body {
 }
 
 .app-main.journal-main {
-  margin-top: 72px; /* Fixed header height */
-  min-height: calc(100vh - 72px);
+  margin-top: 0;
+  min-height: 100vh;
 }
 
 .app-main.portal-main {
