@@ -204,13 +204,15 @@ const JournalArchivesPage = () => {
                             to={`../volume/${volume.volume_no}/issue/${issue.issue_no}`}
                             className="issue-card"
                           >
-                            <div className="issue-info">
-                              <h4>Issue {issue.issue_no}</h4>
+                            <div className="issue-accent" />
+                            <div className="issue-body">
+                              <h4 className="issue-title">Issue {issue.issue_no}</h4>
                               {issue.month && <p className="issue-month">{issue.month}</p>}
-                              {issue.paper_count !== undefined && (
-                                <p className="issue-papers">{issue.paper_count} Articles</p>
-                              )}
                             </div>
+                            {issue.paper_count !== undefined && (
+                              <span className="issue-badge">{issue.paper_count} Articles</span>
+                            )}
+                            <span className="material-symbols-rounded issue-arrow">arrow_forward</span>
                           </Link>
                         ))}
                       </div>
