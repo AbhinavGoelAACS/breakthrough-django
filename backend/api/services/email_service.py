@@ -1,9 +1,43 @@
 import logging
+import threading
+import queue as _queue
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Background email queue — fire-and-forget email delivery
+# ---------------------------------------------------------------------------
+_email_queue = _queue.Queue()
+
+
+def _email_worker():
+    """Daemon thread that drains the email queue and sends each message."""
+    while True:
+        task = _email_queue.get()
+        if task is None:
+            break
+        fn, args, kwargs = task
+        try:
+            fn(*args, **kwargs)
+        except Exception as exc:
+            logger.error("Background email task failed: %s", exc)
+        finally:
+            _email_queue.task_done()
+
+
+_email_thread = threading.Thread(target=_email_worker, daemon=True)
+_email_thread.start()
+
+
+def queue_email_task(fn, *args, **kwargs):
+    """
+    Schedule an email-sending callable to run in the background thread.
+    The caller returns immediately (fire-and-forget).
+    """
+    _email_queue.put((fn, args, kwargs))
 
 
 def _get_frontend_url():

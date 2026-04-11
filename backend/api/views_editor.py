@@ -984,8 +984,8 @@ class EditorPaperDecisionView(APIView):
         if decision not in allowed_decisions:
             return Response({"detail": f"Invalid decision. Allowed: {allowed_decisions}"}, status=status.HTTP_400_BAD_REQUEST)
             
-        if not editor_comments or len(editor_comments.strip()) < 50:
-            return Response({"detail": "Editor comments must be at least 50 characters"}, status=status.HTTP_400_BAD_REQUEST)
+        if not editor_comments or not editor_comments.strip():
+            return Response({"detail": "Editor comments are required"}, status=status.HTTP_400_BAD_REQUEST)
             
         if decision == "correction" and revision_type and revision_type not in ["minor", "major"]:
             return Response({"detail": "Invalid revision type. Allowed: minor, major"}, status=status.HTTP_400_BAD_REQUEST)

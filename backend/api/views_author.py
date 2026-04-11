@@ -177,6 +177,7 @@ class AuthorPaperResubmitView(APIView):
                 paper_id=paper.id, status="queued"
             )
             auto_assigned_any = False
+            pending_email_invitations = []
             for invitation in queued_invitations:
                 if invitation.auto_assign:
                     # Auto-assign: create OnlineReview directly
@@ -193,28 +194,31 @@ class AuthorPaperResubmitView(APIView):
                     invitation.save()
                     auto_assigned_any = True
                 else:
-                    # Send invitation email — set status to pending and refresh token
+                    # Prepare invitation for email — set status to pending and refresh token
                     invitation.status = "pending"
                     invitation.invitation_token = str(uuid.uuid4())
                     invitation.token_expiry = timezone.now() + timedelta(days=7)
                     invitation.invited_on = timezone.now()
                     invitation.save()
-                    try:
-                        from .services.email_service import send_reviewer_invitation_email
-                        journal_name = ""
-                        if paper.journal:
-                            j = Journal.objects.filter(fld_id=paper.journal).first()
-                            if j:
-                                journal_name = j.fld_journal_name or ""
-                        send_reviewer_invitation_email(
-                            invitation, paper, journal_name, invitation.is_external
-                        )
-                    except Exception:
-                        pass
+                    pending_email_invitations.append(invitation)
 
             if auto_assigned_any:
                 paper.status = "under_review"
                 paper.save()
+
+        # Send invitation emails asynchronously (outside the transaction)
+        if pending_email_invitations:
+            from .services.email_service import send_reviewer_invitation_email, queue_email_task
+            journal_name = ""
+            if paper.journal:
+                j = Journal.objects.filter(fld_id=paper.journal).first()
+                if j:
+                    journal_name = j.fld_journal_name or ""
+            for invitation in pending_email_invitations:
+                queue_email_task(
+                    send_reviewer_invitation_email,
+                    invitation, paper, journal_name, invitation.is_external
+                )
 
         return Response({
             "message": "Paper resubmitted successfully",
