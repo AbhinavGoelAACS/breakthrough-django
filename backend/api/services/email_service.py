@@ -3,7 +3,7 @@ import threading
 import queue as _queue
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
-from datetime import datetime
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def send_correspondence_email(correspondence):
     )
     if success:
         correspondence.delivery_status = "sent"
-        correspondence.sent_at = datetime.utcnow()
+        correspondence.sent_at = timezone.now()
     else:
         correspondence.delivery_status = "failed"
         correspondence.error_message = error
@@ -104,8 +104,8 @@ def _log_correspondence(paper_id, recipient_email, recipient_name, subject, body
             status_at_send=status_at_send,
             is_read=False,
             delivery_status=delivery_status,
-            created_at=datetime.utcnow(),
-            sent_at=datetime.utcnow() if delivery_status == "sent" else None,
+            created_at=timezone.now(),
+            sent_at=timezone.now() if delivery_status == "sent" else None,
         )
     except Exception as e:
         logger.error("Failed to log correspondence for paper %s: %s", paper_id, e)
