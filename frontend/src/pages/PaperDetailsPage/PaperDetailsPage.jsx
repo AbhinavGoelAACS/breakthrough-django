@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { renderAsync } from 'docx-preview';
 import { useRole } from '../../hooks/useRole';
 import { useToast } from '../../hooks/useToast';
 import { useModal } from '../../hooks/useModal';
@@ -70,9 +71,31 @@ const PaperDetailsPage = () => {
   const [showRevisions, setShowRevisions] = useState(false);
   // Copyright form trigger (admin only)
   const [triggeringCopyright, setTriggeringCopyright] = useState(false);
-  // PDF Viewer state
+  // Document Viewer state
   const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
   const [pdfViewerTitle, setPdfViewerTitle] = useState('');
+  const [docLoading, setDocLoading] = useState(false);
+  const [docType, setDocType] = useState(null); // 'pdf' | 'docx'
+  const [docBlobUrl, setDocBlobUrl] = useState(null);
+  const [docArrayBuffer, setDocArrayBuffer] = useState(null);
+  const [docError, setDocError] = useState(null);
+  const docxContainerRef = useRef(null);
+
+  // Render DOCX when arrayBuffer and container are ready
+  useEffect(() => {
+    if (docType === 'docx' && docArrayBuffer && docxContainerRef.current) {
+      docxContainerRef.current.innerHTML = '';
+      renderAsync(docArrayBuffer, docxContainerRef.current, null, {
+        className: styles.docxWrapper,
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: true,
+      }).catch((err) => {
+        console.error('DOCX render error:', err);
+        setDocError('Failed to render document');
+      });
+    }
+  }, [docType, docArrayBuffer]);
 
   // Generate alerts based on paper status and data
   const getAlerts = () => {
@@ -682,14 +705,64 @@ const PaperDetailsPage = () => {
     }
   };
 
-  const openPdfViewer = (url, title) => {
+  const openPdfViewer = async (url, title) => {
     setPdfViewerUrl(url);
     setPdfViewerTitle(title || 'Document');
+    setDocLoading(true);
+    setDocError(null);
+    setDocType(null);
+
+    // Clean up previous blob URL
+    if (docBlobUrl) {
+      URL.revokeObjectURL(docBlobUrl);
+      setDocBlobUrl(null);
+    }
+    setDocArrayBuffer(null);
+
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || `Failed to load document (${response.status})`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const blob = await response.blob();
+
+      if (contentType.includes('pdf')) {
+        const blobUrl = URL.createObjectURL(blob);
+        setDocBlobUrl(blobUrl);
+        setDocType('pdf');
+      } else if (contentType.includes('word') || contentType.includes('openxmlformats')) {
+        const arrayBuffer = await blob.arrayBuffer();
+        setDocArrayBuffer(arrayBuffer);
+        setDocType('docx');
+      } else {
+        // Fallback: try as PDF
+        const blobUrl = URL.createObjectURL(blob);
+        setDocBlobUrl(blobUrl);
+        setDocType('pdf');
+      }
+    } catch (err) {
+      console.error('Error loading document:', err);
+      setDocError(err.message);
+    } finally {
+      setDocLoading(false);
+    }
   };
 
   const closePdfViewer = () => {
+    if (docBlobUrl) {
+      URL.revokeObjectURL(docBlobUrl);
+    }
     setPdfViewerUrl(null);
     setPdfViewerTitle('');
+    setDocType(null);
+    setDocBlobUrl(null);
+    setDocArrayBuffer(null);
+    setDocError(null);
+    setDocLoading(false);
   };
 
   const handleViewPaper = () => {
@@ -1834,7 +1907,7 @@ const PaperDetailsPage = () => {
         />
       )}
 
-      {/* PDF Viewer Modal */}
+      {/* Document Viewer Modal */}
       {pdfViewerUrl && (
         <div className={styles.pdfOverlay} onClick={closePdfViewer}>
           <div className={styles.pdfViewerModal} onClick={(e) => e.stopPropagation()}>
@@ -1859,11 +1932,28 @@ const PaperDetailsPage = () => {
               </div>
             </div>
             <div className={styles.pdfViewerBody}>
-              <iframe
-                src={pdfViewerUrl}
-                title="Document Viewer"
-                className={styles.pdfIframe}
-              />
+              {docLoading && (
+                <div className={styles.docLoadingState}>
+                  <span className="material-symbols-rounded">hourglass_empty</span>
+                  <p>Loading document...</p>
+                </div>
+              )}
+              {docError && !docLoading && (
+                <div className={styles.docErrorState}>
+                  <span className="material-symbols-rounded">error_outline</span>
+                  <p>{docError}</p>
+                </div>
+              )}
+              {!docLoading && !docError && docType === 'pdf' && (
+                <iframe
+                  src={docBlobUrl}
+                  title="Document Viewer"
+                  className={styles.pdfIframe}
+                />
+              )}
+              {!docLoading && !docError && docType === 'docx' && (
+                <div ref={docxContainerRef} className={styles.docxContainer} />
+              )}
             </div>
           </div>
         </div>

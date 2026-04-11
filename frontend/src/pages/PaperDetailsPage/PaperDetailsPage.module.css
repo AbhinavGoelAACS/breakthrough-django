@@ -2168,3 +2168,43 @@
   height: 100%;
   border: none;
 }
+
+.docxContainer {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  background: #ffffff;
+}
+
+.docxWrapper {
+  max-width: 100%;
+}
+
+.docLoadingState,
+.docErrorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.docLoadingState span {
+  font-size: 36px;
+  color: #0D4715;
+  animation: spin 1.5s linear infinite;
+}
+
+.docErrorState span {
+  font-size: 36px;
+  color: #ef4444;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
