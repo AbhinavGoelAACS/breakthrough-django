@@ -891,6 +891,56 @@ class EditorPaperStatusUpdateView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class EditorPaperPreviousReviewersView(APIView):
+    """Return list of previous reviewers for a paper, including their review recommendations."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get all reviewer assignments for this paper
+        assignments = OnlineReview.objects.filter(paper_id=str(paper_id))
+        reviewer_map = {}
+
+        for assignment in assignments:
+            rid = assignment.reviewer_id
+            if not rid or rid in reviewer_map:
+                continue
+
+            user = User.objects.filter(id=int(rid)).first() if rid and rid.isdigit() else None
+
+            # Get latest submitted review for this reviewer
+            review = ReviewSubmission.objects.filter(
+                paper_id=paper_id, reviewer_id=str(rid), status="submitted"
+            ).order_by('-submitted_at').first()
+
+            # Check if this was an external invitation
+            invitation = ReviewerInvitation.objects.filter(
+                paper_id=paper_id, reviewer_id=int(rid) if rid and rid.isdigit() else None
+            ).order_by('-invited_on').first()
+
+            reviewer_map[rid] = {
+                "reviewer_id": int(rid) if rid and rid.isdigit() else rid,
+                "reviewer_name": f"{user.fname or ''} {user.lname or ''}".strip() if user else (invitation.reviewer_name if invitation else "Unknown"),
+                "reviewer_email": user.email if user else (invitation.reviewer_email if invitation else ""),
+                "recommendation": review.recommendation if review else None,
+                "overall_rating": review.overall_rating if review else None,
+                "submitted_on": review.submitted_at.isoformat() if review and review.submitted_at else None,
+                "is_external": invitation.is_external if invitation else False,
+                "review_status": assignment.review_status,
+            }
+
+        return Response({
+            "paper_id": paper_id,
+            "previous_reviewers": list(reviewer_map.values()),
+        }, status=status.HTTP_200_OK)
+
+
 class EditorPaperDecisionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
@@ -965,6 +1015,78 @@ class EditorPaperDecisionView(APIView):
             
         paper.save()
         
+        # Queue reviewer pre-assignments when requesting revision
+        queued_count = 0
+        if decision == "correction":
+            import uuid
+            target_version = paper.version_number + 1
+            previous_reviewers = request.data.get("previous_reviewers") or []
+            new_reviewers = request.data.get("new_reviewers") or []
+
+            for prev in previous_reviewers:
+                action = prev.get("action")
+                if action == "skip":
+                    continue
+                rev_id = prev.get("reviewer_id")
+                rev_email = prev.get("reviewer_email", "")
+                if not rev_id and not rev_email:
+                    continue
+                # Avoid duplicate queued invitation for same paper+reviewer+version
+                existing = ReviewerInvitation.objects.filter(
+                    paper_id=paper.id, status="queued", for_version=target_version
+                )
+                if rev_id:
+                    existing = existing.filter(reviewer_id=int(rev_id))
+                else:
+                    existing = existing.filter(reviewer_email=rev_email)
+                if existing.exists():
+                    continue
+
+                user = User.objects.filter(id=int(rev_id)).first() if rev_id else None
+                ReviewerInvitation.objects.create(
+                    paper_id=paper.id,
+                    reviewer_id=int(rev_id) if rev_id else None,
+                    reviewer_email=user.email if user else rev_email,
+                    reviewer_name=f"{user.fname or ''} {user.lname or ''}".strip() if user else prev.get("reviewer_name", rev_email),
+                    journal_id=str(paper.journal) if paper.journal else None,
+                    invitation_token=str(uuid.uuid4()),
+                    token_expiry=timezone.now() + timedelta(days=7),
+                    status="queued",
+                    invited_on=timezone.now(),
+                    is_external=prev.get("is_external", False),
+                    auto_assign=(action == "auto_assign"),
+                    for_version=target_version,
+                )
+                queued_count += 1
+
+            for new_rev in new_reviewers:
+                rev_email = new_rev.get("reviewer_email", "").strip()
+                if not rev_email:
+                    continue
+                # Duplicate check
+                if ReviewerInvitation.objects.filter(
+                    paper_id=paper.id, reviewer_email=rev_email, status="queued", for_version=target_version
+                ).exists():
+                    continue
+
+                user = User.objects.filter(email=rev_email).first()
+                is_external = new_rev.get("is_external", user is None)
+                ReviewerInvitation.objects.create(
+                    paper_id=paper.id,
+                    reviewer_id=user.id if user else None,
+                    reviewer_email=rev_email,
+                    reviewer_name=new_rev.get("reviewer_name", "") or (f"{user.fname or ''} {user.lname or ''}".strip() if user else rev_email),
+                    journal_id=str(paper.journal) if paper.journal else None,
+                    invitation_token=str(uuid.uuid4()),
+                    token_expiry=timezone.now() + timedelta(days=7),
+                    status="queued",
+                    invited_on=timezone.now(),
+                    is_external=is_external,
+                    auto_assign=False,
+                    for_version=target_version,
+                )
+                queued_count += 1
+
         # Send decision notification email to author
         email_sent = False
         try:
@@ -1024,7 +1146,8 @@ class EditorPaperDecisionView(APIView):
             "revision_type": revision_type if decision == "correction" else None,
             "revision_deadline": paper.revision_deadline.isoformat() if getattr(paper, 'revision_deadline', None) else None,
             "email_notification_queued": email_sent,
-            "copyright_form_created": copyright_created
+            "copyright_form_created": copyright_created,
+            "queued_reviewers_count": queued_count
         }, status=status.HTTP_200_OK)
 
 

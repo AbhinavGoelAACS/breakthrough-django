@@ -308,6 +308,8 @@ class ReviewerInvitation(models.Model):
     invitation_message = models.TextField(null=True, blank=True)
     decline_reason = models.TextField(null=True, blank=True)
     is_external = models.BooleanField(default=False)
+    auto_assign = models.BooleanField(default=False)
+    for_version = models.IntegerField(null=True, blank=True)
 
 
 class ReviewSubmission(models.Model):

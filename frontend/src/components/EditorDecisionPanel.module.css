@@ -781,3 +781,511 @@
     font-size: 14px;
   }
 }
+
+/* ============================================
+   Reviewer Management Section
+   ============================================ */
+
+.reviewerManagementSection {
+  margin-top: 24px;
+  padding: 24px;
+  background: #fafffe;
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
+}
+
+.reviewerSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0D4715;
+  margin: 0 0 20px 0;
+  flex-wrap: wrap;
+}
+
+.reviewerSectionTitle span.material-symbols-rounded {
+  font-size: 22px;
+}
+
+.queuedNote {
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-left: auto;
+}
+
+.reviewerLoading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.reviewerLoading span {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Previous Reviewers */
+.previousReviewersBlock {
+  margin-bottom: 24px;
+}
+
+.previousReviewersHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prevLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.bulkActions {
+  display: flex;
+  gap: 6px;
+}
+
+.bulkBtn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bulkBtn:hover {
+  background: #E8F5E9;
+  border-color: #41644A;
+  color: #0D4715;
+}
+
+.bulkSkip:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.prevReviewerCards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prevReviewerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.prevReviewerCard:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.skippedCard {
+  opacity: 0.55;
+  background: #f8fafc;
+}
+
+.prevReviewerInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.prevAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0D4715, #41644A);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.prevDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.prevName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prevEmail {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prevRecommendation {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.externalBadge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #ede9fe;
+  color: #7c3aed;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: fit-content;
+}
+
+/* Action Toggle */
+.actionToggle {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.toggleBtn span.material-symbols-rounded {
+  font-size: 15px;
+}
+
+.toggleBtn:hover {
+  border-color: #94a3b8;
+}
+
+.toggleActive {
+  background: #E8F5E9;
+  border-color: #41644A;
+  color: #0D4715;
+  font-weight: 600;
+}
+
+.toggleActiveAssign {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.toggleActiveSkip {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.noPrevReviewers {
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 0 0 16px 0;
+}
+
+/* New Reviewers */
+.newReviewersBlock {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 20px;
+}
+
+.newReviewersHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.addReviewerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px dashed #41644A;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0D4715;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.addReviewerBtn span.material-symbols-rounded {
+  font-size: 18px;
+}
+
+.addReviewerBtn:hover {
+  background: #E8F5E9;
+}
+
+.addReviewerForm {
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #c8e6c9;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.formGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formGroupSmall {
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formGroup label,
+.formGroupSmall label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.formInput {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.formInput:focus {
+  border-color: #41644A;
+  box-shadow: 0 0 0 2px rgba(65, 100, 74, 0.1);
+}
+
+.formRowBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  accent-color: #41644A;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+}
+
+.cancelFormBtn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.cancelFormBtn:hover {
+  background: #f1f5f9;
+}
+
+.addToQueueBtn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: #0D4715;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.addToQueueBtn:hover {
+  background: #41644A;
+}
+
+.addToQueueBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.queuedNewReviewers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.queuedReviewerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.queuedReviewerInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.queuedName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.queuedEmail {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.queuedDays {
+  font-size: 11px;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.removeBtn {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.removeBtn:hover {
+  background: #fef2f2;
+}
+
+.removeBtn span.material-symbols-rounded {
+  font-size: 18px;
+}
+
+/* Responsive: Reviewer Management */
+@media (max-width: 768px) {
+  .reviewerManagementSection {
+    padding: 16px;
+  }
+
+  .previousReviewersHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bulkActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .prevReviewerCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actionToggle {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .toggleBtn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+
+  .formGroupSmall {
+    width: 100%;
+  }
+
+  .formRowBottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .queuedNote {
+    margin-left: 0;
+    margin-top: 4px;
+  }
+}

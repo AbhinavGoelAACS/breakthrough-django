@@ -170,6 +170,52 @@ class AuthorPaperResubmitView(APIView):
                 uploaded_by=str(user.id)
             )
 
+            # Process queued reviewer invitations for this version
+            from django.utils import timezone
+            from datetime import timedelta
+            queued_invitations = ReviewerInvitation.objects.filter(
+                paper_id=paper.id, status="queued"
+            )
+            auto_assigned_any = False
+            for invitation in queued_invitations:
+                if invitation.auto_assign:
+                    # Auto-assign: create OnlineReview directly
+                    OnlineReview.objects.create(
+                        paper_id=str(paper.id),
+                        reviewer_id=str(invitation.reviewer_id),
+                        review_status="pending",
+                        assigned_on=timezone.now(),
+                        due_date=timezone.now() + timedelta(days=14),
+                        invitation_id=invitation.id,
+                    )
+                    invitation.status = "accepted"
+                    invitation.accepted_on = timezone.now()
+                    invitation.save()
+                    auto_assigned_any = True
+                else:
+                    # Send invitation email — set status to pending and refresh token
+                    invitation.status = "pending"
+                    invitation.invitation_token = str(uuid.uuid4())
+                    invitation.token_expiry = timezone.now() + timedelta(days=7)
+                    invitation.invited_on = timezone.now()
+                    invitation.save()
+                    try:
+                        from .services.email_service import send_reviewer_invitation_email
+                        journal_name = ""
+                        if paper.journal:
+                            j = Journal.objects.filter(fld_id=paper.journal).first()
+                            if j:
+                                journal_name = j.fld_journal_name or ""
+                        send_reviewer_invitation_email(
+                            invitation, paper, journal_name, invitation.is_external
+                        )
+                    except Exception:
+                        pass
+
+            if auto_assigned_any:
+                paper.status = "under_review"
+                paper.save()
+
         return Response({
             "message": "Paper resubmitted successfully",
             "paper_id": paper.id,

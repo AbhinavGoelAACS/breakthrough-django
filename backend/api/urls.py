@@ -85,6 +85,7 @@ from .views_editor import (
     RegisterAcceptInvitationView,
     EditorPaperSubmissionHistoryView, EditorPaperVersionFileView,
     EditorPaperInvitationsView,
+    EditorPaperPreviousReviewersView,
 )
 
 from .views_reviewer import (
@@ -428,6 +429,7 @@ urlpatterns = [
     path("api/v1/editor/papers/<int:paper_id>", EditorPaperDetailView.as_view(), name="editor-paper-detail"),
     path("api/v1/editor/papers/<int:paper_id>/invite-reviewer", EditorInviteReviewerView.as_view(), name="editor-invite-reviewer"),
     path("api/v1/editor/papers/<int:paper_id>/invitations", EditorPaperInvitationsView.as_view(), name="editor-paper-invitations"),
+    path("api/v1/editor/papers/<int:paper_id>/previous-reviewers", EditorPaperPreviousReviewersView.as_view(), name="editor-paper-previous-reviewers"),
     path("api/v1/editor/papers/<int:paper_id>/assign-reviewer", EditorAssignReviewerView.as_view(), name="editor-assign-reviewer"),
     path("api/v1/editor/papers/<int:paper_id>/reviews", EditorPaperReviewsView.as_view(), name="editor-paper-reviews"),
     path("api/v1/editor/reviewers", ListAvailableReviewersView.as_view(), name="editor-reviewers"),

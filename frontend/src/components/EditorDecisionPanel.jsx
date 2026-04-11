@@ -36,9 +36,44 @@ export default function EditorDecisionPanel() {
 
   const [expandedReview, setExpandedReview] = useState(null);
 
+  // Reviewer pre-assignment state
+  const [previousReviewers, setPreviousReviewers] = useState([]);
+  const [previousReviewerActions, setPreviousReviewerActions] = useState({});
+  const [loadingReviewers, setLoadingReviewers] = useState(false);
+  const [newReviewers, setNewReviewers] = useState([]);
+  const [showAddReviewerForm, setShowAddReviewerForm] = useState(false);
+  const [newReviewerEmail, setNewReviewerEmail] = useState('');
+  const [newReviewerName, setNewReviewerName] = useState('');
+  const [newReviewerDueDays, setNewReviewerDueDays] = useState(14);
+  const [newReviewerIsExternal, setNewReviewerIsExternal] = useState(false);
+
   useEffect(() => {
     loadPaperReviews();
   }, [paperId]);
+
+  // Fetch previous reviewers when "correction" is selected
+  useEffect(() => {
+    if (selectedDecision === 'correction' && previousReviewers.length === 0) {
+      loadPreviousReviewers();
+    }
+  }, [selectedDecision]);
+
+  const loadPreviousReviewers = async () => {
+    try {
+      setLoadingReviewers(true);
+      const response = await acsApi.editor.getPreviousReviewers(paperId);
+      const reviewers = response.previous_reviewers || [];
+      setPreviousReviewers(reviewers);
+      // Default all to "reinvite"
+      const actions = {};
+      reviewers.forEach(r => { actions[r.reviewer_id] = 'reinvite'; });
+      setPreviousReviewerActions(actions);
+    } catch {
+      // Non-critical — panel still works without previous reviewers
+    } finally {
+      setLoadingReviewers(false);
+    }
+  };
 
   const loadPaperReviews = async () => {
     try {
@@ -104,6 +139,22 @@ export default function EditorDecisionPanel() {
 
       if (selectedDecision === 'correction') {
         decisionPayload.revision_type = revisionType;
+
+        // Include reviewer pre-assignments
+        decisionPayload.previous_reviewers = previousReviewers.map(r => ({
+          reviewer_id: r.reviewer_id,
+          reviewer_email: r.reviewer_email,
+          reviewer_name: r.reviewer_name,
+          is_external: r.is_external,
+          action: previousReviewerActions[r.reviewer_id] || 'skip'
+        }));
+
+        decisionPayload.new_reviewers = newReviewers.map(r => ({
+          reviewer_email: r.email,
+          reviewer_name: r.name,
+          due_days: r.dueDays,
+          is_external: r.isExternal
+        }));
       }
 
       const response = await acsApi.editor.makePaperDecision(paperId, decisionPayload);
@@ -123,6 +174,47 @@ export default function EditorDecisionPanel() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePreviousReviewerAction = (reviewerId, action) => {
+    setPreviousReviewerActions(prev => ({ ...prev, [reviewerId]: action }));
+  };
+
+  const handleBulkAction = (action) => {
+    const actions = {};
+    previousReviewers.forEach(r => { actions[r.reviewer_id] = action; });
+    setPreviousReviewerActions(actions);
+  };
+
+  const handleAddNewReviewer = () => {
+    if (!newReviewerEmail.trim()) return;
+    // Prevent duplicates
+    if (newReviewers.some(r => r.email === newReviewerEmail.trim())) return;
+    setNewReviewers(prev => [...prev, {
+      email: newReviewerEmail.trim(),
+      name: newReviewerName.trim(),
+      dueDays: newReviewerDueDays,
+      isExternal: newReviewerIsExternal
+    }]);
+    setNewReviewerEmail('');
+    setNewReviewerName('');
+    setNewReviewerDueDays(14);
+    setNewReviewerIsExternal(false);
+    setShowAddReviewerForm(false);
+  };
+
+  const handleRemoveNewReviewer = (email) => {
+    setNewReviewers(prev => prev.filter(r => r.email !== email));
+  };
+
+  const getRecommendationLabel = (rec) => {
+    const map = { accept: 'Accept', minor_revisions: 'Minor Revisions', major_revisions: 'Major Revisions', reject: 'Reject' };
+    return map[rec] || rec || 'N/A';
+  };
+
+  const getRecommendationColor = (rec) => {
+    const map = { accept: '#22c55e', minor_revisions: '#f59e0b', major_revisions: '#ea580c', reject: '#ef4444' };
+    return map[rec] || '#94a3b8';
   };
 
   if (loading) {
@@ -368,6 +460,180 @@ export default function EditorDecisionPanel() {
             {validationErrors.revisionType && (
               <div className={styles.validationError}>{validationErrors.revisionType}</div>
             )}
+          </div>
+        )}
+
+        {/* Reviewer Management for Revision */}
+        {selectedDecision === 'correction' && (
+          <div className={styles.reviewerManagementSection}>
+            <h4 className={styles.reviewerSectionTitle}>
+              <span className="material-symbols-rounded">group</span>
+              Reviewer Assignment for Revision
+              <span className={styles.queuedNote}>Invitations will be sent after author submits revision</span>
+            </h4>
+
+            {/* Previous Reviewers */}
+            {loadingReviewers ? (
+              <div className={styles.reviewerLoading}>
+                <span className="material-symbols-rounded">hourglass_empty</span>
+                Loading previous reviewers...
+              </div>
+            ) : previousReviewers.length > 0 ? (
+              <div className={styles.previousReviewersBlock}>
+                <div className={styles.previousReviewersHeader}>
+                  <span className={styles.prevLabel}>Previous Reviewers ({previousReviewers.length})</span>
+                  <div className={styles.bulkActions}>
+                    <button type="button" className={styles.bulkBtn} onClick={() => handleBulkAction('reinvite')}>Re-invite All</button>
+                    <button type="button" className={styles.bulkBtn} onClick={() => handleBulkAction('auto_assign')}>Auto-assign All</button>
+                    <button type="button" className={`${styles.bulkBtn} ${styles.bulkSkip}`} onClick={() => handleBulkAction('skip')}>Skip All</button>
+                  </div>
+                </div>
+                <div className={styles.prevReviewerCards}>
+                  {previousReviewers.map(reviewer => {
+                    const action = previousReviewerActions[reviewer.reviewer_id] || 'reinvite';
+                    return (
+                      <div key={reviewer.reviewer_id} className={`${styles.prevReviewerCard} ${action === 'skip' ? styles.skippedCard : ''}`}>
+                        <div className={styles.prevReviewerInfo}>
+                          <div className={styles.prevAvatar}>
+                            {(reviewer.reviewer_name || reviewer.reviewer_email || '?')[0].toUpperCase()}
+                          </div>
+                          <div className={styles.prevDetails}>
+                            <span className={styles.prevName}>{reviewer.reviewer_name || 'Unknown Reviewer'}</span>
+                            <span className={styles.prevEmail}>{reviewer.reviewer_email}</span>
+                            {reviewer.recommendation && (
+                              <span
+                                className={styles.prevRecommendation}
+                                style={{ color: getRecommendationColor(reviewer.recommendation) }}
+                              >
+                                {getRecommendationLabel(reviewer.recommendation)}
+                                {reviewer.overall_rating ? ` (★ ${reviewer.overall_rating}/5)` : ''}
+                              </span>
+                            )}
+                            {reviewer.is_external && <span className={styles.externalBadge}>External</span>}
+                          </div>
+                        </div>
+                        <div className={styles.actionToggle}>
+                          <button
+                            type="button"
+                            className={`${styles.toggleBtn} ${action === 'reinvite' ? styles.toggleActive : ''}`}
+                            onClick={() => handlePreviousReviewerAction(reviewer.reviewer_id, 'reinvite')}
+                            title="Send a fresh invitation email after author resubmits"
+                          >
+                            <span className="material-symbols-rounded">mail</span>
+                            Re-invite
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.toggleBtn} ${action === 'auto_assign' ? styles.toggleActiveAssign : ''}`}
+                            onClick={() => handlePreviousReviewerAction(reviewer.reviewer_id, 'auto_assign')}
+                            title="Automatically assign without invitation step"
+                          >
+                            <span className="material-symbols-rounded">assignment_turned_in</span>
+                            Auto-assign
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.toggleBtn} ${action === 'skip' ? styles.toggleActiveSkip : ''}`}
+                            onClick={() => handlePreviousReviewerAction(reviewer.reviewer_id, 'skip')}
+                            title="Do not include this reviewer for the revision"
+                          >
+                            <span className="material-symbols-rounded">person_off</span>
+                            Skip
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className={styles.noPrevReviewers}>No previous reviewers found for this paper.</p>
+            )}
+
+            {/* Invite New Reviewers */}
+            <div className={styles.newReviewersBlock}>
+              <div className={styles.newReviewersHeader}>
+                <span className={styles.prevLabel}>Invite Additional Reviewers</span>
+                {!showAddReviewerForm && (
+                  <button type="button" className={styles.addReviewerBtn} onClick={() => setShowAddReviewerForm(true)}>
+                    <span className="material-symbols-rounded">person_add</span>
+                    Add Reviewer
+                  </button>
+                )}
+              </div>
+
+              {showAddReviewerForm && (
+                <div className={styles.addReviewerForm}>
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label>Email <span className={styles.required}>*</span></label>
+                      <input
+                        type="email"
+                        value={newReviewerEmail}
+                        onChange={e => setNewReviewerEmail(e.target.value)}
+                        placeholder="reviewer@example.com"
+                        className={styles.formInput}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Name</label>
+                      <input
+                        type="text"
+                        value={newReviewerName}
+                        onChange={e => setNewReviewerName(e.target.value)}
+                        placeholder="Reviewer name"
+                        className={styles.formInput}
+                      />
+                    </div>
+                    <div className={styles.formGroupSmall}>
+                      <label>Due Days</label>
+                      <input
+                        type="number"
+                        value={newReviewerDueDays}
+                        onChange={e => setNewReviewerDueDays(parseInt(e.target.value) || 14)}
+                        min={1}
+                        max={60}
+                        className={styles.formInput}
+                      />
+                    </div>
+                  </div>
+                  <div className={styles.formRowBottom}>
+                    <label className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={newReviewerIsExternal}
+                        onChange={e => setNewReviewerIsExternal(e.target.checked)}
+                      />
+                      External reviewer (not in system)
+                    </label>
+                    <div className={styles.formActions}>
+                      <button type="button" className={styles.cancelFormBtn} onClick={() => setShowAddReviewerForm(false)}>Cancel</button>
+                      <button type="button" className={styles.addToQueueBtn} onClick={handleAddNewReviewer} disabled={!newReviewerEmail.trim()}>
+                        Add to Queue
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {newReviewers.length > 0 && (
+                <div className={styles.queuedNewReviewers}>
+                  {newReviewers.map(r => (
+                    <div key={r.email} className={styles.queuedReviewerItem}>
+                      <div className={styles.queuedReviewerInfo}>
+                        <span className={styles.queuedName}>{r.name || r.email}</span>
+                        {r.name && <span className={styles.queuedEmail}>{r.email}</span>}
+                        {r.isExternal && <span className={styles.externalBadge}>External</span>}
+                        <span className={styles.queuedDays}>{r.dueDays} days</span>
+                      </div>
+                      <button type="button" className={styles.removeBtn} onClick={() => handleRemoveNewReviewer(r.email)} title="Remove">
+                        <span className="material-symbols-rounded">close</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
