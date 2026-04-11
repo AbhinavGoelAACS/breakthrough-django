@@ -65,6 +65,29 @@ html {
   --font-size-lg: 18px;
   --font-size-xl: 24px;
   --font-size-2xl: 32px;
+
+  /* Journal Design Fonts */
+  --font-headline: 'Newsreader', serif;
+  --font-body: 'Manrope', sans-serif;
+
+  /* Journal Design Colors (Material Design 3 Green) */
+  --j-primary: #012d1d;
+  --j-secondary: #3f665c;
+  --j-primary-container: #1b4332;
+  --j-surface: #f9f9f8;
+  --j-surface-low: #f3f4f3;
+  --j-surface-high: #e7e8e7;
+  --j-surface-dim: #d9dad9;
+  --j-on-surface: #191c1c;
+  --j-on-surface-variant: #414844;
+  --j-outline-variant: #c1c8c2;
+  --j-on-primary: #ffffff;
+  --j-primary-fixed: #c1ecd4;
+  --j-primary-fixed-dim: #a5d0b9;
+  --j-secondary-container: #bee8dc;
+  --j-on-secondary-container: #436a60;
+  --j-secondary-fixed: #c1ebdf;
+  --j-on-primary-fixed: #002114;
 }
 
 /* ============================================
@@ -78,6 +101,7 @@ html {
 }
 
 html {
+  font-size: 16px !important;
   scroll-behavior: smooth;
 }
 
@@ -108,8 +132,8 @@ body {
 }
 
 .app-main.journal-main {
-  margin-top: 92px; /* Fixed header (60px) + info bar (32px) */
-  min-height: calc(100vh - 92px);
+  margin-top: 72px; /* Fixed header height */
+  min-height: calc(100vh - 72px);
 }
 
 .app-main.portal-main {

@@ -47,51 +47,37 @@ const JournalNavbar = ({ journal }) => {
     { path: '/archives', label: 'Archives' },
     { path: '/editorial-board', label: 'Editorial Board' },
     { path: '/guidelines', label: 'Guidelines' },
-    { path: '/submit', label: 'Submit Paper' },
   ];
 
   return (
     <header className={styles.header}>
       <div className={styles.headerContainer}>
-        {/* Left: Journal brand */}
+        {/* Left: Journal brand + nav */}
         <div className={styles.headerLeft}>
           <Link to={journalBasePath} className={styles.brand}>
-            {journal?.journal_logo && (
-              <img
-                src={journal.journal_logo}
-                alt={journal?.name}
-                className={styles.logo}
-              />
+            {journal?.name || journal?.short_form}
+          </Link>
+          <nav className={styles.headerNav}>
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path === '/' ? journalBasePath : `${journalBasePath}${link.path}`}
+                className={`${styles.navLink} ${isActive(link.path) ? styles.navLinkActive : ''}`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isAuthenticated && displayRole && (
+              <Link className={styles.navLink} to={getDashboardPath()}>Dashboard</Link>
             )}
-            <div className={styles.brandText}>
-              <span className={styles.shortForm}>{journal?.short_form}</span>
-              <span className={styles.fullName}>{journal?.name}</span>
-            </div>
-          </Link>
-          <Link to="/" className={styles.bpiBadge}>
-            <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>home</span>
-            BPI
-          </Link>
+          </nav>
         </div>
 
-        {/* Center: Navigation */}
-        <nav className={styles.headerNav}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path === '/' ? journalBasePath : `${journalBasePath}${link.path}`}
-              className={`${styles.navLink} ${isActive(link.path) ? styles.navLinkActive : ''}`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {isAuthenticated && displayRole && (
-            <Link className={styles.navLink} to={getDashboardPath()}>Dashboard</Link>
-          )}
-        </nav>
-
-        {/* Right: Auth */}
+        {/* Right: Submit button + auth */}
         <div className={styles.headerRight}>
+          <Link to={`${journalBasePath}/submit`} className={styles.submitBtn}>
+            Submit Paper
+          </Link>
           {isAuthenticated ? (
             <div className={styles.userMenu}>
               <button
@@ -122,9 +108,10 @@ const JournalNavbar = ({ journal }) => {
               )}
             </div>
           ) : (
-            <div className={styles.authButtons}>
-              <Link to="/login" className={styles.loginBtn}>Login</Link>
-              <Link to="/signup" className={styles.signupBtn}>Sign Up</Link>
+            <div className={styles.personIcon}>
+              <Link to="/login">
+                <span className="material-symbols-rounded">person</span>
+              </Link>
             </div>
           )}
 
@@ -155,6 +142,13 @@ const JournalNavbar = ({ journal }) => {
                 {link.label}
               </Link>
             ))}
+            <Link
+              className={styles.mobileNavLink}
+              to={`${journalBasePath}/submit`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Submit Paper
+            </Link>
             {isAuthenticated && displayRole && (
               <Link className={styles.mobileNavLink} to={getDashboardPath()} onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
             )}
@@ -167,18 +161,6 @@ const JournalNavbar = ({ journal }) => {
           </div>
         </div>
       )}
-
-      {/* Journal Info Bar */}
-      <div className={styles.infoBar}>
-        <div className={styles.infoContainer}>
-          {journal?.issn_online && (
-            <span className={styles.infoItem}>ISSN (Online): {journal.issn_online}</span>
-          )}
-          {journal?.issn_print && (
-            <span className={styles.infoItem}>ISSN (Print): {journal.issn_print}</span>
-          )}
-        </div>
-      </div>
     </header>
   );
 };

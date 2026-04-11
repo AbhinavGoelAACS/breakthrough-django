@@ -12,22 +12,27 @@ import { acsApi } from '../../api/apiService';
 import './JournalHomePage.css';
 
 const JournalHomePage = () => {
-  const { currentJournal, journalDetails, loading: contextLoading } = useJournalContext();
+  const { currentJournal, journalDetails, journalShortForm, loading: contextLoading } = useJournalContext();
   const [latestArticles, setLatestArticles] = useState([]);
-  const [volumes, setVolumes] = useState([]);
+  const [editorialBoard, setEditorialBoard] = useState([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
   useEffect(() => {
     if (currentJournal?.id) {
       fetchLatestArticles();
-      fetchVolumes();
     }
   }, [currentJournal]);
+
+  useEffect(() => {
+    if (journalShortForm) {
+      fetchEditorialBoard();
+    }
+  }, [journalShortForm]);
 
   const fetchLatestArticles = async () => {
     try {
       setArticlesLoading(true);
-      const response = await acsApi.articles.getByJournal(currentJournal.id, 0, 6);
+      const response = await acsApi.articles.getByJournal(currentJournal.id, 0, 3);
       setLatestArticles(response || []);
     } catch (err) {
       console.error('Failed to fetch latest articles:', err);
@@ -36,12 +41,12 @@ const JournalHomePage = () => {
     }
   };
 
-  const fetchVolumes = async () => {
+  const fetchEditorialBoard = async () => {
     try {
-      const response = await acsApi.journals.getVolumes(currentJournal.id);
-      setVolumes(response.volumes || []);
+      const response = await acsApi.journals.getEditorialBoard(journalShortForm);
+      setEditorialBoard(response || []);
     } catch (err) {
-      console.error('Failed to fetch volumes:', err);
+      console.error('Failed to fetch editorial board:', err);
     }
   };
 
@@ -50,6 +55,8 @@ const JournalHomePage = () => {
     if (!html) return '';
     return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
   };
+
+  const journalBasePath = `/j/${currentJournal?.short_form}`;
 
   if (contextLoading) {
     return (
@@ -72,168 +79,230 @@ const JournalHomePage = () => {
   return (
     <div className="journal-home-page">
       {/* Hero Section */}
-      <section className="journal-hero">
-        <div className="journal-hero-content">
-          <div className="journal-hero-text">
-            <h1 className="journal-title">{currentJournal.name}</h1>
-            <p className="journal-tagline">
-              {currentJournal.short_form} &mdash; A Peer-Reviewed Academic Journal
-            </p>
-            <div className="journal-meta">
-              {currentJournal.issn_online && (
-                <span className="meta-item">
-                  <span className="material-symbols-rounded meta-icon">tag</span>
-                  <strong>ISSN Online:</strong> {currentJournal.issn_online}
-                </span>
-              )}
-              {currentJournal.issn_print && (
-                <span className="meta-item">
-                  <span className="material-symbols-rounded meta-icon">print</span>
-                  <strong>ISSN Print:</strong> {currentJournal.issn_print}
-                </span>
-              )}
-              {currentJournal.frequency && (
-                <span className="meta-item">
-                  <span className="material-symbols-rounded meta-icon">calendar_month</span>
-                  <strong>Frequency:</strong> {currentJournal.frequency}
-                </span>
-              )}
-            </div>
+      <section className="jhp-hero">
+        <div className="jhp-hero-bg-panel"></div>
+        <div className="jhp-hero-content">
+          <h1 className="jhp-hero-title">{currentJournal.name}</h1>
+          <p className="jhp-hero-subtitle">
+            {currentJournal.short_form} &mdash; A Peer-Reviewed Academic Journal
+          </p>
+          <div className="jhp-hero-buttons">
+            <Link to={`${journalBasePath}/submit`} className="jhp-btn-solid">
+              Submit Manuscript
+            </Link>
+            <Link to={`${journalBasePath}/archives`} className="jhp-btn-outline">
+              Browse Archives
+            </Link>
           </div>
-          {currentJournal.journal_image && (
-            <div className="journal-hero-image">
-              <img 
-                src={currentJournal.journal_image}
-                alt={currentJournal.name}
-              />
+        </div>
+        <div className="jhp-hero-stats">
+          {currentJournal.issn_online && (
+            <div className="jhp-stat">
+              <span className="jhp-stat-label">ISSN Online</span>
+              <p className="jhp-stat-value">{currentJournal.issn_online}</p>
+            </div>
+          )}
+          {currentJournal.issn_print && (
+            <div className="jhp-stat">
+              <span className="jhp-stat-label">ISSN Print</span>
+              <p className="jhp-stat-value">{currentJournal.issn_print}</p>
+            </div>
+          )}
+          {currentJournal.frequency && (
+            <div className="jhp-stat">
+              <span className="jhp-stat-label">Frequency</span>
+              <p className="jhp-stat-value">{currentJournal.frequency}</p>
             </div>
           )}
         </div>
       </section>
 
       {/* About Section */}
-      <section className="journal-about-section">
-        <div className="section-container">
-          <h2 className="section-title">About the Journal</h2>
-          <div className="about-content">
+      <section className="jhp-about">
+        <div className="jhp-about-text">
+          <h2 className="jhp-section-title">About the Journal</h2>
+          <div className="jhp-about-body">
             <p>
-              {journalDetails?.about_journal 
-                ? stripHtmlTags(journalDetails.about_journal).substring(0, 500) + '...'
-                : stripHtmlTags(currentJournal.description)?.substring(0, 500) + '...'
+              {journalDetails?.about_journal
+                ? stripHtmlTags(journalDetails.about_journal).substring(0, 600)
+                : stripHtmlTags(currentJournal.description)?.substring(0, 600)
               }
             </p>
-            <Link to="about" className="read-more-link">
-              Read More <span className="material-symbols-rounded">arrow_forward</span>
+            <Link to={`${journalBasePath}/about`} className="jhp-about-link">
+              Read Our Full Statement
+              <span className="material-symbols-rounded">arrow_forward</span>
             </Link>
           </div>
         </div>
-      </section>
-
-      {/* Editorial Board Link */}
-      <section className="journal-editorial-section">
-        <div className="section-container">
-          <div className="section-header">
-            <h2 className="section-title">Editorial Board</h2>
-          </div>
-          <p className="editorial-summary">
-            Meet the researchers and academics who guide the peer-review process for {currentJournal.short_form}.
-          </p>
-          <Link to="editorial-board" className="btn-secondary">
-            <span className="material-symbols-rounded">groups</span>
-            View Editorial Board
-          </Link>
-        </div>
-      </section>
-
-      {/* Scope Section */}
-      {journalDetails?.scope && (
-        <section className="journal-scope-section">
-          <div className="section-container">
-            <h2 className="section-title">Scope &amp; Topics</h2>
-            <div className="scope-content">
-              <p>{stripHtmlTags(journalDetails.scope).substring(0, 400)}...</p>
-              <Link to="about#scope" className="read-more-link">
-                View Full Scope <span className="material-symbols-rounded">arrow_forward</span>
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Latest Articles Section */}
-      <section className="journal-articles-section">
-        <div className="section-container">
-          <div className="section-header">
-            <h2 className="section-title">Latest Articles</h2>
-            <Link to="archives" className="view-all-link">
-              View All <span className="material-symbols-rounded">arrow_forward</span>
-            </Link>
-          </div>
-          
-          {articlesLoading ? (
-            <div className="articles-loading">
-              <div className="spinner-small"></div>
-              <p>Loading articles...</p>
-            </div>
-          ) : latestArticles.length > 0 ? (
-            <div className="articles-grid">
-              {latestArticles.map((article) => (
-                <article key={article.id} className="article-card">
-                  <h3 className="article-title">
-                    <Link to={`article/${article.id}`}>
-                      {stripHtmlTags(article.title)}
-                    </Link>
-                  </h3>
-                  <p className="article-authors">{article.author}</p>
-                  <p className="article-abstract">
-                    {stripHtmlTags(article.abstract)?.substring(0, 150)}...
-                  </p>
-                  <div className="article-meta">
-                    {article.volume && <span>Vol. {article.volume}</span>}
-                    {article.issue && <span>Issue {article.issue}</span>}
-                  </div>
-                </article>
-              ))}
+        <div className="jhp-about-image-wrapper">
+          {currentJournal.journal_image ? (
+            <div className="jhp-about-image-container">
+              <img
+                src={currentJournal.journal_image}
+                alt={currentJournal.name}
+                className="jhp-about-image"
+              />
             </div>
           ) : (
-            <div className="no-articles">
-              <span className="material-symbols-rounded">description</span>
-              <p>No articles published yet.</p>
+            <div className="jhp-about-image-container jhp-about-image-placeholder">
+              <span className="material-symbols-rounded">menu_book</span>
             </div>
           )}
+          <div className="jhp-about-quote">
+            <p className="jhp-about-quote-text">
+              "Advancing knowledge through rigorous peer review and open scholarly discourse."
+            </p>
+            <p className="jhp-about-quote-attribution">&mdash; Editorial Board</p>
+          </div>
         </div>
       </section>
 
-      {/* Volume Browser Section */}
-      {volumes.length > 0 && (
-        <section className="journal-volumes-section">
-          <div className="section-container">
-            <div className="section-header">
-              <h2 className="section-title">Browse by Volume</h2>
-              <Link to="archives" className="view-all-link">
-                All Volumes <span className="material-symbols-rounded">arrow_forward</span>
-              </Link>
-            </div>
-            <div className="volumes-grid">
-              {volumes.slice(0, 6).map((volume) => (
-                <Link 
-                  key={volume.volume_no}
-                  to={`archives?volume=${volume.volume_no}`}
-                  className="volume-card"
-                >
-                  <span className="material-symbols-rounded volume-icon">menu_book</span>
-                  <span className="volume-number">Volume {volume.volume_no}</span>
-                  <span className="volume-year">{volume.year}</span>
-                  {volume.issue_count && (
-                    <span className="volume-issues">{volume.issue_count} Issues</span>
-                  )}
+      {/* Latest Articles Section */}
+      <section className="jhp-latest">
+        <div className="jhp-latest-header">
+          <div className="jhp-latest-header-text">
+            <h2 className="jhp-section-title">Latest Articles</h2>
+            <p className="jhp-latest-subtitle">Explore our most recent contributions to scholarly research.</p>
+          </div>
+          <Link to={`${journalBasePath}/archives`} className="jhp-archive-link">
+            View Volume Archive
+            <span className="material-symbols-rounded">north_east</span>
+          </Link>
+        </div>
+
+        {articlesLoading ? (
+          <div className="jhp-articles-loading">
+            <div className="spinner-small"></div>
+            <p>Loading articles...</p>
+          </div>
+        ) : latestArticles.length > 0 ? (
+          <div className="jhp-bento-grid">
+            {/* Featured large card */}
+            <div className="jhp-bento-featured">
+              <div className="jhp-bento-featured-overlay"></div>
+              <div className="jhp-bento-featured-content">
+                {latestArticles[0].volume && (
+                  <span className="jhp-bento-badge">
+                    Volume {latestArticles[0].volume}{latestArticles[0].issue ? `, Issue ${latestArticles[0].issue}` : ''}
+                  </span>
+                )}
+                <h3 className="jhp-bento-featured-title">
+                  {stripHtmlTags(latestArticles[0].title)}
+                </h3>
+                <p className="jhp-bento-featured-abstract">
+                  {stripHtmlTags(latestArticles[0].abstract)?.substring(0, 200)}
+                </p>
+                <Link to={`${journalBasePath}/article/${latestArticles[0].id}`} className="jhp-bento-featured-btn">
+                  Read Article
                 </Link>
-              ))}
+              </div>
             </div>
+
+            {/* Smaller cards */}
+            {latestArticles.slice(1, 3).map((article) => (
+              <div key={article.id} className="jhp-bento-card">
+                <div>
+                  <span className="jhp-bento-card-type">Research Article</span>
+                  <h4 className="jhp-bento-card-title">
+                    {stripHtmlTags(article.title)}
+                  </h4>
+                  <p className="jhp-bento-card-abstract">
+                    {stripHtmlTags(article.abstract)?.substring(0, 120)}
+                  </p>
+                </div>
+                <div className="jhp-bento-card-footer">
+                  <div className="jhp-bento-card-icon">
+                    <span className="material-symbols-rounded">description</span>
+                  </div>
+                  <Link to={`${journalBasePath}/article/${article.id}`} className="jhp-bento-card-link">
+                    Read Article
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="jhp-no-articles">
+            <span className="material-symbols-rounded">description</span>
+            <p>No articles published yet.</p>
+          </div>
+        )}
+      </section>
+
+      {/* Call for Papers Section */}
+      <section className="jhp-cfp">
+        <div className="jhp-cfp-inner">
+          <div className="jhp-cfp-content">
+            <h2 className="jhp-cfp-title">Call for Papers</h2>
+            <p className="jhp-cfp-body">
+              We are seeking original research, methodological papers, and literature reviews.
+              Submit your best work for peer review and publication in {currentJournal.short_form}.
+            </p>
+            <div className="jhp-cfp-buttons">
+              <Link to={`${journalBasePath}/submit`} className="jhp-cfp-btn-solid">Submit Now</Link>
+              <Link to={`${journalBasePath}/guidelines`} className="jhp-cfp-btn-outline">Submission Guidelines</Link>
+            </div>
+          </div>
+          <div className="jhp-cfp-words">
+            <span>Authenticity</span>
+            <span>Longevity</span>
+            <span>Accessibility</span>
+            <span>Rigor</span>
+          </div>
+          <div className="jhp-cfp-grain"></div>
+        </div>
+      </section>
+
+      {/* Editorial Board Section */}
+      {editorialBoard.length > 0 && (
+        <section className="jhp-board">
+          <div className="jhp-board-header">
+            <h2 className="jhp-section-title">Editorial Board</h2>
+            <p className="jhp-board-subtitle">
+              Our board comprises leading experts who guide the peer-review process.
+            </p>
+          </div>
+          <div className="jhp-board-grid">
+            {editorialBoard.slice(0, 4).map((member, idx) => (
+              <div key={idx} className="jhp-board-member">
+                <div className="jhp-board-avatar">
+                  {member.profile_photo ? (
+                    <img src={member.profile_photo} alt={member.name || `${member.fname} ${member.lname}`} />
+                  ) : (
+                    <span className="material-symbols-rounded">person</span>
+                  )}
+                </div>
+                <h5 className="jhp-board-name">{member.name || `${member.fname || ''} ${member.lname || ''}`}</h5>
+                <p className="jhp-board-role">{member.role || member.designation}</p>
+                {member.affiliation && <p className="jhp-board-org">{member.affiliation}</p>}
+              </div>
+            ))}
+          </div>
+          <div className="jhp-board-link-wrapper">
+            <Link to={`${journalBasePath}/editorial-board`} className="jhp-board-link">
+              View Full Board &rarr;
+            </Link>
           </div>
         </section>
       )}
 
+      {/* Footer */}
+      <footer className="jhp-footer">
+        <div className="jhp-footer-inner">
+          <div className="jhp-footer-brand">
+            <span className="jhp-footer-name">{currentJournal.name}</span>
+            <p className="jhp-footer-copyright">
+              &copy; {new Date().getFullYear()} {currentJournal.name}. All rights reserved.
+            </p>
+          </div>
+          <nav className="jhp-footer-nav">
+            <Link to={`${journalBasePath}/about`}>About</Link>
+            <Link to={`${journalBasePath}/guidelines`}>Guidelines</Link>
+            <Link to={`${journalBasePath}/archives`}>Archives</Link>
+            <Link to={`${journalBasePath}/editorial-board`}>Editorial Board</Link>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 };
