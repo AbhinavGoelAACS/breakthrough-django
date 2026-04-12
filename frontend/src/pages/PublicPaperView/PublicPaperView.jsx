@@ -113,36 +113,6 @@ const PublicPaperView = () => {
       .filter(ref => ref.length > 5); // Filter out empty or very short fragments
   };
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loading}>
-          <span className="material-icons">hourglass_empty</span>
-          <p>Loading article...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          <span className="material-icons">error_outline</span>
-          <h2>Article Not Found</h2>
-          <p>{error}</p>
-          <button onClick={() => navigate('/journals')} className={styles.backBtn}>
-            <span className="material-icons">arrow_back</span>
-            Browse Journals
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const authors = parseAuthors(article?.author);
-  const structuredAuthors = parseCoAuthorsJson(article?.co_authors_json);
-  const keywords = parseKeywords(article?.keyword);
   const isOpenAccess = article?.access_type === 'open';
 
   useEffect(() => {
@@ -230,6 +200,37 @@ const PublicPaperView = () => {
       controller.abort();
     };
   }, [article?.id, isOpenAccess]);
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>
+          <span className="material-icons">hourglass_empty</span>
+          <p>Loading article...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.error}>
+          <span className="material-icons">error_outline</span>
+          <h2>Article Not Found</h2>
+          <p>{error}</p>
+          <button onClick={() => navigate('/journals')} className={styles.backBtn}>
+            <span className="material-icons">arrow_back</span>
+            Browse Journals
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const authors = parseAuthors(article?.author);
+  const structuredAuthors = parseCoAuthorsJson(article?.co_authors_json);
+  const keywords = parseKeywords(article?.keyword);
 
   // Handle PDF download for open access
   const handleDownloadPdf = () => {
