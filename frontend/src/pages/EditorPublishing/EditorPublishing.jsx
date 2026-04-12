@@ -20,6 +20,16 @@ const EditorPublishing = () => {
     currentPage: 1,
     totalPages: 1
   });
+  const [publishedPapers, setPublishedPapers] = useState([]);
+  const [publishedLoading, setPublishedLoading] = useState(true);
+  const [publishedError, setPublishedError] = useState(null);
+  const [publishedPagination, setPublishedPagination] = useState({
+    skip: 0,
+    limit: 10,
+    total: 0,
+    currentPage: 1,
+    totalPages: 1
+  });
   
   // Publish modal state
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -36,6 +46,10 @@ const EditorPublishing = () => {
   });
   const [publishing, setPublishing] = useState(false);
   const [finalPaperFile, setFinalPaperFile] = useState(null);
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  const [selectedPublishedPaper, setSelectedPublishedPaper] = useState(null);
+  const [pendingAccessType, setPendingAccessType] = useState('open');
+  const [updatingAccess, setUpdatingAccess] = useState(false);
   
   const { success, error: showError, info } = useToast();
 
@@ -61,13 +75,40 @@ const EditorPublishing = () => {
     }
   }, [pagination.limit]);
 
+  const fetchPublishedPapers = useCallback(async (skip = 0) => {
+    try {
+      setPublishedLoading(true);
+      setPublishedError(null);
+      const response = await acsApi.editor.getPublishedPapers(skip, publishedPagination.limit);
+      setPublishedPapers(response.papers || []);
+      setPublishedPagination((prev) => ({
+        ...prev,
+        skip,
+        total: response.total || 0,
+        currentPage: Math.floor(skip / prev.limit) + 1,
+        totalPages: Math.ceil((response.total || 0) / prev.limit) || 1,
+      }));
+    } catch (err) {
+      console.error('Error fetching published papers:', err);
+      setPublishedError(err.response?.data?.detail || 'Failed to load published papers');
+    } finally {
+      setPublishedLoading(false);
+    }
+  }, [publishedPagination.limit]);
+
   useEffect(() => {
     fetchReadyToPublish(0);
-  }, [fetchReadyToPublish]);
+    fetchPublishedPapers(0);
+  }, [fetchReadyToPublish, fetchPublishedPapers]);
 
   const handlePageChange = (newPage) => {
     const skip = (newPage - 1) * pagination.limit;
     fetchReadyToPublish(skip);
+  };
+
+  const handlePublishedPageChange = (newPage) => {
+    const skip = (newPage - 1) * publishedPagination.limit;
+    fetchPublishedPapers(skip);
   };
 
   const openPublishModal = (paper) => {
@@ -135,6 +176,7 @@ const EditorPublishing = () => {
       closePublishModal();
       // Refresh the list
       fetchReadyToPublish(pagination.skip);
+      fetchPublishedPapers(0);
     } catch (err) {
       console.error('Error publishing paper:', err);
       const errorMsg = err.response?.data?.detail || 'Failed to publish paper';
@@ -143,6 +185,50 @@ const EditorPublishing = () => {
       setPublishing(false);
     }
   };
+
+  const openAccessModal = (paper) => {
+    setSelectedPublishedPaper(paper);
+    setPendingAccessType(paper.access_type || 'open');
+    setShowAccessModal(true);
+  };
+
+  const closeAccessModal = () => {
+    if (updatingAccess) {
+      return;
+    }
+    setShowAccessModal(false);
+    setSelectedPublishedPaper(null);
+    setPendingAccessType('open');
+  };
+
+  const handleAccessUpdate = async () => {
+    if (!selectedPublishedPaper) {
+      return;
+    }
+
+    try {
+      setUpdatingAccess(true);
+      const response = await acsApi.editor.updatePublishedPaperAccess(selectedPublishedPaper.id, pendingAccessType);
+      const updatedPaper = response.paper;
+
+      setPublishedPapers((current) => current.map((paper) => (
+        paper.id === updatedPaper.id ? updatedPaper : paper
+      )));
+
+      success(response.message || 'Access type updated successfully', 4000);
+      closeAccessModal();
+      fetchPublishedPapers(publishedPagination.skip);
+    } catch (err) {
+      console.error('Error updating access type:', err);
+      showError(err.response?.data?.detail || 'Failed to update access type', 5000);
+    } finally {
+      setUpdatingAccess(false);
+    }
+  };
+
+  const formatAccessLabel = (accessType) => accessType === 'open' ? 'Open Access' : 'Subscription';
+
+  const getAccessIcon = (accessType) => accessType === 'open' ? 'lock_open' : 'lock';
 
   // Document Viewer state
   const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
@@ -422,6 +508,112 @@ const EditorPublishing = () => {
         </>
       )}
 
+      <section className={styles.publishedSection}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2>
+              <span className="material-symbols-rounded">library_books</span>
+              Published Papers
+            </h2>
+            <p>Manage post-publication access for papers in your journals.</p>
+          </div>
+          <div className={styles.sectionBadge}>{publishedPagination.total}</div>
+        </div>
+
+        {publishedLoading && (
+          <div className={styles.inlineState}>
+            <span className="material-symbols-rounded">hourglass_empty</span>
+            <p>Loading published papers...</p>
+          </div>
+        )}
+
+        {publishedError && !publishedLoading && (
+          <div className={styles.inlineStateError}>
+            <span className="material-symbols-rounded">error_outline</span>
+            <p>{publishedError}</p>
+            <button onClick={() => fetchPublishedPapers(0)} className={styles.retryBtn}>Try Again</button>
+          </div>
+        )}
+
+        {!publishedLoading && !publishedError && publishedPapers.length === 0 && (
+          <div className={styles.inlineState}>
+            <span className="material-symbols-rounded">inventory_2</span>
+            <p>No published papers found for your journals yet.</p>
+          </div>
+        )}
+
+        {!publishedLoading && !publishedError && publishedPapers.length > 0 && (
+          <>
+            <div className={styles.publishedList}>
+              {publishedPapers.map((paper) => {
+                const nextAccessType = paper.access_type === 'open' ? 'subscription' : 'open';
+                const latestAudit = paper.latest_access_audit;
+
+                return (
+                  <article key={paper.id} className={styles.publishedCard}>
+                    <div className={styles.publishedCardHeader}>
+                      <div>
+                        <p className={styles.publishedMeta}>Published ID #{paper.id}</p>
+                        <h3 className={styles.publishedTitle}>{paper.title}</h3>
+                      </div>
+                      <span className={`${styles.accessBadge} ${paper.access_type === 'open' ? styles.accessOpen : styles.accessSubscription}`}>
+                        <span className="material-symbols-rounded">{getAccessIcon(paper.access_type)}</span>
+                        {formatAccessLabel(paper.access_type)}
+                      </span>
+                    </div>
+
+                    <div className={styles.publishedInfo}>
+                      <span><strong>Author:</strong> {paper.author || 'Unknown'}</span>
+                      <span><strong>Journal:</strong> {paper.journal || 'Unknown Journal'}</span>
+                      <span><strong>Issue:</strong> Vol. {paper.volume}, Issue {paper.issue}</span>
+                      <span><strong>Published:</strong> {formatDateIST(paper.date)}</span>
+                    </div>
+
+                    {latestAudit && (
+                      <div className={styles.auditNote}>
+                        Last changed by {latestAudit.changed_by_email || 'unknown user'} on {formatDateIST(latestAudit.changed_at)}
+                      </div>
+                    )}
+
+                    <div className={styles.publishedActions}>
+                      <button
+                        className={`${styles.btn} ${styles.btnSecondary}`}
+                        onClick={() => openAccessModal(paper)}
+                      >
+                        <span className="material-symbols-rounded">swap_horiz</span>
+                        Switch to {formatAccessLabel(nextAccessType)}
+                      </button>
+                      <a
+                        href={`/article/${paper.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${styles.btn} ${styles.btnOutline}`}
+                      >
+                        <span className="material-symbols-rounded">open_in_new</span>
+                        View Public Page
+                      </a>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            {publishedPagination.totalPages > 1 && (
+              <div className={styles.paginationContainer}>
+                <Pagination
+                  currentPage={publishedPagination.currentPage}
+                  totalPages={publishedPagination.totalPages}
+                  onPageChange={handlePublishedPageChange}
+                  isLoading={publishedLoading}
+                  itemsPerPage={publishedPagination.limit}
+                  totalItems={publishedPagination.total}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
       {/* Publish Modal */}
       {showPublishModal && selectedPaper && (
         <div className={styles.modalOverlay} onClick={closePublishModal}>
@@ -629,6 +821,84 @@ const EditorPublishing = () => {
                   <>
                     <span className="material-symbols-rounded">check_circle</span>
                     Publish Now
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAccessModal && selectedPublishedPaper && (
+        <div className={styles.modalOverlay} onClick={closeAccessModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>
+                <span className="material-symbols-rounded">lock_open_right</span>
+                Update Access Type
+              </h2>
+              <button className={styles.closeBtn} onClick={closeAccessModal}>
+                <span className="material-symbols-rounded">close</span>
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.paperSummary}>
+                <h4>{selectedPublishedPaper.title}</h4>
+                <p>Changing this setting updates public PDF availability immediately.</p>
+              </div>
+
+              <div className={styles.formGroupFull}>
+                <label htmlFor="published-access-type">Access Type *</label>
+                <div className={styles.accessTypeOptions} id="published-access-type">
+                  <label className={`${styles.accessTypeOption} ${pendingAccessType === 'open' ? styles.accessTypeSelected : ''}`}>
+                    <input
+                      type="radio"
+                      name="published_access_type"
+                      value="open"
+                      checked={pendingAccessType === 'open'}
+                      onChange={(e) => setPendingAccessType(e.target.value)}
+                      disabled={updatingAccess}
+                    />
+                    <span className="material-symbols-rounded">lock_open</span>
+                    <div>
+                      <strong>Open Access</strong>
+                      <p>Readers can open the public PDF without subscription.</p>
+                    </div>
+                  </label>
+                  <label className={`${styles.accessTypeOption} ${pendingAccessType === 'subscription' ? styles.accessTypeSelected : ''}`}>
+                    <input
+                      type="radio"
+                      name="published_access_type"
+                      value="subscription"
+                      checked={pendingAccessType === 'subscription'}
+                      onChange={(e) => setPendingAccessType(e.target.value)}
+                      disabled={updatingAccess}
+                    />
+                    <span className="material-symbols-rounded">lock</span>
+                    <div>
+                      <strong>Subscription</strong>
+                      <p>Public metadata remains visible, but PDF access is blocked.</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={closeAccessModal} disabled={updatingAccess}>
+                Cancel
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleAccessUpdate} disabled={updatingAccess}>
+                {updatingAccess ? (
+                  <>
+                    <span className="material-symbols-rounded">hourglass_empty</span>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-rounded">check_circle</span>
+                    Save Access Type
                   </>
                 )}
               </button>

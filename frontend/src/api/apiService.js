@@ -355,6 +355,8 @@ export const acsApi = {
     // Publishing workflow
     getReadyToPublish: (skip = 0, limit = 20) =>
       apiService.get(`/api/v1/editor/ready-to-publish?skip=${skip}&limit=${limit}`),
+    getPublishedPapers: (skip = 0, limit = 10, accessType = '') =>
+      apiService.get(`/api/v1/editor/published-papers?skip=${skip}&limit=${limit}${accessType ? `&access_type=${accessType}` : ''}`),
     publishPaper: (paperId, publishData) =>
       apiService.post(`/api/v1/editor/papers/${paperId}/publish`, publishData),
     publishPaperWithFile: async (paperId, formData) => {
@@ -374,6 +376,8 @@ export const acsApi = {
     },
     checkDoiStatus: (paperId) =>
       apiService.get(`/api/v1/editor/papers/${paperId}/doi-status`),
+    updatePublishedPaperAccess: (publishedPaperId, accessType) =>
+      apiService.patch(`/api/v1/editor/published-papers/${publishedPaperId}/access`, { access_type: accessType }),
     
     // Email Templates (Editor can also access)
     listEmailTemplates: (category = null) =>

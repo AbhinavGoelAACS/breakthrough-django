@@ -1,9 +1,16 @@
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db import transaction
 from django.db.models import Count, Q
 
 from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor, PaperVersion, CopyrightForm, PaperCoAuthor
+from .models import PaperAccessAuditLog
+from .access_utils import (
+    serialize_published_paper_access,
+    update_published_paper_access,
+    validate_access_type,
+)
 
 
 def _is_admin(user):
@@ -1404,6 +1411,93 @@ class EditorReadyToPublishView(APIView):
             "skip": skip,
             "limit": limit,
             "papers": papers_list
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPublishedPapersView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not allowed_journals and not _is_admin(request.user):
+            return Response({"papers": [], "total": 0, "skip": 0, "limit": 10}, status=status.HTTP_200_OK)
+
+        skip = int(request.query_params.get("skip", 0))
+        limit = int(request.query_params.get("limit", 10))
+        search = (request.query_params.get("search") or "").strip()
+        access_type = request.query_params.get("access_type")
+
+        query = PaperPublished.objects.all()
+        if not _is_admin(request.user):
+            query = query.filter(journal_id__in=allowed_journals)
+        if access_type:
+            query = query.filter(access_type=access_type)
+        if search:
+            query = query.filter(
+                Q(title__icontains=search)
+                | Q(author__icontains=search)
+                | Q(doi__icontains=search)
+            )
+
+        total = query.count()
+        papers = list(query.order_by("-date", "-id")[skip:skip + limit])
+        audit_map = {}
+        published_ids = [paper.id for paper in papers]
+        if published_ids:
+            audits = PaperAccessAuditLog.objects.filter(
+                published_paper_id__in=published_ids
+            ).order_by("-changed_at")
+            for audit in audits:
+                if audit.published_paper_id not in audit_map:
+                    audit_map[audit.published_paper_id] = audit
+
+        return Response({
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "papers": [
+                serialize_published_paper_access(paper, audit_map.get(paper.id))
+                for paper in papers
+            ],
+        }, status=status.HTTP_200_OK)
+
+
+class EditorPublishedPaperAccessUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, published_paper_id):
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        access_type = request.data.get("access_type")
+        try:
+            validate_access_type(access_type)
+        except ValueError:
+            return Response({"detail": "Invalid access type"}, status=status.HTTP_400_BAD_REQUEST)
+
+        published_paper = PaperPublished.objects.filter(id=published_paper_id).first()
+        if not published_paper:
+            return Response({"detail": "Published paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not _is_admin(request.user) and published_paper.journal_id not in allowed_journals:
+            return Response({"detail": "You don't have access to update this paper"}, status=status.HTTP_403_FORBIDDEN)
+
+        old_access = published_paper.access_type
+        with transaction.atomic():
+            audit = update_published_paper_access(published_paper, access_type, request.user)
+
+        return Response({
+            "success": True,
+            "message": (
+                f"Access type already set to '{access_type}'"
+                if audit is None
+                else f"Access type updated from '{old_access}' to '{access_type}'"
+            ),
+            "paper": serialize_published_paper_access(published_paper, audit),
         }, status=status.HTTP_200_OK)
 
 

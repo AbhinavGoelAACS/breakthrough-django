@@ -2,6 +2,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count, Q
+from django.db import transaction
 from django.utils import timezone
 from datetime import datetime, timedelta
 
@@ -9,6 +10,11 @@ from .models import (
     User, Paper, Journal, PaperPublished, UserRole, PaperCorrespondence,
     CopyrightForm, News, EmailTemplate, OnlineReview, ReviewSubmission, Editor,
     PaperCoAuthor, PaperComment, PaperVersion, ReviewerInvitation
+)
+from .access_utils import (
+    serialize_published_paper_access,
+    update_published_paper_access,
+    validate_access_type,
 )
 
 
@@ -569,25 +575,27 @@ class AdminPaperAccessUpdateView(APIView):
             return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
             
         access_type = request.data.get("access_type")
-        if access_type not in ["subscription", "open"]:
+        try:
+            validate_access_type(access_type)
+        except ValueError:
             return Response({"detail": "Invalid access type"}, status=status.HTTP_400_BAD_REQUEST)
             
         published_paper = PaperPublished.objects.filter(id=paper_id).first()
         if not published_paper:
             return Response({"detail": "Published paper not found"}, status=status.HTTP_404_NOT_FOUND)
-            
+
         old_access = published_paper.access_type
-        published_paper.access_type = access_type
-        published_paper.save()
+        with transaction.atomic():
+            audit = update_published_paper_access(published_paper, access_type, request.user)
         
         return Response({
             "success": True,
-            "message": f"Access type updated from '{old_access}' to '{access_type}'",
-            "paper": {
-                "id": published_paper.id,
-                "access_type": published_paper.access_type,
-                "doi": published_paper.doi
-            }
+            "message": (
+                f"Access type already set to '{access_type}'"
+                if audit is None
+                else f"Access type updated from '{old_access}' to '{access_type}'"
+            ),
+            "paper": serialize_published_paper_access(published_paper, audit)
         }, status=status.HTTP_200_OK)
 
 
@@ -601,10 +609,20 @@ class AdminBulkAccessUpdateView(APIView):
         paper_ids = request.data.get("paper_ids", [])
         access_type = request.data.get("access_type")
         
-        if not paper_ids or access_type not in ["subscription", "open"]:
+        try:
+            validate_access_type(access_type)
+        except ValueError:
+            access_type = None
+
+        if not paper_ids or not access_type:
             return Response({"detail": "Invalid parameters"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        updated_count = PaperPublished.objects.filter(id__in=paper_ids).update(access_type=access_type)
+
+        updated_count = 0
+        with transaction.atomic():
+            for published_paper in PaperPublished.objects.filter(id__in=paper_ids):
+                audit = update_published_paper_access(published_paper, access_type, request.user)
+                if audit is not None:
+                    updated_count += 1
         
         return Response({
             "success": True,

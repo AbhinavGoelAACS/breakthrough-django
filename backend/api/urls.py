@@ -80,6 +80,7 @@ from .views_editor import (
     EditorPaperViewTrackChanges, EditorPaperViewCleanRevision, EditorPaperViewResponseToReviewer,
     EditorPaperViewFile,
     EditorPublishPaperWithFileView, EditorCheckDOIStatusView, InvitationStatusView,
+    EditorPublishedPapersView, EditorPublishedPaperAccessUpdateView,
     AcceptInvitationView,
     DeclineInvitationView,
     RegisterAcceptInvitationView,
@@ -440,6 +441,8 @@ urlpatterns = [
     # New Editor endpoints added
     path("api/v1/editor/accepted-papers", EditorAcceptedPapersView.as_view(), name="editor-accepted-papers"),
     path("api/v1/editor/ready-to-publish", EditorReadyToPublishView.as_view(), name="editor-ready-to-publish"),
+    path("api/v1/editor/published-papers", EditorPublishedPapersView.as_view(), name="editor-published-papers"),
+    path("api/v1/editor/published-papers/<int:published_paper_id>/access", EditorPublishedPaperAccessUpdateView.as_view(), name="editor-published-paper-access"),
     path("api/v1/editor/papers/<int:paper_id>/view-title-page", EditorPaperViewTitlePage.as_view(), name="editor-paper-view-title-page"),
     path("api/v1/editor/papers/<int:paper_id>/view", EditorPaperViewFile.as_view(), name="editor-paper-view-file"),
     path("api/v1/editor/papers/<int:paper_id>/view-blinded-manuscript", EditorPaperViewBlindedManuscript.as_view(), name="editor-paper-view-blinded-manuscript"),

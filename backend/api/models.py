@@ -146,6 +146,24 @@ class PaperPublished(models.Model):
     paper_submission_id = models.IntegerField(null=True, blank=True)
 
 
+class PaperAccessAuditLog(models.Model):
+    class Meta:
+        db_table = "paper_access_audit_log"
+        managed = True
+        ordering = ["-changed_at"]
+
+    id = models.AutoField(primary_key=True)
+    published_paper_id = models.IntegerField()
+    paper_submission_id = models.IntegerField(null=True, blank=True)
+    journal_id = models.IntegerField(null=True, blank=True)
+    old_access_type = models.CharField(max_length=20)
+    new_access_type = models.CharField(max_length=20)
+    changed_by_id = models.IntegerField(null=True, blank=True)
+    changed_by_email = models.CharField(max_length=255, null=True, blank=True)
+    changed_by_role = models.CharField(max_length=50, null=True, blank=True)
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+
 class News(models.Model):
     class Meta:
         db_table = "news"
