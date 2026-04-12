@@ -34,6 +34,25 @@ const PublicPaperView = () => {
     return formatDateIST(dateStr);
   };
 
+  const getTimelineTone = (item) => {
+    const icon = item?.icon;
+    const event = item?.event?.toLowerCase() || '';
+
+    if (icon === 'check_circle' || event.includes('accepted')) {
+      return styles.timelineSuccess;
+    }
+
+    if (icon === 'publish' || event.includes('published')) {
+      return styles.timelinePrimary;
+    }
+
+    if (icon === 'rate_review' || event.includes('review')) {
+      return styles.timelineReview;
+    }
+
+    return styles.timelineNeutral;
+  };
+
   const parseAuthors = (authorString) => {
     if (!authorString) return [];
     return authorString.split(',').map(a => a.trim()).filter(a => a);
@@ -295,19 +314,28 @@ const PublicPaperView = () => {
 
       {/* Article Timeline */}
       {article?.timeline?.length > 0 && (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.timelineSection}`}>
           <h2 className={styles.sectionTitle}>
-            <span className="material-icons">timeline</span>
+            <span className="material-symbols-rounded">timeline</span>
             Article Timeline
           </h2>
           <div className={styles.timeline}>
             {article.timeline.map((item, idx) => (
-              <div key={idx} className={styles.timelineItem}>
-                <span className={styles.timelineDot}>
-                  <span className="material-icons">{item.icon}</span>
-                </span>
-                <div className={styles.timelineEvent}>{item.event}</div>
-                <div className={styles.timelineDate}>{formatDate(item.date)}</div>
+              <div key={`${item.event}-${item.date}-${idx}`} className={styles.timelineItem}>
+                <div className={styles.timelineConnector}>
+                  <div className={`${styles.timelineDot} ${getTimelineTone(item)}`}>
+                    <span className="material-symbols-rounded">{item.icon || 'schedule'}</span>
+                  </div>
+                  {idx < article.timeline.length - 1 && <div className={styles.timelineLine} />}
+                </div>
+
+                <div className={styles.timelineCard}>
+                  <div className={styles.timelineCardHeader}>
+                    <span className={styles.timelineBadge}>Step {idx + 1}</span>
+                    <span className={styles.timelineDate}>{formatDate(item.date)}</span>
+                  </div>
+                  <div className={styles.timelineEvent}>{item.event}</div>
+                </div>
               </div>
             ))}
           </div>
