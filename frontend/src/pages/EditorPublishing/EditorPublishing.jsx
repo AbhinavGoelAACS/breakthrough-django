@@ -192,8 +192,8 @@ const EditorPublishing = () => {
     setShowAccessModal(true);
   };
 
-  const closeAccessModal = () => {
-    if (updatingAccess) {
+  const closeAccessModal = (force = false) => {
+    if (updatingAccess && !force) {
       return;
     }
     setShowAccessModal(false);
@@ -216,7 +216,7 @@ const EditorPublishing = () => {
       )));
 
       success(response.message || 'Access type updated successfully', 4000);
-      closeAccessModal();
+      closeAccessModal(true);
       fetchPublishedPapers(publishedPagination.skip);
     } catch (err) {
       console.error('Error updating access type:', err);
