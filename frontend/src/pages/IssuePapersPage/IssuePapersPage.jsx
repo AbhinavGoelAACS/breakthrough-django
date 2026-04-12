@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useJournalContext } from '../../contexts/JournalContext';
+import { useOptionalJournalContext } from '../../contexts/JournalContext';
 import { acsApi, apiService } from '../../api/apiService';
 import { formatDateIST } from '../../utils/dateUtils';
 import './IssuePapersPage.css';
@@ -73,7 +73,9 @@ const AuthorChips = ({ structuredAuthors, fallbackAuthor }) => {
 
 const IssuePapersPage = () => {
   const { id: urlJournalId, volumeNo, issueNo } = useParams();
-  const { currentJournal, isJournalSite } = useJournalContext();
+  const journalContext = useOptionalJournalContext();
+  const currentJournal = journalContext?.currentJournal || null;
+  const isJournalSite = Boolean(journalContext?.isJournalSite);
   const navigate = useNavigate();
   
   // Use journal ID from URL params, or from context if on journal page route

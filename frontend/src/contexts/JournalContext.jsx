@@ -137,4 +137,12 @@ export const useJournalContext = () => {
   return context;
 };
 
+/**
+ * Optional hook for components that can render on both journal and non-journal routes.
+ * Returns null when no JournalProvider is present.
+ */
+export const useOptionalJournalContext = () => {
+  return useContext(JournalContext);
+};
+
 export default JournalProvider;
