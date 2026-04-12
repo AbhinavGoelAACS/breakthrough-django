@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { renderAsync } from 'docx-preview';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
 import { API_BASE_URL } from '../../api/axios';
 import { formatDateIST } from '../../utils/dateUtils';
@@ -9,6 +9,7 @@ import styles from './PublicPaperView.module.css';
 const PublicPaperView = () => {
   const { id: paperCode } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -144,6 +145,7 @@ const PublicPaperView = () => {
   };
 
   const isOpenAccess = article?.access_type === 'open';
+  const isJournalRoute = location.pathname.startsWith('/j/');
 
   useEffect(() => {
     if (!article?.id || !isOpenAccess) {
@@ -308,7 +310,7 @@ const PublicPaperView = () => {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isJournalRoute ? styles.journalContainer : ''}`}>
       <nav className={styles.breadcrumb}>
         <Link to="/journals">Journals</Link>
         <span className="material-icons">chevron_right</span>
