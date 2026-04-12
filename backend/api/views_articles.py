@@ -1,9 +1,11 @@
 import html
 import os
 import re
+import mimetypes
 from pathlib import Path
 
 from django.http import FileResponse, Http404
+from django.conf import settings
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -227,15 +229,38 @@ class ArticlePDFView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        possible_paths = [
-            PUBLISHED_PAPERS_DIR / article.paper,
-            PUBLISHED_PAPERS_DIR / str(article.journal_id) / article.paper,
-            (PUBLISHED_PAPERS_DIR.parent / "papers" / article.paper),
-            Path(article.paper) if os.path.isabs(article.paper) else None,
-        ]
+        paper_path = str(article.paper).strip()
+        media_root = Path(settings.MEDIA_ROOT)
+        uploads_root = BASE_DIR.parent / "uploads"
+
+        possible_paths = []
+
+        # Absolute path stored in DB
+        if os.path.isabs(paper_path):
+            possible_paths.append(Path(paper_path))
+
+        # Common relative forms from editor publish flow and legacy records
+        possible_paths.extend([
+            media_root / paper_path,
+            media_root / "published" / paper_path,
+            media_root / "published" / str(article.journal_id) / Path(paper_path).name,
+            uploads_root / paper_path,
+            uploads_root / "published" / paper_path,
+            uploads_root / "published" / str(article.journal_id) / Path(paper_path).name,
+            PUBLISHED_PAPERS_DIR / paper_path,
+            PUBLISHED_PAPERS_DIR / str(article.journal_id) / Path(paper_path).name,
+            (PUBLISHED_PAPERS_DIR.parent / "papers" / paper_path),
+        ])
 
         file_path = None
+        seen = set()
         for path in possible_paths:
+            if not path:
+                continue
+            normalized = str(path.resolve()) if path.exists() else str(path)
+            if normalized in seen:
+                continue
+            seen.add(normalized)
             if path and path.exists():
                 file_path = path
                 break
@@ -248,11 +273,16 @@ class ArticlePDFView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        content_type, _ = mimetypes.guess_type(str(file_path))
+        if not content_type:
+            content_type = "application/octet-stream"
+
         response = FileResponse(
             open(file_path, "rb"),
-            content_type="application/pdf",
+            content_type=content_type,
         )
-        response["Content-Disposition"] = f'inline; filename="{article.paper}"'
+        response["Content-Disposition"] = f'inline; filename="{Path(file_path).name}"'
+        response.xframe_options_exempt = True
         return response
 
 
