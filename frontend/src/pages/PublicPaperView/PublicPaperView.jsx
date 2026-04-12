@@ -18,6 +18,7 @@ const PublicPaperView = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
   const [docArrayBuffer, setDocArrayBuffer] = useState(null);
+  const [fileUrl, setFileUrl] = useState('');
   const docxContainerRef = useRef(null);
 
   const fetchArticle = useCallback(async () => {
@@ -121,24 +122,58 @@ const PublicPaperView = () => {
       setPreviewError('');
       setPreviewLoading(false);
       setDocArrayBuffer(null);
+      setFileUrl('');
       return;
     }
 
     const controller = new AbortController();
+
+    const getCandidateUrls = () => {
+      const candidates = [`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`];
+      const paperPath = (article.paper || '').trim();
+
+      if (paperPath) {
+        const cleanPath = paperPath.replace(/^\/+/, '');
+        if (/^https?:\/\//i.test(paperPath)) {
+          candidates.push(paperPath);
+        } else {
+          candidates.push(`${API_BASE_URL}/${cleanPath}`);
+          candidates.push(`${API_BASE_URL}/media/${cleanPath}`);
+          candidates.push(`${API_BASE_URL}/uploads/${cleanPath}`);
+          candidates.push(`${API_BASE_URL}/published/${cleanPath}`);
+        }
+      }
+
+      return [...new Set(candidates)];
+    };
+
+    const fetchFirstAvailable = async () => {
+      const candidates = getCandidateUrls();
+      for (const url of candidates) {
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            signal: controller.signal,
+          });
+          if (response.ok) {
+            return { response, url };
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            throw err;
+          }
+        }
+      }
+      throw new Error('Document unavailable (404)');
+    };
 
     const loadDocumentPreview = async () => {
       try {
         setPreviewLoading(true);
         setPreviewError('');
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`, {
-          method: 'GET',
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Document unavailable (${response.status})`);
-        }
+        const { response, url } = await fetchFirstAvailable();
+        setFileUrl(url);
 
         const contentType = (response.headers.get('content-type') || '').toLowerCase();
         const contentDisposition = (response.headers.get('content-disposition') || '').toLowerCase();
@@ -191,6 +226,7 @@ const PublicPaperView = () => {
         setPreviewError('Document preview is not available right now. You can still use the download button.');
         setPreviewType('');
         setDocArrayBuffer(null);
+        setFileUrl('');
       } finally {
         setPreviewLoading(false);
       }
@@ -235,7 +271,7 @@ const PublicPaperView = () => {
   const keywords = parseKeywords(article?.keyword);
 
   const handleDownloadFile = () => {
-    window.open(`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`, '_blank');
+    window.open(fileUrl || `${API_BASE_URL}/api/v1/articles/${article.id}/pdf`, '_blank');
   };
 
   return (
