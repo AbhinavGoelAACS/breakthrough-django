@@ -408,7 +408,7 @@ const PublicPaperView = () => {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
             <span className="material-icons">description</span>
-            Full Text File
+            Manuscript
           </h2>
           <div className={styles.pdfContainer}>
             {previewLoading && <p className={styles.pdfStatus}>Loading document preview...</p>}

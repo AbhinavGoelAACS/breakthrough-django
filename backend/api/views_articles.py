@@ -231,7 +231,35 @@ class ArticlePDFView(APIView):
 
         paper_path = str(article.paper).strip()
         media_root = Path(settings.MEDIA_ROOT)
-        uploads_root = BASE_DIR.parent / "uploads"
+        project_root = BASE_DIR.parent
+        uploads_root = project_root / "uploads"
+
+        normalized_path = paper_path.replace("\\", "/").strip().lstrip("/")
+        path_variants = [normalized_path]
+        if normalized_path.startswith("media/"):
+            path_variants.append(normalized_path[len("media/") :])
+        if normalized_path.startswith("uploads/"):
+            path_variants.append(normalized_path[len("uploads/") :])
+
+        file_name = Path(normalized_path).name if normalized_path else ""
+        if file_name:
+            path_variants.append(file_name)
+
+        # De-duplicate while preserving order
+        seen_variants = set()
+        unique_variants = []
+        for variant in path_variants:
+            if variant and variant not in seen_variants:
+                unique_variants.append(variant)
+                seen_variants.add(variant)
+
+        roots = [
+            media_root,
+            uploads_root,
+            project_root,
+            PUBLISHED_PAPERS_DIR,
+            PUBLISHED_PAPERS_DIR.parent / "papers",
+        ]
 
         possible_paths = []
 
@@ -240,17 +268,15 @@ class ArticlePDFView(APIView):
             possible_paths.append(Path(paper_path))
 
         # Common relative forms from editor publish flow and legacy records
-        possible_paths.extend([
-            media_root / paper_path,
-            media_root / "published" / paper_path,
-            media_root / "published" / str(article.journal_id) / Path(paper_path).name,
-            uploads_root / paper_path,
-            uploads_root / "published" / paper_path,
-            uploads_root / "published" / str(article.journal_id) / Path(paper_path).name,
-            PUBLISHED_PAPERS_DIR / paper_path,
-            PUBLISHED_PAPERS_DIR / str(article.journal_id) / Path(paper_path).name,
-            (PUBLISHED_PAPERS_DIR.parent / "papers" / paper_path),
-        ])
+        for variant in unique_variants:
+            variant_path = Path(variant)
+            for root in roots:
+                possible_paths.append(root / variant_path)
+
+            # Handle records that only store the filename or store non-prefixed relative paths
+            if file_name:
+                possible_paths.append(media_root / "published" / str(article.journal_id) / file_name)
+                possible_paths.append(uploads_root / "published" / str(article.journal_id) / file_name)
 
         file_path = None
         seen = set()
