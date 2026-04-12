@@ -19,8 +19,14 @@
 }
 
 .portal-layout > .portal-main > .portal-content {
-  padding: 0;
+  padding: 1.5rem 2rem;
   min-height: 100%;
+}
+
+@media (max-width: 768px) {
+  .portal-layout > .portal-main > .portal-content {
+    padding: 1rem;
+  }
 }
 
 /* Responsive - Mobile: sidebar stays, just adjust if needed */
