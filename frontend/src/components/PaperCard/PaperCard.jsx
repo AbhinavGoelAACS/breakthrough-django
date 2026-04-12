@@ -95,37 +95,41 @@ const PaperCard = ({ paper, actions = 'minimal', onManage, onView, role }) => {
         </div>
       </div>
 
-      {/* Admin Actions: MANAGE button */}
-      {(actions === 'admin' || actions === 'editor') && (
-        <button
-          className={`${styles.actionBtn} ${styles.manageBtn}`}
-          onClick={handleManage}
-        >
-          <span>Manage</span>
-          <span className="material-symbols-rounded">chevron_right</span>
-        </button>
-      )}
+      {(actions === 'admin' || actions === 'editor' || actions === 'author' || actions === 'reviewer') && (
+        <div className={styles.actionArea}>
+          {/* Admin Actions: MANAGE button */}
+          {(actions === 'admin' || actions === 'editor') && (
+            <button
+              className={`${styles.actionBtn} ${styles.manageBtn}`}
+              onClick={handleManage}
+            >
+              <span>Manage</span>
+              <span className="material-symbols-rounded">chevron_right</span>
+            </button>
+          )}
 
-      {/* Author Actions: VIEW ONLY */}
-      {actions === 'author' && (
-        <button
-          className={`${styles.actionBtn} ${styles.viewOnlyBtn}`}
-          onClick={handleView}
-        >
-          <span>VIEW</span>
-          <span className="material-symbols-rounded">open_in_new</span>
-        </button>
-      )}
+          {/* Author Actions: VIEW ONLY */}
+          {actions === 'author' && (
+            <button
+              className={`${styles.actionBtn} ${styles.viewOnlyBtn}`}
+              onClick={handleView}
+            >
+              <span>View</span>
+              <span className="material-symbols-rounded">open_in_new</span>
+            </button>
+          )}
 
-      {/* Reviewer Actions: REVIEW button */}
-      {actions === 'reviewer' && (
-        <button
-          className={`${styles.actionBtn} ${styles.reviewBtn}`}
-          onClick={handleManage}
-        >
-          <span>REVIEW</span>
-          <span className="material-symbols-rounded">edit_note</span>
-        </button>
+          {/* Reviewer Actions: REVIEW button */}
+          {actions === 'reviewer' && (
+            <button
+              className={`${styles.actionBtn} ${styles.reviewBtn}`}
+              onClick={handleManage}
+            >
+              <span>Review</span>
+              <span className="material-symbols-rounded">edit_note</span>
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
