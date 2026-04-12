@@ -374,6 +374,16 @@
   border: none;
 }
 
+.docxContainer {
+  width: 100%;
+  min-height: 700px;
+  max-height: 700px;
+  overflow: auto;
+  background: #f1f5f9;
+  padding: 16px;
+  border-radius: 8px;
+}
+
 .pdfStatus,
 .pdfStatusError {
   margin: 0;

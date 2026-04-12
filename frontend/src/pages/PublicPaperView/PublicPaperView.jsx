@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { renderAsync } from 'docx-preview';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
 import { API_BASE_URL } from '../../api/axios';
@@ -14,6 +15,9 @@ const PublicPaperView = () => {
   const [pdfEmbedUrl, setPdfEmbedUrl] = useState('');
   const [pdfEmbedLoading, setPdfEmbedLoading] = useState(false);
   const [pdfEmbedError, setPdfEmbedError] = useState('');
+  const [previewType, setPreviewType] = useState('');
+  const [docArrayBuffer, setDocArrayBuffer] = useState(null);
+  const docxContainerRef = useRef(null);
 
   const fetchArticle = useCallback(async () => {
     try {
@@ -40,6 +44,21 @@ const PublicPaperView = () => {
       }
     };
   }, [pdfEmbedUrl]);
+
+  useEffect(() => {
+    if (previewType === 'docx' && docArrayBuffer && docxContainerRef.current) {
+      docxContainerRef.current.innerHTML = '';
+      renderAsync(docArrayBuffer, docxContainerRef.current, null, {
+        className: styles.docxWrapper,
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: true,
+      }).catch((err) => {
+        console.error('DOCX render error:', err);
+        setPdfEmbedError('Document preview is not available right now. You can still use the download button.');
+      });
+    }
+  }, [previewType, docArrayBuffer, styles.docxWrapper]);
 
   const formatDate = (dateStr) => {
     return formatDateIST(dateStr);
@@ -134,6 +153,8 @@ const PublicPaperView = () => {
       setPdfEmbedUrl('');
       setPdfEmbedLoading(false);
       setPdfEmbedError('');
+      setPreviewType('');
+      setDocArrayBuffer(null);
       return;
     }
 
@@ -150,12 +171,35 @@ const PublicPaperView = () => {
         });
 
         if (!response.ok) {
-          throw new Error(`PDF unavailable (${response.status})`);
+          throw new Error(`Document unavailable (${response.status})`);
         }
 
+        const contentType = (response.headers.get('content-type') || '').toLowerCase();
+        const contentDisposition = (response.headers.get('content-disposition') || '').toLowerCase();
         const blob = await response.blob();
-        if (blob.type && !blob.type.includes('pdf')) {
-          throw new Error('Invalid PDF response');
+
+        const blobType = (blob.type || '').toLowerCase();
+        const isPdf = contentType.includes('pdf') || blobType.includes('pdf');
+        const isDocx =
+          contentType.includes('officedocument.wordprocessingml.document')
+          || contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+          || contentType.includes('application/msword')
+          || blobType.includes('officedocument.wordprocessingml.document')
+          || blobType.includes('application/msword')
+          || contentDisposition.includes('.docx')
+          || contentDisposition.includes('.doc');
+
+        if (isDocx && !isPdf) {
+          const buffer = await blob.arrayBuffer();
+          setDocArrayBuffer(buffer);
+          setPreviewType('docx');
+          setPdfEmbedUrl((previousUrl) => {
+            if (previousUrl) {
+              URL.revokeObjectURL(previousUrl);
+            }
+            return '';
+          });
+          return;
         }
 
         const objectUrl = URL.createObjectURL(blob);
@@ -165,12 +209,16 @@ const PublicPaperView = () => {
           }
           return objectUrl;
         });
+        setPreviewType('pdf');
+        setDocArrayBuffer(null);
       } catch (err) {
         if (err.name === 'AbortError') {
           return;
         }
         console.error('Error loading embedded PDF:', err);
-        setPdfEmbedError('PDF preview is not available right now. You can still use the download button.');
+        setPdfEmbedError('Document preview is not available right now. You can still use the download button.');
+        setPreviewType('');
+        setDocArrayBuffer(null);
       } finally {
         setPdfEmbedLoading(false);
       }
@@ -342,17 +390,20 @@ const PublicPaperView = () => {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
             <span className="material-icons">picture_as_pdf</span>
-            Full Text PDF
+            Full Text File
           </h2>
           <div className={styles.pdfContainer}>
-            {pdfEmbedLoading && <p className={styles.pdfStatus}>Loading PDF preview...</p>}
+            {pdfEmbedLoading && <p className={styles.pdfStatus}>Loading document preview...</p>}
             {!pdfEmbedLoading && pdfEmbedError && <p className={styles.pdfStatusError}>{pdfEmbedError}</p>}
-            {!pdfEmbedLoading && !pdfEmbedError && pdfEmbedUrl && (
+            {!pdfEmbedLoading && !pdfEmbedError && previewType === 'pdf' && pdfEmbedUrl && (
               <iframe
                 src={pdfEmbedUrl}
                 title="Article PDF"
                 className={styles.pdfViewer}
               />
+            )}
+            {!pdfEmbedLoading && !pdfEmbedError && previewType === 'docx' && (
+              <div ref={docxContainerRef} className={styles.docxContainer} />
             )}
           </div>
         </section>
