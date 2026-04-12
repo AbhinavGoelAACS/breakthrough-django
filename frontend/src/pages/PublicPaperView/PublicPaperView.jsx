@@ -12,10 +12,11 @@ const PublicPaperView = () => {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pdfEmbedUrl, setPdfEmbedUrl] = useState('');
-  const [pdfEmbedLoading, setPdfEmbedLoading] = useState(false);
-  const [pdfEmbedError, setPdfEmbedError] = useState('');
-  const [previewType, setPreviewType] = useState('');
+
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewType, setPreviewType] = useState(''); // 'pdf' | 'docx' | ''
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
   const [docArrayBuffer, setDocArrayBuffer] = useState(null);
   const docxContainerRef = useRef(null);
 
@@ -39,53 +40,31 @@ const PublicPaperView = () => {
 
   useEffect(() => {
     return () => {
-      if (pdfEmbedUrl) {
-        URL.revokeObjectURL(pdfEmbedUrl);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
     };
-  }, [pdfEmbedUrl]);
+  }, [previewUrl]);
 
   useEffect(() => {
     if (previewType === 'docx' && docArrayBuffer && docxContainerRef.current) {
       docxContainerRef.current.innerHTML = '';
       renderAsync(docArrayBuffer, docxContainerRef.current, null, {
-        className: styles.docxWrapper,
+        className: 'docx-wrapper',
         inWrapper: true,
         ignoreWidth: false,
         ignoreHeight: true,
       }).catch((err) => {
         console.error('DOCX render error:', err);
-        setPdfEmbedError('Document preview is not available right now. You can still use the download button.');
+        setPreviewType('');
+        setPreviewError('Document preview is not available right now. You can still use the download button.');
       });
     }
-  }, [previewType, docArrayBuffer, styles.docxWrapper]);
-
-  const formatDate = (dateStr) => {
-    return formatDateIST(dateStr);
-  };
-
-  const getTimelineTone = (item) => {
-    const icon = item?.icon;
-    const event = item?.event?.toLowerCase() || '';
-
-    if (icon === 'check_circle' || event.includes('accepted')) {
-      return styles.timelineSuccess;
-    }
-
-    if (icon === 'publish' || event.includes('published')) {
-      return styles.timelinePrimary;
-    }
-
-    if (icon === 'rate_review' || event.includes('review')) {
-      return styles.timelineReview;
-    }
-
-    return styles.timelineNeutral;
-  };
+  }, [previewType, docArrayBuffer]);
 
   const parseAuthors = (authorString) => {
     if (!authorString) return [];
-    return authorString.split(',').map(a => a.trim()).filter(a => a);
+    return authorString.split(',').map((a) => a.trim()).filter((a) => a);
   };
 
   const parseCoAuthorsJson = (jsonString) => {
@@ -99,41 +78,58 @@ const PublicPaperView = () => {
 
   const parseKeywords = (keywordString) => {
     if (!keywordString) return [];
-    return keywordString.split(',').map(k => k.trim()).filter(k => k);
+    return keywordString.split(',').map((k) => k.trim()).filter((k) => k);
   };
 
-  // Parse references - they come from backend as newline-separated text
   const parseReferences = (refString) => {
     if (!refString) return [];
-    
-    // Split by newlines (backend converts <div> tags to newlines)
     return refString
       .split('\n')
-      .map(ref => ref.trim())
-      .filter(ref => ref.length > 5); // Filter out empty or very short fragments
+      .map((ref) => ref.trim())
+      .filter((ref) => ref.length > 5);
+  };
+
+  const isZipDocx = (arrayBuffer) => {
+    if (!arrayBuffer || arrayBuffer.byteLength < 4) {
+      return false;
+    }
+    const bytes = new Uint8Array(arrayBuffer, 0, 4);
+    return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+  };
+
+  const formatDate = (dateStr) => formatDateIST(dateStr);
+
+  const getTimelineTone = (item) => {
+    const icon = item?.icon;
+    const event = item?.event?.toLowerCase() || '';
+
+    if (icon === 'check_circle' || event.includes('accepted')) return styles.timelineSuccess;
+    if (icon === 'publish' || event.includes('published')) return styles.timelinePrimary;
+    if (icon === 'rate_review' || event.includes('review')) return styles.timelineReview;
+    return styles.timelineNeutral;
   };
 
   const isOpenAccess = article?.access_type === 'open';
 
   useEffect(() => {
     if (!article?.id || !isOpenAccess) {
-      if (pdfEmbedUrl) {
-        URL.revokeObjectURL(pdfEmbedUrl);
-      }
-      setPdfEmbedUrl('');
-      setPdfEmbedLoading(false);
-      setPdfEmbedError('');
+      setPreviewUrl((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
+        return '';
+      });
       setPreviewType('');
+      setPreviewError('');
+      setPreviewLoading(false);
       setDocArrayBuffer(null);
       return;
     }
 
     const controller = new AbortController();
 
-    const loadPdf = async () => {
+    const loadDocumentPreview = async () => {
       try {
-        setPdfEmbedLoading(true);
-        setPdfEmbedError('');
+        setPreviewLoading(true);
+        setPreviewError('');
 
         const response = await fetch(`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`, {
           method: 'GET',
@@ -147,54 +143,60 @@ const PublicPaperView = () => {
         const contentType = (response.headers.get('content-type') || '').toLowerCase();
         const contentDisposition = (response.headers.get('content-disposition') || '').toLowerCase();
         const blob = await response.blob();
-
         const blobType = (blob.type || '').toLowerCase();
-        const isPdf = contentType.includes('pdf') || blobType.includes('pdf');
-        const isDocx =
+
+        const isPdf =
+          contentType.includes('pdf')
+          || blobType.includes('pdf')
+          || contentDisposition.includes('.pdf');
+
+        const isDocxMime =
           contentType.includes('officedocument.wordprocessingml.document')
           || contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-          || contentType.includes('application/msword')
-          || blobType.includes('officedocument.wordprocessingml.document')
-          || blobType.includes('application/msword')
-          || contentDisposition.includes('.docx')
-          || contentDisposition.includes('.doc');
+          || blobType.includes('officedocument.wordprocessingml.document');
+
+        const isDocxByName = contentDisposition.includes('.docx');
+        const isLegacyDoc = contentType.includes('application/msword') || contentDisposition.includes('.doc');
+        const isDocx = isDocxMime || isDocxByName;
+
+        if (isLegacyDoc && !isDocx) {
+          throw new Error('Legacy .doc preview is not supported');
+        }
 
         if (isDocx && !isPdf) {
           const buffer = await blob.arrayBuffer();
+          if (!isZipDocx(buffer)) {
+            throw new Error('Invalid DOCX content');
+          }
+
           setDocArrayBuffer(buffer);
           setPreviewType('docx');
-          setPdfEmbedUrl((previousUrl) => {
-            if (previousUrl) {
-              URL.revokeObjectURL(previousUrl);
-            }
+          setPreviewUrl((previous) => {
+            if (previous) URL.revokeObjectURL(previous);
             return '';
           });
           return;
         }
 
         const objectUrl = URL.createObjectURL(blob);
-        setPdfEmbedUrl((previousUrl) => {
-          if (previousUrl) {
-            URL.revokeObjectURL(previousUrl);
-          }
+        setPreviewUrl((previous) => {
+          if (previous) URL.revokeObjectURL(previous);
           return objectUrl;
         });
         setPreviewType('pdf');
         setDocArrayBuffer(null);
       } catch (err) {
-        if (err.name === 'AbortError') {
-          return;
-        }
-        console.error('Error loading embedded PDF:', err);
-        setPdfEmbedError('Document preview is not available right now. You can still use the download button.');
+        if (err.name === 'AbortError') return;
+        console.error('Error loading embedded document:', err);
+        setPreviewError('Document preview is not available right now. You can still use the download button.');
         setPreviewType('');
         setDocArrayBuffer(null);
       } finally {
-        setPdfEmbedLoading(false);
+        setPreviewLoading(false);
       }
     };
 
-    loadPdf();
+    loadDocumentPreview();
 
     return () => {
       controller.abort();
@@ -232,14 +234,12 @@ const PublicPaperView = () => {
   const structuredAuthors = parseCoAuthorsJson(article?.co_authors_json);
   const keywords = parseKeywords(article?.keyword);
 
-  // Handle PDF download for open access
-  const handleDownloadPdf = () => {
+  const handleDownloadFile = () => {
     window.open(`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`, '_blank');
   };
 
   return (
     <div className={styles.container}>
-      {/* Breadcrumb */}
       <nav className={styles.breadcrumb}>
         <Link to="/journals">Journals</Link>
         <span className="material-icons">chevron_right</span>
@@ -252,7 +252,6 @@ const PublicPaperView = () => {
         <span>Article</span>
       </nav>
 
-      {/* Article Header */}
       <header className={styles.header}>
         <div className={styles.badges}>
           {article?.doi && (
@@ -265,14 +264,11 @@ const PublicPaperView = () => {
             <span className="material-icons">{isOpenAccess ? 'lock_open' : 'lock'}</span>
             {isOpenAccess ? 'Open Access' : 'Subscription'}
           </span>
-          {article?.paper_code && (
-            <span className={styles.paperCodeBadge}>{article.paper_code}</span>
-          )}
+          {article?.paper_code && <span className={styles.paperCodeBadge}>{article.paper_code}</span>}
         </div>
 
         <h1 className={styles.title}>{article?.title}</h1>
 
-        {/* Authors — numbered names, hover to expand */}
         {structuredAuthors && structuredAuthors.length > 0 ? (
           <div className={styles.authorsSection}>
             <div className={styles.authorChips}>
@@ -280,10 +276,7 @@ const PublicPaperView = () => {
                 <span key={idx} className={styles.authorChip}>
                   <span className={styles.authorNumber}>{idx + 1}</span>
                   <span className={styles.authorNameText}>{author.name}</span>
-                  {author.is_corresponding && (
-                    <span className={styles.corrStar} title="Corresponding Author">*</span>
-                  )}
-                  {/* Hover detail card */}
+                  {author.is_corresponding && <span className={styles.corrStar} title="Corresponding Author">*</span>}
                   <span className={styles.authorDetail}>
                     <span className={styles.detailName}>{author.name}</span>
                     {author.email && (
@@ -298,9 +291,7 @@ const PublicPaperView = () => {
                         {author.affiliation}
                       </span>
                     )}
-                    {author.is_corresponding && (
-                      <span className={styles.detailCorr}>Corresponding Author</span>
-                    )}
+                    {author.is_corresponding && <span className={styles.detailCorr}>Corresponding Author</span>}
                   </span>
                 </span>
               ))}
@@ -317,14 +308,10 @@ const PublicPaperView = () => {
           </div>
         ) : null}
 
-        {/* Legacy Affiliation (if no structured authors) */}
         {!structuredAuthors && article?.affiliation && (
-          <p className={styles.legacyAffiliation}>
-            {article.affiliation}
-          </p>
+          <p className={styles.legacyAffiliation}>{article.affiliation}</p>
         )}
 
-        {/* Publication Info */}
         <div className={styles.pubInfo}>
           <span className={styles.pubItem}>
             <span className="material-icons">calendar_today</span>
@@ -350,13 +337,12 @@ const PublicPaperView = () => {
           )}
         </div>
 
-        {/* DOI */}
         {article?.doi && (
           <div className={styles.doiSection}>
             <strong>DOI:</strong>
-            <a 
-              href={`https://doi.org/${article.doi}`} 
-              target="_blank" 
+            <a
+              href={`https://doi.org/${article.doi}`}
+              target="_blank"
               rel="noopener noreferrer"
               className={styles.doiLink}
             >
@@ -366,18 +352,14 @@ const PublicPaperView = () => {
         )}
       </header>
 
-      {/* Action Buttons */}
       <div className={styles.actions}>
         {isOpenAccess && (
-          <button 
-            onClick={handleDownloadPdf}
-            className={`${styles.actionBtn} ${styles.primaryBtn}`}
-          >
-            <span className="material-icons">picture_as_pdf</span>
-            Download Full PDF
+          <button onClick={handleDownloadFile} className={`${styles.actionBtn} ${styles.primaryBtn}`}>
+            <span className="material-icons">download</span>
+            Download Full File
           </button>
         )}
-        <button 
+        <button
           onClick={() => navigator.clipboard.writeText(window.location.href)}
           className={styles.actionBtn}
         >
@@ -386,42 +368,33 @@ const PublicPaperView = () => {
         </button>
       </div>
 
-      {/* Embedded PDF (Open Access only) */}
       {isOpenAccess && article?.id && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
-            <span className="material-icons">picture_as_pdf</span>
+            <span className="material-icons">description</span>
             Full Text File
           </h2>
           <div className={styles.pdfContainer}>
-            {pdfEmbedLoading && <p className={styles.pdfStatus}>Loading document preview...</p>}
-            {!pdfEmbedLoading && pdfEmbedError && <p className={styles.pdfStatusError}>{pdfEmbedError}</p>}
-            {!pdfEmbedLoading && !pdfEmbedError && previewType === 'pdf' && pdfEmbedUrl && (
-              <iframe
-                src={pdfEmbedUrl}
-                title="Article PDF"
-                className={styles.pdfViewer}
-              />
+            {previewLoading && <p className={styles.pdfStatus}>Loading document preview...</p>}
+            {!previewLoading && previewError && <p className={styles.pdfStatusError}>{previewError}</p>}
+            {!previewLoading && !previewError && previewType === 'pdf' && previewUrl && (
+              <iframe src={previewUrl} title="Article PDF" className={styles.pdfViewer} />
             )}
-            {!pdfEmbedLoading && !pdfEmbedError && previewType === 'docx' && (
+            {!previewLoading && !previewError && previewType === 'docx' && (
               <div ref={docxContainerRef} className={styles.docxContainer} />
             )}
           </div>
         </section>
       )}
 
-      {/* Abstract */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>
           <span className="material-icons">subject</span>
           Abstract
         </h2>
-        <div className={styles.abstract}>
-          {article?.abstract || 'No abstract available.'}
-        </div>
+        <div className={styles.abstract}>{article?.abstract || 'No abstract available.'}</div>
       </section>
 
-      {/* Keywords */}
       {keywords.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
@@ -436,7 +409,6 @@ const PublicPaperView = () => {
         </section>
       )}
 
-      {/* References */}
       {article?.p_reference && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
@@ -453,7 +425,6 @@ const PublicPaperView = () => {
         </section>
       )}
 
-      {/* Article Timeline */}
       {article?.timeline?.length > 0 && (
         <section className={`${styles.section} ${styles.timelineSection}`}>
           <h2 className={styles.sectionTitle}>
@@ -469,7 +440,6 @@ const PublicPaperView = () => {
                   </div>
                   {idx < article.timeline.length - 1 && <div className={styles.timelineLine} />}
                 </div>
-
                 <div className={styles.timelineContent}>
                   <div className={styles.timelineEvent}>{item.event}</div>
                   <div className={styles.timelineDate}>{formatDate(item.date)}</div>
@@ -480,7 +450,6 @@ const PublicPaperView = () => {
         </section>
       )}
 
-      {/* Citation */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>
           <span className="material-icons">format_quote</span>
@@ -488,12 +457,12 @@ const PublicPaperView = () => {
         </h2>
         <div className={styles.citation}>
           <p className={styles.citationText}>
-            {article?.author} ({new Date(article?.date).getFullYear()}). 
-            {article?.title}. <em>{article?.journal}</em>, 
+            {article?.author} ({new Date(article?.date).getFullYear()}).
+            {article?.title}. <em>{article?.journal}</em>,
             {article?.volume}({article?.issue}), {article?.pages || 'pp. N/A'}.
             {article?.doi && ` https://doi.org/${article.doi}`}
           </p>
-          <button 
+          <button
             onClick={() => navigator.clipboard.writeText(
               `${article?.author} (${new Date(article?.date).getFullYear()}). ${article?.title}. ${article?.journal}, ${article?.volume}(${article?.issue}), ${article?.pages || 'pp. N/A'}.${article?.doi ? ` https://doi.org/${article.doi}` : ''}`
             )}
@@ -505,7 +474,6 @@ const PublicPaperView = () => {
         </div>
       </section>
 
-      {/* Back Button */}
       <div className={styles.footer}>
         <button onClick={() => navigate(-1)} className={styles.backBtn}>
           <span className="material-icons">arrow_back</span>
