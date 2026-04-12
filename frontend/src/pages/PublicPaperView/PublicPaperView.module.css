@@ -456,7 +456,12 @@
 .timelineItem {
   display: flex;
   gap: 18px;
-  align-items: stretch;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+}
+
+.timelineItem:last-child {
+  padding-bottom: 0;
 }
 
 .timelineConnector {
@@ -515,55 +520,24 @@
   margin-top: 8px;
 }
 
-.timelineCard {
+.timelineContent {
   flex: 1;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px 18px;
-  margin-bottom: 16px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.timelineCard:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
-}
-
-.timelineCardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.timelineBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #f0fdf4;
-  color: #0D4715;
-  border: 1px solid #dcfce7;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  padding-top: 2px;
 }
 
 .timelineEvent {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.45;
 }
 
 .timelineDate {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   color: #64748b;
 }
 
@@ -683,13 +657,8 @@
     gap: 14px;
   }
 
-  .timelineCard {
-    padding: 14px 16px;
-  }
-
-  .timelineCardHeader {
-    align-items: flex-start;
-    flex-direction: column;
+  .timelineEvent {
+    font-size: 0.92rem;
   }
 }
 

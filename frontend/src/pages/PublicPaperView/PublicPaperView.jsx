@@ -269,6 +269,23 @@ const PublicPaperView = () => {
         </button>
       </div>
 
+      {/* Embedded PDF (Open Access only) */}
+      {isOpenAccess && article?.id && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            <span className="material-icons">picture_as_pdf</span>
+            Full Text PDF
+          </h2>
+          <div className={styles.pdfContainer}>
+            <iframe
+              src={`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`}
+              title="Article PDF"
+              className={styles.pdfViewer}
+            />
+          </div>
+        </section>
+      )}
+
       {/* Abstract */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>
@@ -329,12 +346,9 @@ const PublicPaperView = () => {
                   {idx < article.timeline.length - 1 && <div className={styles.timelineLine} />}
                 </div>
 
-                <div className={styles.timelineCard}>
-                  <div className={styles.timelineCardHeader}>
-                    <span className={styles.timelineBadge}>Step {idx + 1}</span>
-                    <span className={styles.timelineDate}>{formatDate(item.date)}</span>
-                  </div>
+                <div className={styles.timelineContent}>
                   <div className={styles.timelineEvent}>{item.event}</div>
+                  <div className={styles.timelineDate}>{formatDate(item.date)}</div>
                 </div>
               </div>
             ))}
