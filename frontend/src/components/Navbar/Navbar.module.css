@@ -53,6 +53,8 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .brand {
@@ -65,6 +67,18 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  min-width: 0;
+}
+
+.brandText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brandTextCompact {
+  display: none;
+  white-space: nowrap;
 }
 
 .logo {
@@ -121,6 +135,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
 /* Submit Button */
@@ -497,6 +512,25 @@
   }
 }
 
+@media (max-width: 1100px) {
+  .headerContainer {
+    padding: 0 1.25rem;
+  }
+
+  .headerNav {
+    gap: 1.5rem;
+  }
+
+  .headerRight {
+    gap: 0.875rem;
+  }
+
+  .submitBtn {
+    padding: 0.5625rem 1rem;
+    font-size: 0.8125rem;
+  }
+}
+
 @media (max-width: 768px) {
   .desktopOnly {
     display: none;
@@ -507,8 +541,11 @@
   }
 
   .submitBtn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8125rem;
+    display: none;
+  }
+
+  .headerRight {
+    gap: 0.625rem;
   }
 }
 
@@ -519,6 +556,15 @@
   
   .logo {
     height: 28px;
+  }
+
+  .brandText {
+    display: none;
+  }
+
+  .brandTextCompact {
+    display: inline;
+    font-size: 1.05rem;
   }
   
   .portalBadge {

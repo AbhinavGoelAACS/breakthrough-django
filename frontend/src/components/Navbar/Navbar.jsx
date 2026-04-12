@@ -5,7 +5,7 @@ import { RoleSwitcher } from '../RoleSwitcher';
 import styles from './Navbar.module.css';
 
 const Navbar = ({ sections = [], portalName = "Portal" }) => {
-  const { isAuthenticated, user, logout, activeRole, roles } = useAuth();
+  const { isAuthenticated, user, logout, activeRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,7 +54,8 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
           <div className={styles.headerLeft}>
             <Link className={styles.brand} to="/">
               <img src="/logo.png" alt="BPI" className={styles.logo} />
-              Breakthrough Publishers India
+              <span className={styles.brandText}>Breakthrough Publishers India</span>
+              <span className={styles.brandTextCompact}>BPI</span>
             </Link>
             {sections.length > 0 && (
               <span className={styles.portalBadge}>{portalName}</span>

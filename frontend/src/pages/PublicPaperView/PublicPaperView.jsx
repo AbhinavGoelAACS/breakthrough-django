@@ -19,6 +19,7 @@ const PublicPaperView = () => {
   const [previewError, setPreviewError] = useState('');
   const [docArrayBuffer, setDocArrayBuffer] = useState(null);
   const [fileUrl, setFileUrl] = useState('');
+  const [journalPath, setJournalPath] = useState('');
   const docxContainerRef = useRef(null);
 
   const fetchArticle = useCallback(async () => {
@@ -38,6 +39,38 @@ const PublicPaperView = () => {
   useEffect(() => {
     fetchArticle();
   }, [fetchArticle]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveJournalPath = async () => {
+      if (!article?.journal_id) {
+        setJournalPath('');
+        return;
+      }
+
+      try {
+        const journal = await acsApi.journals.getDetail(article.journal_id);
+        const shortForm = (journal?.short_form || '').trim();
+        if (isMounted && shortForm) {
+          setJournalPath(`/j/${shortForm}`);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to resolve journal short form for breadcrumb:', err);
+      }
+
+      if (isMounted) {
+        setJournalPath('/journals');
+      }
+    };
+
+    resolveJournalPath();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [article?.journal_id]);
 
   useEffect(() => {
     return () => {
@@ -281,7 +314,7 @@ const PublicPaperView = () => {
         <span className="material-icons">chevron_right</span>
         {article?.journal_id && (
           <>
-            <Link to={`/journal/${article.journal_id}`}>{article.journal}</Link>
+            <Link to={journalPath || '/journals'}>{article.journal}</Link>
             <span className="material-icons">chevron_right</span>
           </>
         )}

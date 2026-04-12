@@ -38,6 +38,8 @@
   display: flex;
   align-items: center;
   gap: 2rem;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .brand {
@@ -61,6 +63,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  min-width: 0;
 }
 
 .navLink {
@@ -92,6 +95,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
 .submitBtn {
@@ -100,7 +104,7 @@
   padding: 0.75rem 2rem;
   border-radius: 0.5rem;
   font-family: var(--font-body);
-  font-size: 1.25 rem;
+  font-size: 1.25rem;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -340,9 +344,32 @@
   }
 }
 
+@media (max-width: 1100px) {
+  .headerContainer {
+    padding: 0 0.875rem;
+  }
+
+  .headerLeft {
+    gap: 1rem;
+  }
+
+  .headerRight {
+    gap: 0.75rem;
+  }
+
+  .submitBtn {
+    padding: 0.625rem 1rem;
+    font-size: 0.95rem;
+  }
+}
+
 @media (max-width: 768px) {
   .submitBtn {
     display: none;
+  }
+
+  .headerRight {
+    gap: 0.625rem;
   }
 }
 
