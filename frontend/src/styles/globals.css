@@ -10,6 +10,7 @@
 body,
 html {
   font-family: 'Open Sans', sans-serif;
+  background-color: var(--j-surface, #f9f9f8);
 }
 
 /* Material Symbols Icon Font - Ensure icons render correctly */
@@ -127,17 +128,18 @@ body {
 
 .app-main {
   flex: 1;
-  margin-top: 84px; /* Space for fixed Navbar header on public pages */
-  min-height: calc(100vh - 84px);
+  padding-top: 84px; /* Reserve space for the fixed Navbar without exposing body background */
+  min-height: 100vh;
+  background-color: var(--j-surface, #f9f9f8);
 }
 
 .app-main.journal-main {
-  margin-top: 0;
+  padding-top: 0;
   min-height: 100vh;
 }
 
 .app-main.portal-main {
-  margin-top: 0; /* Portal layouts handle their own spacing */
+  padding-top: 0; /* Portal layouts handle their own spacing */
 }
 
 /* ============================================

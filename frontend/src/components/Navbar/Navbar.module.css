@@ -33,9 +33,9 @@
   left: 0;
   right: 0;
   height: var(--header-height);
-  background: rgba(249, 249, 248, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--bg-white);
+  border-bottom: 1px solid rgba(193, 200, 194, 0.35);
+  box-shadow: 0 8px 24px rgba(25, 28, 28, 0.06);
   z-index: 1000;
 }
 
