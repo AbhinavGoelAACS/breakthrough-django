@@ -374,6 +374,24 @@
   border: none;
 }
 
+.pdfStatus,
+.pdfStatusError {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+
+.pdfStatus {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.pdfStatusError {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 /* Sections */
 .section {
   margin-bottom: 1.5rem;

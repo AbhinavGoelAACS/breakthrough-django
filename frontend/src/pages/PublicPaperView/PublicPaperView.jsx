@@ -11,6 +11,9 @@ const PublicPaperView = () => {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pdfEmbedUrl, setPdfEmbedUrl] = useState('');
+  const [pdfEmbedLoading, setPdfEmbedLoading] = useState(false);
+  const [pdfEmbedError, setPdfEmbedError] = useState('');
 
   const fetchArticle = useCallback(async () => {
     try {
@@ -29,6 +32,14 @@ const PublicPaperView = () => {
   useEffect(() => {
     fetchArticle();
   }, [fetchArticle]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfEmbedUrl) {
+        URL.revokeObjectURL(pdfEmbedUrl);
+      }
+    };
+  }, [pdfEmbedUrl]);
 
   const formatDate = (dateStr) => {
     return formatDateIST(dateStr);
@@ -114,6 +125,63 @@ const PublicPaperView = () => {
   const structuredAuthors = parseCoAuthorsJson(article?.co_authors_json);
   const keywords = parseKeywords(article?.keyword);
   const isOpenAccess = article?.access_type === 'open';
+
+  useEffect(() => {
+    if (!article?.id || !isOpenAccess) {
+      if (pdfEmbedUrl) {
+        URL.revokeObjectURL(pdfEmbedUrl);
+      }
+      setPdfEmbedUrl('');
+      setPdfEmbedLoading(false);
+      setPdfEmbedError('');
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadPdf = async () => {
+      try {
+        setPdfEmbedLoading(true);
+        setPdfEmbedError('');
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`PDF unavailable (${response.status})`);
+        }
+
+        const blob = await response.blob();
+        if (blob.type && !blob.type.includes('pdf')) {
+          throw new Error('Invalid PDF response');
+        }
+
+        const objectUrl = URL.createObjectURL(blob);
+        setPdfEmbedUrl((previousUrl) => {
+          if (previousUrl) {
+            URL.revokeObjectURL(previousUrl);
+          }
+          return objectUrl;
+        });
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          return;
+        }
+        console.error('Error loading embedded PDF:', err);
+        setPdfEmbedError('PDF preview is not available right now. You can still use the download button.');
+      } finally {
+        setPdfEmbedLoading(false);
+      }
+    };
+
+    loadPdf();
+
+    return () => {
+      controller.abort();
+    };
+  }, [article?.id, isOpenAccess]);
 
   // Handle PDF download for open access
   const handleDownloadPdf = () => {
@@ -277,11 +345,15 @@ const PublicPaperView = () => {
             Full Text PDF
           </h2>
           <div className={styles.pdfContainer}>
-            <iframe
-              src={`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`}
-              title="Article PDF"
-              className={styles.pdfViewer}
-            />
+            {pdfEmbedLoading && <p className={styles.pdfStatus}>Loading PDF preview...</p>}
+            {!pdfEmbedLoading && pdfEmbedError && <p className={styles.pdfStatusError}>{pdfEmbedError}</p>}
+            {!pdfEmbedLoading && !pdfEmbedError && pdfEmbedUrl && (
+              <iframe
+                src={pdfEmbedUrl}
+                title="Article PDF"
+                className={styles.pdfViewer}
+              />
+            )}
           </div>
         </section>
       )}
