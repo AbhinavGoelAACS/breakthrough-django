@@ -475,7 +475,7 @@ const JournalDetailPage = () => {
     try {
       const response = await acsApi.admin.listEditors(0, 500);
       // Map editor data to the format expected by SearchableEditorDropdown
-      const editors = (response.editors || []).map(editor => {
+      const mappedEditors = (response.editors || []).map(editor => {
         const nameParts = (editor.editor_name || '').split(' ');
         return {
           id: editor.user_id || editor.id,
@@ -486,7 +486,14 @@ const JournalDetailPage = () => {
           editor_type: editor.editor_type,
         };
       });
-      setAvailableEditors(editors);
+
+      // Some API responses can include duplicate role rows for the same user.
+      // Keep one option per unique user id so dropdown items are not repeated.
+      const uniqueEditors = mappedEditors.filter((editor, index, arr) =>
+        arr.findIndex(e => e.id === editor.id) === index
+      );
+
+      setAvailableEditors(uniqueEditors);
     } catch (err) {
       console.error('Failed to fetch editors:', err);
       setAvailableEditors([]);
@@ -507,7 +514,10 @@ const JournalDetailPage = () => {
         setSelectedCoEditor(response.co_editor.user_id);
       }
       if (response.section_editors?.length > 0) {
-        setSelectedSectionEditors(response.section_editors.map(e => e.user_id).filter(Boolean));
+        const uniqueSectionEditorIds = [...new Set(
+          response.section_editors.map(e => e.user_id).filter(Boolean)
+        )];
+        setSelectedSectionEditors(uniqueSectionEditorIds);
       }
     } catch (err) {
       console.warn('Could not fetch journal editors:', err);
