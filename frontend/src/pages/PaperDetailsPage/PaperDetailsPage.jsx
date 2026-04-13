@@ -69,7 +69,7 @@ const PaperDetailsPage = () => {
   const [revisionHistory, setRevisionHistory] = useState([]);
   const [loadingRevisions, setLoadingRevisions] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
-  // Copyright form trigger (admin only)
+  // Copyright form trigger (admin/editor)
   const [triggeringCopyright, setTriggeringCopyright] = useState(false);
   // Document Viewer state
   const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
@@ -657,7 +657,7 @@ const PaperDetailsPage = () => {
     setShowReviewerDropdown(false);
   };
 
-  // Trigger copyright form for accepted papers (admin only)
+  // Trigger copyright form for accepted papers (admin/editor)
   const handleTriggerCopyrightForm = async () => {
     if (!paper?.id) return;
     
@@ -968,7 +968,7 @@ const PaperDetailsPage = () => {
               </button>
             )}
             
-            {isAdmin() && paper.status === 'accepted' && (
+            {(isEditor() || isAdmin()) && paper.status === 'accepted' && (
               <button 
                 className={styles.subNavItem}
                 onClick={handleTriggerCopyrightForm}

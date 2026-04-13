@@ -1476,8 +1476,9 @@ class AdminTriggerCopyrightView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, paper_id):
-        if not check_admin_role(request.user):
-            return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+        user_role = (request.user.role or '').lower()
+        if user_role not in ["admin", "editor"]:
+            return Response({"detail": "Admin or editor access required"}, status=status.HTTP_403_FORBIDDEN)
         
         paper = Paper.objects.filter(id=paper_id).first()
         if not paper:
