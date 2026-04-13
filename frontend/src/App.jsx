@@ -46,7 +46,6 @@ import EditorLayout from './layouts/EditorLayout/EditorLayout.jsx';
 import EditorDashboard from './pages/EditorDashboard/EditorDashboard.jsx';
 import EditorPaperQueue from './pages/EditorPaperQueue/EditorPaperQueue.jsx';
 import EditorPendingDecision from './pages/EditorPendingDecision/EditorPendingDecision.jsx';
-import EditorReviewerList from './pages/EditorReviewerList/EditorReviewerList.jsx';
 import EditorJournals from './pages/EditorJournals/EditorJournals.jsx';
 // Reviewer layouts and pages
 import ReviewerLayout from './layouts/ReviewerLayout/ReviewerLayout.jsx';
@@ -279,9 +278,9 @@ function AppContent() {
               <Route path="papers/:id/reviewer-invitations" element={<ReviewerInvitationsPage />} />
               <Route path="papers/:paperId/decision" element={<EditorDecisionPanel />} />
               <Route path="publishing" element={<EditorPublishing />} />
-              <Route path="reviewers" element={<EditorReviewerList />} />
               <Route path="guidelines" element={<EditorGuidelines />} />
               <Route path="profile" element={<ProfilePage />} />
+              <Route path="*" element={<Navigate to="/editor/dashboard" replace />} />
             </Route>
           </Route>
 
