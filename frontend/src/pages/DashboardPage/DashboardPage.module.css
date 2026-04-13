@@ -152,10 +152,10 @@
   color: var(--j-on-primary-container, #002107);
   border-radius: 1rem;
   padding: 1.75rem;
-  min-height: 400px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
