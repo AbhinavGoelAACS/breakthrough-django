@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Load environment variables from .env file
 load_dotenv()
@@ -107,14 +108,20 @@ WSGI_APPLICATION = 'bp_backend.wsgi.application'
 # Database
 # Use the same MySQL database as the existing FastAPI app.
 
+def get_required_env(var_name: str) -> str:
+    value = os.environ.get(var_name)
+    if not value:
+        raise ImproperlyConfigured(f"Missing required environment variable: {var_name}")
+    return value
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("DB_NAME", "aacsjour_breakthroughPy"),
-        "USER": os.environ.get("DB_USER", "aacsjour_breakthroughdb"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "!rIT9g;Qp]&nD9z{"),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": str(os.environ.get("DB_PORT", "3306")),
+        "NAME": get_required_env("DB_NAME"),
+        "USER": get_required_env("DB_USER"),
+        "PASSWORD": get_required_env("DB_PASSWORD"),
+        "HOST": get_required_env("DB_HOST"),
+        "PORT": get_required_env("DB_PORT"),
         "OPTIONS": {
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },

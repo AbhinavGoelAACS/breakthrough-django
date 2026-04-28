@@ -51,6 +51,19 @@ jobs:
           # List files to be deployed
           echo "Files to deploy:"
           ls -la ../deploy_package
+
+      - name: Generate backend .env from GitHub config
+        run: |
+          cat > deploy_package/.env << EOF
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          EOF
           
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -68,7 +81,6 @@ jobs:
             **/__pycache__/**
             **/*.pyc
             **/*.pyo
-            **/.env
             **/db.sqlite3
             **/*.log
             **/.DS_Store
