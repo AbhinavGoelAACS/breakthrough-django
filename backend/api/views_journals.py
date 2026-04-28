@@ -9,7 +9,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Issue, Journal, JournalDetails, Paper, PaperCoAuthor, PaperPublished, User, UserRole, Volume
+from .models import Editor, Issue, Journal, JournalDetails, Paper, PaperCoAuthor, PaperPublished, User, UserRole, Volume
 from .serializers import (
     JournalCreateUpdateSerializer,
     JournalDetailsSerializer,
