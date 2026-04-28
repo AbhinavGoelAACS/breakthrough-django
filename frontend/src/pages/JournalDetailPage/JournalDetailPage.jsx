@@ -285,11 +285,12 @@ const JournalDetailPage = () => {
   const [logoPreview, setLogoPreview] = useState(null);
   
   // Available editors state
-  const [availableEditors, setAvailableEditors] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const [loadingEditors, setLoadingEditors] = useState(false);
   const [selectedChiefEditor, setSelectedChiefEditor] = useState(null);
   const [selectedCoEditor, setSelectedCoEditor] = useState(null);
   const [selectedSectionEditors, setSelectedSectionEditors] = useState([]);
+  const [selectedEditorialBoardMembers, setSelectedEditorialBoardMembers] = useState([]);
   
   // Volume and Issue state
   const [volumes, setVolumes] = useState([]);
@@ -473,30 +474,21 @@ const JournalDetailPage = () => {
   const fetchAvailableEditors = async () => {
     setLoadingEditors(true);
     try {
-      const response = await acsApi.admin.listEditors(0, 500);
-      // Map editor data to the format expected by SearchableEditorDropdown
-      const mappedEditors = (response.editors || []).map(editor => {
-        const nameParts = (editor.editor_name || '').split(' ');
-        return {
-          id: editor.user_id || editor.id,
-          fname: nameParts[0] || '',
-          lname: nameParts.slice(1).join(' ') || '',
-          email: editor.editor_email || '',
-          editor_name: editor.editor_name,
-          editor_type: editor.editor_type,
-        };
-      });
-
-      // Some API responses can include duplicate role rows for the same user.
-      // Keep one option per unique user id so dropdown items are not repeated.
-      const uniqueEditors = mappedEditors.filter((editor, index, arr) =>
-        arr.findIndex(e => e.id === editor.id) === index
+      const usersResponse = await acsApi.admin.listUsers(0, 1000);
+      const mappedUsers = (usersResponse.users || []).map(user => ({
+        id: user.id,
+        fname: user.fname || '',
+        lname: user.lname || '',
+        email: user.email || '',
+        role: user.role || '',
+      }));
+      const uniqueUsers = mappedUsers.filter((user, index, arr) =>
+        arr.findIndex(u => u.id === user.id) === index
       );
-
-      setAvailableEditors(uniqueEditors);
+      setAvailableUsers(uniqueUsers);
     } catch (err) {
       console.error('Failed to fetch editors:', err);
-      setAvailableEditors([]);
+      setAvailableUsers([]);
     } finally {
       setLoadingEditors(false);
     }
@@ -518,6 +510,12 @@ const JournalDetailPage = () => {
           response.section_editors.map(e => e.user_id).filter(Boolean)
         )];
         setSelectedSectionEditors(uniqueSectionEditorIds);
+      }
+      if (response.editorial_board_members?.length > 0) {
+        const uniqueEditorialBoardMemberIds = [...new Set(
+          response.editorial_board_members.map(e => e.user_id).filter(Boolean)
+        )];
+        setSelectedEditorialBoardMembers(uniqueEditorialBoardMemberIds);
       }
     } catch (err) {
       console.warn('Could not fetch journal editors:', err);
@@ -578,8 +576,8 @@ const JournalDetailPage = () => {
       setIsSubmitting(true);
       
       // Get editor names from selected editors
-      const chiefEditor = availableEditors.find(e => e.id === selectedChiefEditor);
-      const coEditor = availableEditors.find(e => e.id === selectedCoEditor);
+      const chiefEditor = availableUsers.find(e => e.id === selectedChiefEditor);
+      const coEditor = availableUsers.find(e => e.id === selectedCoEditor);
       
       const updateData = {
         ...editFormData,
@@ -592,6 +590,7 @@ const JournalDetailPage = () => {
         chief_editor_id: selectedChiefEditor,
         co_editor_id: selectedCoEditor,
         section_editor_ids: selectedSectionEditors,
+        editorial_board_member_ids: selectedEditorialBoardMembers,
       };
       
       // Use file upload version if files are present
@@ -767,7 +766,7 @@ const JournalDetailPage = () => {
                   label="Chief Editor"
                   value={selectedChiefEditor}
                   onChange={setSelectedChiefEditor}
-                  options={availableEditors}
+                  options={availableUsers}
                   placeholder="Search for chief editor..."
                   loading={loadingEditors}
                   icon="stars"
@@ -776,7 +775,7 @@ const JournalDetailPage = () => {
                   label="Co-Editor"
                   value={selectedCoEditor}
                   onChange={setSelectedCoEditor}
-                  options={availableEditors}
+                  options={availableUsers}
                   placeholder="Search for co-editor..."
                   loading={loadingEditors}
                   icon="person_add"
@@ -785,8 +784,16 @@ const JournalDetailPage = () => {
                   label="Section Editors"
                   values={selectedSectionEditors}
                   onChange={setSelectedSectionEditors}
-                  options={availableEditors}
+                  options={availableUsers}
                   placeholder="Search and add section editors..."
+                  loading={loadingEditors}
+                />
+                <MultiSelectEditorDropdown
+                  label="Editorial Board Members"
+                  values={selectedEditorialBoardMembers}
+                  onChange={setSelectedEditorialBoardMembers}
+                  options={availableUsers}
+                  placeholder="Search and add editorial board members..."
                   loading={loadingEditors}
                 />
               </div>

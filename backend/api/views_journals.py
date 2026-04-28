@@ -259,11 +259,24 @@ class JournalDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, journal_id: int):
-        if getattr(request.user, "role", "").lower() != "admin":
+        if not _is_admin_or_editor(request.user):
             return Response(
-                {"detail": "Admin access required"},
+                {"detail": "Admin or editor access required"},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+        if (getattr(request.user, "role", "") or "").lower() != "admin":
+            has_journal_access = UserRole.objects.filter(
+                user=request.user,
+                journal_id=journal_id,
+                role="editor",
+                status="approved",
+            ).exists()
+            if not has_journal_access:
+                return Response(
+                    {"detail": "You don't have access to update this journal"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         journal = self.get_object(journal_id)
         if not journal:
@@ -318,8 +331,9 @@ class JournalDetailView(APIView):
         chief_editor_id = data.get("chief_editor_id")
         co_editor_id = data.get("co_editor_id")
         section_editor_ids = data.get("section_editor_ids") or []
+        editorial_board_member_ids = data.get("editorial_board_member_ids") or []
 
-        if chief_editor_id is not None or co_editor_id is not None or section_editor_ids:
+        if chief_editor_id is not None or co_editor_id is not None or section_editor_ids or editorial_board_member_ids:
             from .models import User as UserModel
             # Remove existing editor assignments for this journal
             UserRole.objects.filter(
@@ -361,6 +375,18 @@ class JournalDetailView(APIView):
                         journal_id=journal_id,
                         role="editor",
                         editor_type="section_editor",
+                        status="approved",
+                        requested_at=timezone.now(),
+                    )
+
+            # Assign editorial board members
+            for ebm_id in editorial_board_member_ids:
+                if UserModel.objects.filter(id=ebm_id).exists():
+                    UserRole.objects.create(
+                        user_id=ebm_id,
+                        journal_id=journal_id,
+                        role="editor",
+                        editor_type="editorial_board_member",
                         status="approved",
                         requested_at=timezone.now(),
                     )
@@ -929,6 +955,7 @@ class JournalEditorialBoardView(APIView):
         chief_editor = None
         co_editors = []
         section_editors = []
+        editorial_board_members = []
 
         for ur in roles:
             u = ur.user
@@ -949,6 +976,8 @@ class JournalEditorialBoardView(APIView):
                 chief_editor = entry
             elif ur.editor_type == "co_editor":
                 co_editors.append(entry)
+            elif ur.editor_type == "editorial_board_member":
+                editorial_board_members.append(entry)
             else:
                 section_editors.append(entry)
 
@@ -956,6 +985,7 @@ class JournalEditorialBoardView(APIView):
             "chief_editor": chief_editor,
             "co_editors": co_editors,
             "section_editors": section_editors,
+            "editorial_board_members": editorial_board_members,
         })
 
 

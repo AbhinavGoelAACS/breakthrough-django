@@ -206,6 +206,9 @@ class JournalCreateUpdateSerializer(serializers.Serializer):
     section_editor_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False, allow_null=True
     )
+    editorial_board_member_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, allow_null=True
+    )
     about_journal = serializers.CharField(required=False, allow_blank=True, default="")
     chief_say = serializers.CharField(required=False, allow_blank=True, default="")
     aim_objective = serializers.CharField(required=False, allow_blank=True, default="")

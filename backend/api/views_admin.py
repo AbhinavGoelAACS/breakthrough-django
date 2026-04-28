@@ -21,6 +21,14 @@ from .access_utils import (
 def check_admin_role(user):
     return (user.role or '').lower() == "admin"
 
+
+def check_admin_or_editor_role(user):
+    if check_admin_role(user):
+        return True
+    if (getattr(user, 'role', '') or '').lower() == 'editor':
+        return True
+    return UserRole.objects.filter(user=user, role='editor', status='approved').exists()
+
 class AdminDashboardStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -99,8 +107,8 @@ class AdminUsersListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        if not check_admin_role(request.user):
-            return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+        if not check_admin_or_editor_role(request.user):
+            return Response({"detail": "Admin or editor access required"}, status=status.HTTP_403_FORBIDDEN)
             
         skip = int(request.query_params.get("skip", 0))
         limit = int(request.query_params.get("limit", 20))
@@ -892,8 +900,18 @@ class AdminJournalEditorsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, journal_id):
+        if not check_admin_or_editor_role(request.user):
+            return Response({"detail": "Admin or editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
         if not check_admin_role(request.user):
-            return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+            has_access = UserRole.objects.filter(
+                user_id=request.user.id,
+                journal_id=journal_id,
+                role='editor',
+                status='approved'
+            ).exists()
+            if not has_access:
+                return Response({"detail": "You don't have access to this journal"}, status=status.HTTP_403_FORBIDDEN)
         
         # Verify journal exists
         try:
@@ -914,6 +932,7 @@ class AdminJournalEditorsView(APIView):
         chief_editor = None
         co_editor = None
         section_editors = []
+        editorial_board_members = []
         seen_emails = set()
         
         for user_role in results:
@@ -939,6 +958,8 @@ class AdminJournalEditorsView(APIView):
                 chief_editor = editor_dict
             elif user_role.editor_type == "co_editor":
                 co_editor = editor_dict
+            elif user_role.editor_type == "editorial_board_member":
+                editorial_board_members.append(editor_dict)
             else:
                 section_editors.append(editor_dict)
         
@@ -976,10 +997,12 @@ class AdminJournalEditorsView(APIView):
                     co_editor = editor_dict
                 else:
                     section_editors.append(editor_dict)
+            elif editor.editor_type == "editorial_board_member":
+                editorial_board_members.append(editor_dict)
             else:
                 section_editors.append(editor_dict)
         
-        total_editors = (1 if chief_editor else 0) + (1 if co_editor else 0) + len(section_editors)
+        total_editors = (1 if chief_editor else 0) + (1 if co_editor else 0) + len(section_editors) + len(editorial_board_members)
         
         return Response({
             "journal_id": journal_id,
@@ -987,6 +1010,7 @@ class AdminJournalEditorsView(APIView):
             "chief_editor": chief_editor,
             "co_editor": co_editor,
             "section_editors": section_editors,
+            "editorial_board_members": editorial_board_members,
             "total_editors": total_editors
         }, status=status.HTTP_200_OK)
 

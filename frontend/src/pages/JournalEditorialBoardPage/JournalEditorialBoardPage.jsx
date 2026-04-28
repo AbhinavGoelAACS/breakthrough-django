@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useJournalContext } from '../../contexts/JournalContext';
 import { acsApi } from '../../api/apiService';
@@ -9,13 +9,7 @@ const JournalEditorialBoardPage = () => {
   const [editorialBoard, setEditorialBoard] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (journalShortForm) {
-      fetchEditorialBoard();
-    }
-  }, [journalShortForm]);
-
-  const fetchEditorialBoard = async () => {
+  const fetchEditorialBoard = useCallback(async () => {
     try {
       setLoading(true);
       const response = await acsApi.journals.getEditorialBoard(journalShortForm);
@@ -25,7 +19,13 @@ const JournalEditorialBoardPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [journalShortForm]);
+
+  useEffect(() => {
+    if (journalShortForm) {
+      fetchEditorialBoard();
+    }
+  }, [journalShortForm, fetchEditorialBoard]);
 
   if (contextLoading || loading) {
     return (
@@ -39,16 +39,16 @@ const JournalEditorialBoardPage = () => {
   const hasBoard = editorialBoard && (
     editorialBoard.chief_editor ||
     editorialBoard.co_editors?.length > 0 ||
-    editorialBoard.section_editors?.length > 0
+    editorialBoard.section_editors?.length > 0 ||
+    editorialBoard.editorial_board_members?.length > 0
   );
-
-  const journalBasePath = `/j/${currentJournal?.short_form || ''}`;
 
   /* Merge co-editors + section editors for the grid */
   const associateEditors = [
     ...(editorialBoard?.co_editors || []).map(e => ({ ...e, _role: 'Co-Editor' })),
     ...(editorialBoard?.section_editors || []).map(e => ({ ...e, _role: 'Section Editor' })),
   ];
+  const editorialBoardMembers = (editorialBoard?.editorial_board_members || []).map(e => ({ ...e, _role: 'Editorial Board Member' }));
 
   const chiefEditor = editorialBoard?.chief_editor;
 
@@ -140,6 +140,38 @@ const JournalEditorialBoardPage = () => {
               <div className="eb-associates-grid">
                 {associateEditors.map((member, idx) => (
                   <div className="eb-assoc-card" key={`${member._role}-${member.name}-${idx}`}>
+                    <div className="eb-assoc-img-wrap">
+                      {member.profile_picture ? (
+                        <img src={member.profile_picture} alt={member.name} className="eb-assoc-img" />
+                      ) : (
+                        <div className="eb-assoc-img-fallback">
+                          <span className="material-symbols-rounded">person</span>
+                        </div>
+                      )}
+                      <div className="eb-assoc-img-overlay" />
+                    </div>
+                    <h4 className="eb-assoc-name">{member.name}</h4>
+                    <p className="eb-assoc-role">{member._role}</p>
+                    <p className="eb-assoc-affiliation">
+                      {[member.department, member.organisation || member.affiliation]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {editorialBoardMembers.length > 0 && (
+            <section className="eb-associates-section">
+              <div className="eb-associates-header">
+                <h3 className="eb-associates-title">Editorial Board Members</h3>
+                <span className="eb-associates-meta">{editorialBoardMembers.length} Members</span>
+              </div>
+              <div className="eb-associates-grid">
+                {editorialBoardMembers.map((member, idx) => (
+                  <div className="eb-assoc-card" key={`ebm-${member.name}-${idx}`}>
                     <div className="eb-assoc-img-wrap">
                       {member.profile_picture ? (
                         <img src={member.profile_picture} alt={member.name} className="eb-assoc-img" />

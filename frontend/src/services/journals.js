@@ -145,6 +145,7 @@ export const updateJournal = async (id, journalData) => {
       chief_editor_id: journalData.chief_editor_id,
       co_editor_id: journalData.co_editor_id,
       section_editor_ids: journalData.section_editor_ids,
+      editorial_board_member_ids: journalData.editorial_board_member_ids,
       // Journal details fields
       about_journal: journalData.about_journal,
       chief_say: journalData.chief_say,
@@ -201,6 +202,7 @@ export const updateJournalWithFiles = async (id, journalData, imageFile = null, 
       chief_editor_id: journalData.chief_editor_id,
       co_editor_id: journalData.co_editor_id,
       section_editor_ids: journalData.section_editor_ids,
+      editorial_board_member_ids: journalData.editorial_board_member_ids,
     };
     
     Object.keys(transformedData).forEach(key => {
