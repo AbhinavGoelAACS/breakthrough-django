@@ -88,7 +88,7 @@
   font-family: var(--font-headline, 'Newsreader', serif);
   font-size: 3rem;
   font-weight: 500;
-  color: var(--j-on-primary-container, #082100);
+  color: #fff;
   line-height: 1;
 }
 
@@ -97,7 +97,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--j-on-primary-container, #082100);
+  color: #fff;
   margin-top: 0.5rem;
 }
 
@@ -374,7 +374,7 @@
 
 .issue-card {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
   background: var(--j-surface-container-lowest, #f6faf3);
@@ -404,6 +404,10 @@
 .issue-body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.8rem;
 }
 
 .issue-title {
@@ -411,17 +415,24 @@
   font-size: 1.15rem;
   font-weight: 600;
   color: var(--j-on-surface, #1b1c18);
-  margin: 0 0 0.2rem;
-}
-
-.issue-month {
-  font-size: 0.8rem;
-  color: var(--j-on-surface-variant, #44483e);
   margin: 0;
 }
 
+.issue-period {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--j-on-surface-variant, #44483e);
+}
+
+.issue-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .issue-badge {
-  flex-shrink: 0;
+  flex-shrink: 1;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--j-on-primary-container, #082100);
@@ -429,6 +440,8 @@
   padding: 0.3rem 0.75rem;
   border-radius: 10rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .issue-arrow {
