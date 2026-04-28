@@ -15,9 +15,6 @@ import os
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
-# Load environment variables from .env file
-load_dotenv()
-
 # Use PyMySQL as MySQLdb for compatibility with cPanel
 try:
     import pymysql
@@ -27,6 +24,9 @@ except ImportError:
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from backend/.env using an absolute path.
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
