@@ -569,11 +569,57 @@ const JournalDetailPage = () => {
     });
   };
 
+  const getFilteredSingleSelectOptions = (currentValue, excludedIds = []) =>
+    availableUsers.filter((user) => user.id === currentValue || !excludedIds.includes(user.id));
+
+  const getFilteredMultiSelectOptions = (currentValues = [], excludedIds = []) =>
+    availableUsers.filter((user) => currentValues.includes(user.id) || !excludedIds.includes(user.id));
+
+  const chiefEditorOptions = getFilteredSingleSelectOptions(selectedChiefEditor, [
+    selectedCoEditor,
+    ...selectedSectionEditors,
+    ...selectedEditorialBoardMembers,
+  ].filter(Boolean));
+
+  const coEditorOptions = getFilteredSingleSelectOptions(selectedCoEditor, [
+    selectedChiefEditor,
+    ...selectedSectionEditors,
+    ...selectedEditorialBoardMembers,
+  ].filter(Boolean));
+
+  const sectionEditorOptions = getFilteredMultiSelectOptions(selectedSectionEditors, [
+    selectedChiefEditor,
+    selectedCoEditor,
+    ...selectedEditorialBoardMembers,
+  ].filter(Boolean));
+
+  const editorialBoardMemberOptions = getFilteredMultiSelectOptions(selectedEditorialBoardMembers, [
+    selectedChiefEditor,
+    selectedCoEditor,
+    ...selectedSectionEditors,
+  ].filter(Boolean));
+
   // Handle update submission
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+
+      const editorialAssignments = [
+        ...(selectedChiefEditor ? [{ userId: selectedChiefEditor }] : []),
+        ...(selectedCoEditor ? [{ userId: selectedCoEditor }] : []),
+        ...selectedSectionEditors.map((userId) => ({ userId })),
+        ...selectedEditorialBoardMembers.map((userId) => ({ userId })),
+      ];
+
+      const hasDuplicateAssignments = editorialAssignments.some((assignment, index) =>
+        editorialAssignments.findIndex((candidate) => candidate.userId === assignment.userId) !== index
+      );
+
+      if (hasDuplicateAssignments) {
+        showError('A user can only be assigned once in the Editorial Team section.', 5000);
+        return;
+      }
       
       // Get editor names from selected editors
       const chiefEditor = availableUsers.find(e => e.id === selectedChiefEditor);
@@ -766,7 +812,7 @@ const JournalDetailPage = () => {
                   label="Chief Editor"
                   value={selectedChiefEditor}
                   onChange={setSelectedChiefEditor}
-                  options={availableUsers}
+                  options={chiefEditorOptions}
                   placeholder="Search for chief editor..."
                   loading={loadingEditors}
                   icon="stars"
@@ -775,7 +821,7 @@ const JournalDetailPage = () => {
                   label="Co-Editor"
                   value={selectedCoEditor}
                   onChange={setSelectedCoEditor}
-                  options={availableUsers}
+                  options={coEditorOptions}
                   placeholder="Search for co-editor..."
                   loading={loadingEditors}
                   icon="person_add"
@@ -784,7 +830,7 @@ const JournalDetailPage = () => {
                   label="Section Editors"
                   values={selectedSectionEditors}
                   onChange={setSelectedSectionEditors}
-                  options={availableUsers}
+                  options={sectionEditorOptions}
                   placeholder="Search and add section editors..."
                   loading={loadingEditors}
                 />
@@ -792,7 +838,7 @@ const JournalDetailPage = () => {
                   label="Editorial Board Members"
                   values={selectedEditorialBoardMembers}
                   onChange={setSelectedEditorialBoardMembers}
-                  options={availableUsers}
+                  options={editorialBoardMemberOptions}
                   placeholder="Search and add editorial board members..."
                   loading={loadingEditors}
                 />
