@@ -4,6 +4,7 @@ This file is the entry point for the Python application on cPanel.
 """
 import os
 import sys
+import importlib
 
 # Get the directory where this file is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -25,11 +26,15 @@ if os.path.exists(VENV_PATH):
         if os.path.exists(site_packages):
             sys.path.insert(0, site_packages)
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
+# Load environment variables from .env file (optional)
 env_path = os.path.join(SCRIPT_DIR, '.env')
 if os.path.exists(env_path):
-    load_dotenv(env_path)
+    try:
+        load_dotenv = importlib.import_module('dotenv').load_dotenv
+        load_dotenv(env_path)
+    except ImportError:
+        # Don't crash app startup if python-dotenv is missing in production.
+        pass
 
 # Set Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bp_backend.settings')
