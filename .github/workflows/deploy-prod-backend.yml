@@ -49,17 +49,37 @@ jobs:
           ls -la ../deploy_package
 
       - name: Generate backend .env from GitHub config
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DJANGO_DEBUG: ${{ secrets.DJANGO_DEBUG }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
         run: |
-          cat > deploy_package/.env << EOF
-          DB_NAME=${{ secrets.DB_NAME }}
-          DB_USER=${{ secrets.DB_USER }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          DB_HOST=${{ secrets.DB_HOST }}
-          DB_PORT=${{ secrets.DB_PORT }}
-          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-          DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG }}
-          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-          EOF
+          # Fail fast if mandatory secrets are empty.
+          test -n "$DB_NAME" || { echo "DB_NAME is empty"; exit 1; }
+          test -n "$DB_USER" || { echo "DB_USER is empty"; exit 1; }
+          test -n "$DB_PASSWORD" || { echo "DB_PASSWORD is empty"; exit 1; }
+          test -n "$DB_HOST" || { echo "DB_HOST is empty"; exit 1; }
+          test -n "$DB_PORT" || { echo "DB_PORT is empty"; exit 1; }
+          test -n "$DJANGO_SECRET_KEY" || { echo "DJANGO_SECRET_KEY is empty"; exit 1; }
+
+          # Safe write via shell variables (avoids mangling secrets containing '$').
+          {
+            echo "DB_NAME=$DB_NAME"
+            echo "DB_USER=$DB_USER"
+            echo "DB_PASSWORD=$DB_PASSWORD"
+            echo "DB_HOST=$DB_HOST"
+            echo "DB_PORT=$DB_PORT"
+            echo "DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY"
+            echo "DJANGO_DEBUG=${DJANGO_DEBUG:-false}"
+            echo "FRONTEND_URL=$FRONTEND_URL"
+          } > deploy_package/.env
+
+          echo "Wrote deploy_package/.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
 
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
