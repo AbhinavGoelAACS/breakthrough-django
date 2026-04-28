@@ -206,10 +206,10 @@ const JournalArchivesPage = () => {
                           >
                             <div className="issue-accent" />
                             <div className="issue-body">
-                              <h4 className="issue-title">
-                                Issue {issue.issue_no}
-                                {issue.month && <span className="issue-period"> {issue.month}</span>}
-                              </h4>
+                              <div className="issue-header-row">
+                                <h4 className="issue-title">Issue {issue.issue_no}</h4>
+                                {issue.month && <span className="issue-period">{issue.month}</span>}
+                              </div>
                               <div className="issue-meta-row">
                                 <span className="issue-badge">{issue.paper_count ?? 0} Articles Published</span>
                                 <span className="material-symbols-rounded issue-arrow">chevron_right</span>
