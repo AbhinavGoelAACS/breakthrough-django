@@ -1,0 +1,100 @@
+name: Deploy Backend to cPanel (Prod)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: prod-backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Django Backend (Prod)
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Verify requirements.txt
+        run: |
+          echo "Checking requirements.txt..."
+          cat backend/requirements.txt
+
+      - name: Create deployment package
+        run: |
+          cd backend
+          mkdir -p ../deploy_package
+
+          rsync -av --progress . ../deploy_package \
+            --exclude 'venv' \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            --exclude '*.pyo' \
+            --exclude '.env' \
+            --exclude '.git' \
+            --exclude 'db.sqlite3' \
+            --exclude '*.log' \
+            --exclude '.DS_Store' \
+            --exclude 'media/uploads/*' \
+            --exclude 'staticfiles/*'
+
+          echo "Files to deploy:"
+          ls -la ../deploy_package
+
+      - name: Deploy to cPanel via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.BACKEND_FTP_HOST }}
+          username: ${{ secrets.BACKEND_FTP_USERNAME }}
+          password: ${{ secrets.BACKEND_FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./deploy_package/
+          server-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/venv/**
+            **/__pycache__/**
+            **/*.pyc
+            **/*.pyo
+            **/.env
+            **/db.sqlite3
+            **/*.log
+            **/.DS_Store
+
+      - name: Trigger cPanel Python App Restart (via SSH)
+        if: ${{ env.HAS_SSH_KEY == 'true' }}
+        env:
+          HAS_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd /home2/aacsjour/BreakThrough
+
+            if [ -d "venv" ]; then
+              source venv/bin/activate
+            fi
+
+            pip install -r requirements.txt --quiet
+            python manage.py migrate --no-input
+            python manage.py collectstatic --no-input
+            touch tmp/restart.txt
+
+            echo "Backend deployment complete!"
+
+      - name: Deployment Summary
+        run: |
+          echo "Backend prod deployment completed successfully!"
+          echo "Deployed from: backend/"
+          echo "Target: cPanel server"
