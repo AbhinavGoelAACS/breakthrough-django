@@ -16,12 +16,6 @@ const JournalHomePage = () => {
   const [latestArticles, setLatestArticles] = useState([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
-  useEffect(() => {
-    if (currentJournal?.id) {
-      fetchLatestArticles();
-    }
-  }, [currentJournal?.id, fetchLatestArticles]);
-
   const fetchLatestArticles = useCallback(async () => {
     try {
       setArticlesLoading(true);
@@ -33,6 +27,12 @@ const JournalHomePage = () => {
       setArticlesLoading(false);
     }
   }, [currentJournal?.id]);
+
+  useEffect(() => {
+    if (currentJournal?.id) {
+      fetchLatestArticles();
+    }
+  }, [currentJournal?.id, fetchLatestArticles]);
 
   // Strip HTML tags from description
   const stripHtmlTags = (html) => {
