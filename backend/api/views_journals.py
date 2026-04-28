@@ -956,9 +956,11 @@ class JournalEditorialBoardView(APIView):
         co_editors = []
         section_editors = []
         editorial_board_members = []
+        seen_emails = set()
 
         for ur in roles:
             u = ur.user
+            seen_emails.add((u.email or '').lower())
             pic = getattr(u, 'profile_picture', None)
             if pic:
                 pic = request.build_absolute_uri(f'/{pic}')
@@ -977,6 +979,36 @@ class JournalEditorialBoardView(APIView):
             elif ur.editor_type == "co_editor":
                 co_editors.append(entry)
             elif ur.editor_type == "editorial_board_member":
+                editorial_board_members.append(entry)
+            else:
+                section_editors.append(entry)
+
+        legacy_editors = Editor.objects.filter(journal_id=journal.fld_id).order_by('editor_type', 'editor_name')
+        for editor in legacy_editors:
+            email_lower = (editor.editor_email or '').lower()
+            if email_lower and email_lower in seen_emails:
+                continue
+            seen_emails.add(email_lower)
+
+            entry = {
+                "name": editor.editor_name or editor.editor_email or "",
+                "email": editor.editor_email,
+                "designation": None,
+                "department": editor.editor_department,
+                "affiliation": editor.editor_affiliation,
+                "organisation": editor.editor_college,
+                "editor_type": editor.editor_type or "section_editor",
+                "profile_picture": None,
+            }
+
+            if editor.editor_type == "chief_editor":
+                if not chief_editor:
+                    chief_editor = entry
+                else:
+                    section_editors.append(entry)
+            elif editor.editor_type == "co_editor":
+                co_editors.append(entry)
+            elif editor.editor_type == "editorial_board_member":
                 editorial_board_members.append(entry)
             else:
                 section_editors.append(entry)
