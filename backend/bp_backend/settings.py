@@ -54,6 +54,8 @@ ALLOWED_HOSTS = [
     ".up.railway.app",
     ".railway.app",
     ".vercel.app",
+    "devapi.breakthroughpublishers.com",
+    "devapi.breakthroughpublishers.com",
     "api.breakthroughpublishers.com",
     "breakthroughpublishers.com",
     "dev.breakthroughpublishers.com",
@@ -216,6 +218,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://api.breakthroughpublishers.com",
+    "https://devapi.breakthroughpublishers.com",
     "https://breakthroughpublishers.com",
     "https://dev.breakthroughpublishers.com",
 ]
