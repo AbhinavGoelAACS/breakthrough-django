@@ -11,8 +11,6 @@ const GUIDELINES_BY_ROLE = {
   admin: { label: 'Author Guidelines', path: '/author/guidelines' },
 };
 
-const JOURNAL_ICONS = ['book_5', 'science', 'history_edu', 'auto_stories', 'biotech', 'lab_profile'];
-
 const stripHtml = (html) => {
   if (!html) return '';
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
@@ -81,14 +79,6 @@ export const DashboardPage = () => {
               journals.map((journal, index) => (
                 <div key={journal.id || index} className={styles.journalCard}>
                   <div>
-                    <div className={styles.journalCardTop}>
-                      <span className={styles.journalBadge}>
-                        {journal.frequency || 'Open Access'}
-                      </span>
-                      <span className="material-symbols-rounded" style={{ color: '#c1ecd4' }}>
-                        {JOURNAL_ICONS[index % JOURNAL_ICONS.length]}
-                      </span>
-                    </div>
                     <h3 className={styles.journalCardTitle}>
                       {journal.name || `Journal ${index + 1}`}
                     </h3>
