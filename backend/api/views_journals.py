@@ -983,7 +983,9 @@ class JournalEditorialBoardView(APIView):
             else:
                 section_editors.append(entry)
 
-        legacy_editors = Editor.objects.filter(journal_id=journal.fld_id).order_by('editor_type', 'editor_name')
+        # Local import guards against stale module state during partial deploy/reload.
+        from .models import Editor as LegacyEditor
+        legacy_editors = LegacyEditor.objects.filter(journal_id=journal.fld_id).order_by('editor_type', 'editor_name')
         for editor in legacy_editors:
             email_lower = (editor.editor_email or '').lower()
             if email_lower and email_lower in seen_emails:
