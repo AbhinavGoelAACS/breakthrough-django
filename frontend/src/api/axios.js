@@ -2,7 +2,8 @@ import axios from 'axios';
 import toast from '../utils/toast';
 
 // Export base URL for use in other parts of the app
-export const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://api.breakthroughpublishers.com';
+const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://api.breakthroughpublishers.com';
+export const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '');
 
 // Create axios instance with base configuration
 const apiClient = axios.create({

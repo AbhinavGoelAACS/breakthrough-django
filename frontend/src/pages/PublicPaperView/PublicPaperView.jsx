@@ -164,22 +164,8 @@ const PublicPaperView = () => {
     const controller = new AbortController();
 
     const getCandidateUrls = () => {
-      const candidates = [`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`];
-      const paperPath = (article.paper || '').trim();
-
-      if (paperPath) {
-        const cleanPath = paperPath.replace(/^\/+/, '');
-        if (/^https?:\/\//i.test(paperPath)) {
-          candidates.push(paperPath);
-        } else {
-          candidates.push(`${API_BASE_URL}/${cleanPath}`);
-          candidates.push(`${API_BASE_URL}/media/${cleanPath}`);
-          candidates.push(`${API_BASE_URL}/uploads/${cleanPath}`);
-          candidates.push(`${API_BASE_URL}/published/${cleanPath}`);
-        }
-      }
-
-      return [...new Set(candidates)];
+      // Always use the API endpoint so CORS/error handling stays consistent.
+      return [`${API_BASE_URL}/api/v1/articles/${article.id}/pdf`];
     };
 
     const fetchFirstAvailable = async () => {
