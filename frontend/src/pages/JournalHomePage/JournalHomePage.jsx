@@ -5,32 +5,24 @@
  * Displays journal overview, latest articles, and key information.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useJournalContext } from '../../contexts/JournalContext';
 import { acsApi } from '../../api/apiService';
 import './JournalHomePage.css';
 
 const JournalHomePage = () => {
-  const { currentJournal, journalDetails, journalShortForm, loading: contextLoading } = useJournalContext();
+  const { currentJournal, journalDetails, loading: contextLoading } = useJournalContext();
   const [latestArticles, setLatestArticles] = useState([]);
-  const [editorialBoard, setEditorialBoard] = useState([]);
-  const [chiefEditorEmail, setChiefEditorEmail] = useState(null);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
   useEffect(() => {
     if (currentJournal?.id) {
       fetchLatestArticles();
     }
-  }, [currentJournal]);
+  }, [currentJournal?.id, fetchLatestArticles]);
 
-  useEffect(() => {
-    if (journalShortForm) {
-      fetchEditorialBoard();
-    }
-  }, [journalShortForm]);
-
-  const fetchLatestArticles = async () => {
+  const fetchLatestArticles = useCallback(async () => {
     try {
       setArticlesLoading(true);
       const response = await acsApi.articles.getByJournal(currentJournal.id, 0, 3);
@@ -40,24 +32,7 @@ const JournalHomePage = () => {
     } finally {
       setArticlesLoading(false);
     }
-  };
-
-  const fetchEditorialBoard = async () => {
-    try {
-      const response = await acsApi.journals.getEditorialBoard(journalShortForm);
-      if (response?.chief_editor) {
-        setChiefEditorEmail(response.chief_editor.email || null);
-      }
-      const members = [
-        ...(response?.chief_editor ? [response.chief_editor] : []),
-        ...(response?.co_editors || []),
-        ...(response?.section_editors || []),
-      ];
-      setEditorialBoard(members);
-    } catch (err) {
-      console.error('Failed to fetch editorial board:', err);
-    }
-  };
+  }, [currentJournal?.id]);
 
   // Strip HTML tags from description
   const stripHtmlTags = (html) => {
@@ -261,45 +236,6 @@ const JournalHomePage = () => {
           <div className="jhp-cfp-grain"></div>
         </div>
       </section>
-
-      {/* Editorial Board Section */}
-      {editorialBoard.length > 0 && (
-        <section className="jhp-board">
-          <div className="jhp-board-header">
-            <h2 className="jhp-section-title">Editorial Board</h2>
-            <p className="jhp-board-subtitle">
-              Our board comprises leading experts who guide the peer-review process.
-            </p>
-          </div>
-          <div className="jhp-board-grid">
-            {editorialBoard.slice(0, 4).map((member, idx) => (
-              <div key={idx} className="jhp-board-member">
-                <div className="jhp-board-avatar">
-                  {member.profile_photo ? (
-                    <img src={member.profile_photo} alt={member.name || `${member.fname} ${member.lname}`} />
-                  ) : (
-                    <span className="material-symbols-rounded">person</span>
-                  )}
-                </div>
-                <h5 className="jhp-board-name">{member.name || `${member.fname || ''} ${member.lname || ''}`}</h5>
-                <p className="jhp-board-role">{member.role || member.designation}</p>
-                {member.affiliation && <p className="jhp-board-org">{member.affiliation}</p>}
-              </div>
-            ))}
-          </div>
-          <div className="jhp-board-link-wrapper">
-            {chiefEditorEmail ? (
-              <a href={`mailto:${chiefEditorEmail}`} className="jhp-board-link">
-                Contact Editor-in-Chief &rarr;
-              </a>
-            ) : (
-              <Link to={`${journalBasePath}/editorial-board`} className="jhp-board-link">
-                View Full Board &rarr;
-              </Link>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* Footer */}
       <footer className="jhp-footer">

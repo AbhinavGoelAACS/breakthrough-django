@@ -9,6 +9,7 @@ import styles from './AdminJournals.module.css';
 // Research categories for journal classification
 const RESEARCH_CATEGORIES = [
   { value: '', label: 'Select Category...' },
+  { value: 'Multidisciplinary', label: 'Multidisciplinary' },
   { value: 'Arts & Humanities', label: 'Arts & Humanities' },
   { value: 'Social Sciences', label: 'Social Sciences' },
   { value: 'Business & Economics', label: 'Business & Economics' },
