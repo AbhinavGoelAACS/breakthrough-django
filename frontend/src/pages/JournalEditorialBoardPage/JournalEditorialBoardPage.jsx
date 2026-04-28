@@ -207,8 +207,8 @@ const JournalEditorialBoardPage = () => {
           </p>
           <p className="eb-cta-contact">
             Contact us at{' '}
-            <a href={`mailto:${chiefEditor?.email || 'breakthroughpublishers@gmail.com'}`}>
-              {chiefEditor?.email || 'breakthroughpublishers@gmail.com'}
+            <a href="mailto:breakthroughpublishers@gmail.com">
+              breakthroughpublishers@gmail.com
             </a>
           </p>
         </div>
