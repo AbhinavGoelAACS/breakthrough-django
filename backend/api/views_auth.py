@@ -489,7 +489,19 @@ class ForgotPasswordView(APIView):
             f"If you didn't request this, you can safely ignore this email."
         )
 
-        send_email(user.email, "Password Reset - BreakThrough Publishers", plain_body, html_body)
+        success, error = send_email(
+            user.email,
+            "Password Reset - BreakThrough Publishers",
+            plain_body,
+            html_body,
+        )
+        if not success:
+            import logging
+            logging.getLogger(__name__).error(
+                "Password reset email failed for %s: %s",
+                user.email,
+                error,
+            )
 
         return Response(success_msg, status=status.HTTP_200_OK)
 

@@ -54,9 +54,19 @@ def send_email(recipient_email, subject, plain_body, html_body=None, from_email=
         if html_body:
             msg = EmailMultiAlternatives(subject, plain_body, sender, [recipient_email])
             msg.attach_alternative(html_body, "text/html")
-            msg.send(fail_silently=False)
+            sent_count = msg.send(fail_silently=False)
         else:
-            send_mail(subject, plain_body, sender, [recipient_email], fail_silently=False)
+            sent_count = send_mail(subject, plain_body, sender, [recipient_email], fail_silently=False)
+
+        if sent_count < 1:
+            logger.error(
+                "Email backend reported zero deliveries to %s for subject %s",
+                recipient_email,
+                subject,
+            )
+            return False, "Email backend reported zero deliveries"
+
+        logger.info("Email accepted for delivery to %s with subject %s", recipient_email, subject)
         return True, None
     except Exception as e:
         logger.error("Failed to send email to %s: %s", recipient_email, e)
