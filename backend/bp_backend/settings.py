@@ -54,11 +54,7 @@ ALLOWED_HOSTS = [
     ".up.railway.app",
     ".railway.app",
     ".vercel.app",
-    "devapi.breakthroughpublishers.com",
-    "devapi.breakthroughpublishers.com",
-    "api.breakthroughpublishers.com",
-    "breakthroughpublishers.com",
-    "dev.breakthroughpublishers.com",
+    ".breakthroughpublishers.com",
 ]
 
 
@@ -217,12 +213,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://api.breakthroughpublishers.com",
-    "https://devapi.breakthroughpublishers.com",
     "https://breakthroughpublishers.com",
+    "https://www.breakthroughpublishers.com",
     "https://dev.breakthroughpublishers.com",
 ]
-CORS_ALLOW_ALL_ORIGINS = True  # Set to False in production
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://([a-z0-9-]+\.)?breakthroughpublishers\.com$",
+    r"^https://([a-z0-9-]+\.)?aacsjournals\.com$",
+]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://*.breakthroughpublishers.com",
+    "https://*.aacsjournals.com",
+]
 
 # Email Configuration (SMTP)
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
