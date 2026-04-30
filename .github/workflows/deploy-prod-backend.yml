@@ -57,6 +57,13 @@ jobs:
           DB_PORT: ${{ secrets.DB_PORT }}
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           DJANGO_DEBUG: ${{ secrets.DJANGO_DEBUG }}
+          EMAIL_BACKEND: ${{ secrets.EMAIL_BACKEND }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
         run: |
           # Fail fast if mandatory secrets are empty.
@@ -66,6 +73,12 @@ jobs:
           test -n "$DB_HOST" || { echo "DB_HOST is empty"; exit 1; }
           test -n "$DB_PORT" || { echo "DB_PORT is empty"; exit 1; }
           test -n "$DJANGO_SECRET_KEY" || { echo "DJANGO_SECRET_KEY is empty"; exit 1; }
+          test -n "$EMAIL_BACKEND" || { echo "EMAIL_BACKEND is empty"; exit 1; }
+          test -n "$EMAIL_HOST" || { echo "EMAIL_HOST is empty"; exit 1; }
+          test -n "$EMAIL_PORT" || { echo "EMAIL_PORT is empty"; exit 1; }
+          test -n "$EMAIL_HOST_USER" || { echo "EMAIL_HOST_USER is empty"; exit 1; }
+          test -n "$EMAIL_HOST_PASSWORD" || { echo "EMAIL_HOST_PASSWORD is empty"; exit 1; }
+          test -n "$DEFAULT_FROM_EMAIL" || { echo "DEFAULT_FROM_EMAIL is empty"; exit 1; }
 
           # Safe write via shell variables (avoids mangling secrets containing '$').
           {
@@ -76,6 +89,13 @@ jobs:
             echo "DB_PORT=$DB_PORT"
             echo "DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY"
             echo "DJANGO_DEBUG=${DJANGO_DEBUG:-false}"
+            echo "EMAIL_BACKEND=$EMAIL_BACKEND"
+            echo "EMAIL_HOST=$EMAIL_HOST"
+            echo "EMAIL_PORT=$EMAIL_PORT"
+            echo "EMAIL_USE_TLS=${EMAIL_USE_TLS:-true}"
+            echo "EMAIL_HOST_USER=$EMAIL_HOST_USER"
+            echo "EMAIL_HOST_PASSWORD=$EMAIL_HOST_PASSWORD"
+            echo "DEFAULT_FROM_EMAIL=$DEFAULT_FROM_EMAIL"
             echo "FRONTEND_URL=$FRONTEND_URL"
           } > deploy_package/.env
 
