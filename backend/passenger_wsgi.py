@@ -39,5 +39,12 @@ if os.path.exists(env_path):
 # Set Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bp_backend.settings')
 
+# Shared hosting often has tight process/thread limits. Keep BLAS backends
+# single-threaded so importing scipy/sklearn does not exhaust the limit.
+os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
+os.environ.setdefault('OMP_NUM_THREADS', '1')
+os.environ.setdefault('MKL_NUM_THREADS', '1')
+os.environ.setdefault('NUMEXPR_NUM_THREADS', '1')
+
 # Import Django WSGI application
 from bp_backend.wsgi import application
