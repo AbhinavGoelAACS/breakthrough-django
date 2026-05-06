@@ -1225,7 +1225,9 @@ class EditorPublishPaperView(APIView):
         access_type = request.data.get("access_type", "subscription")
         if access_type not in ("open", "subscription"):
             access_type = "subscription"
-        p_reference = request.data.get("references", "") or ""
+        p_reference = request.data.get("references")
+        if p_reference is None or (isinstance(p_reference, str) and not p_reference.strip()):
+            p_reference = paper.paper_references or ""
 
         # Build co_authors_json from submission data
         import json
@@ -1681,7 +1683,9 @@ class EditorPublishPaperWithFileView(APIView):
         access_type = request.data.get("access_type", "subscription")
         if access_type not in ("open", "subscription"):
             access_type = "subscription"
-        p_reference = request.data.get("references", "") or ""
+        p_reference = request.data.get("references")
+        if p_reference is None or (isinstance(p_reference, str) and not p_reference.strip()):
+            p_reference = paper.paper_references or ""
 
         # Build co_authors_json from submission data
         import json

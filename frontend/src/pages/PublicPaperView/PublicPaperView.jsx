@@ -146,6 +146,8 @@ const PublicPaperView = () => {
 
   const isOpenAccess = article?.access_type === 'open';
   const isJournalRoute = location.pathname.startsWith('/j/');
+  const displayDoi = 'XXXX';
+  const displayDoiUrl = `https://doi.org/${displayDoi}`;
 
   useEffect(() => {
     if (!article?.id || !isOpenAccess) {
@@ -311,12 +313,10 @@ const PublicPaperView = () => {
 
       <header className={styles.header}>
         <div className={styles.badges}>
-          {article?.doi && (
-            <span className={styles.doiBadge}>
-              <span className="material-icons">verified</span>
-              DOI
-            </span>
-          )}
+          <span className={styles.doiBadge}>
+            <span className="material-icons">verified</span>
+            DOI
+          </span>
           <span className={`${styles.accessBadge} ${isOpenAccess ? styles.openAccess : styles.subscription}`}>
             <span className="material-icons">{isOpenAccess ? 'lock_open' : 'lock'}</span>
             {isOpenAccess ? 'Open Access' : 'Subscription'}
@@ -394,19 +394,17 @@ const PublicPaperView = () => {
           )}
         </div>
 
-        {article?.doi && (
-          <div className={styles.doiSection}>
-            <strong>DOI:</strong>
-            <a
-              href={`https://doi.org/${article.doi}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.doiLink}
-            >
-              https://doi.org/{article.doi}
-            </a>
-          </div>
-        )}
+        <div className={styles.doiSection}>
+          <strong>DOI:</strong>
+          <a
+            href={displayDoiUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.doiLink}
+          >
+            {displayDoiUrl}
+          </a>
+        </div>
       </header>
 
       <div className={styles.actions}>
@@ -517,11 +515,11 @@ const PublicPaperView = () => {
             {article?.author} ({new Date(article?.date).getFullYear()}).
             {article?.title}. <em>{article?.journal}</em>,
             {article?.volume}({article?.issue}), {article?.pages || 'pp. N/A'}.
-            {article?.doi && ` https://doi.org/${article.doi}`}
+            {` ${displayDoiUrl}`}
           </p>
           <button
             onClick={() => navigator.clipboard.writeText(
-              `${article?.author} (${new Date(article?.date).getFullYear()}). ${article?.title}. ${article?.journal}, ${article?.volume}(${article?.issue}), ${article?.pages || 'pp. N/A'}.${article?.doi ? ` https://doi.org/${article.doi}` : ''}`
+              `${article?.author} (${new Date(article?.date).getFullYear()}). ${article?.title}. ${article?.journal}, ${article?.volume}(${article?.issue}), ${article?.pages || 'pp. N/A'}. ${displayDoiUrl}`
             )}
             className={styles.copyBtn}
           >

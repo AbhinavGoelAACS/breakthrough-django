@@ -112,10 +112,16 @@ class ArticleDetailView(APIView):
         # Build co_authors_json dynamically if not stored
         co_authors_json = article.co_authors_json
         author_display = strip_html_tags(article.author)
+        published_reference = article.p_reference
+        paper = None
+
+        if article.paper_submission_id and (not co_authors_json or not published_reference):
+            paper = Paper.objects.filter(id=article.paper_submission_id).first()
+            if paper and not published_reference:
+                published_reference = paper.paper_references
 
         if not co_authors_json and article.paper_submission_id:
             import json
-            paper = Paper.objects.filter(id=article.paper_submission_id).first()
             if paper:
                 authors_list = []
                 author_user = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by and str(paper.added_by).isdigit() else None
@@ -183,7 +189,7 @@ class ArticleDetailView(APIView):
             "id": article.id,
             "title": strip_html_tags(article.title) or "Untitled",
             "abstract": strip_html_tags(article.abstract),
-            "p_reference": decode_references(article.p_reference),
+            "p_reference": decode_references(published_reference),
             "author": author_display,
             "date": article.date.isoformat() if article.date else None,
             "journal": article.journal,
