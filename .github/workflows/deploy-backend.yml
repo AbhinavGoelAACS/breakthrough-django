@@ -53,7 +53,7 @@ jobs:
           echo "Files to deploy:"
           ls -la ../deploy_package
 
-      - name: Generate backend .env.production from GitHub config
+      - name: Generate backend runtime env from GitHub config
         env:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -105,7 +105,9 @@ jobs:
             echo "FRONTEND_URL=$FRONTEND_URL"
           } > deploy_package/.env.production
 
-          echo "Wrote deploy_package/.env.production (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
+          cp deploy_package/.env.production deploy_package/runtime.env
+
+          echo "Wrote deploy_package/.env.production and deploy_package/runtime.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
           
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

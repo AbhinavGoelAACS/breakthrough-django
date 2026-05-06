@@ -58,7 +58,7 @@ jobs:
             --exclude 'tests/' \
             --exclude '*.sqlite3'
 
-      - name: Generate backend .env.production from GitHub config
+      - name: Generate backend runtime env from GitHub config
         env:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -107,6 +107,8 @@ jobs:
             echo "DEFAULT_FROM_EMAIL=$DEFAULT_FROM_EMAIL"
             echo "FRONTEND_URL=$FRONTEND_URL"
           } > deploy_backend/.env.production
+
+          cp deploy_backend/.env.production deploy_backend/runtime.env
             
       - name: Deploy Backend via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

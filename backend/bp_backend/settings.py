@@ -26,11 +26,15 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from file before resolving runtime mode.
-# Prefer production env file when present, otherwise fall back to legacy .env.
+# Prefer production env file when present, otherwise fall back to a
+# workflow-generated runtime env file, then legacy .env.
 prod_env_path = BASE_DIR / ".env.production"
+runtime_env_path = BASE_DIR / "runtime.env"
 default_env_path = BASE_DIR / ".env"
 if prod_env_path.exists():
     load_dotenv(prod_env_path, override=False)
+elif runtime_env_path.exists():
+    load_dotenv(runtime_env_path, override=False)
 elif default_env_path.exists():
     load_dotenv(default_env_path, override=False)
 
