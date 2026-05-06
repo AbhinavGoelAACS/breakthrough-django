@@ -134,10 +134,14 @@ class AdminUsersListView(APIView):
         user_roles = UserRole.objects.filter(user_id__in=user_ids, status="approved")
         
         roles_map = {}
+        role_seen_map = {}
         for ur in user_roles:
             if ur.user_id not in roles_map:
                 roles_map[ur.user_id] = []
-            roles_map[ur.user_id].append(ur.role)
+                role_seen_map[ur.user_id] = set()
+            if ur.role not in role_seen_map[ur.user_id]:
+                roles_map[ur.user_id].append(ur.role)
+                role_seen_map[ur.user_id].add(ur.role)
             
         users_data = []
         for user in users:
@@ -202,7 +206,14 @@ class AdminUserRolesDetailView(APIView):
         if not user:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
             
-        user_roles = UserRole.objects.filter(user_id=user_id, status="approved")
+        user_roles = UserRole.objects.filter(user_id=user_id, status="approved").order_by("id")
+        unique_roles = []
+        seen_roles = set()
+        for ur in user_roles:
+            if ur.role in seen_roles:
+                continue
+            unique_roles.append(ur)
+            seen_roles.add(ur.role)
         
         return Response({
             "user_id": user_id,
@@ -214,7 +225,7 @@ class AdminUserRolesDetailView(APIView):
                     "status": ur.status,
                     "journal_id": ur.journal_id,
                     "editor_type": ur.editor_type
-                } for ur in user_roles
+                } for ur in unique_roles
             ]
         }, status=status.HTTP_200_OK)
 
@@ -254,13 +265,25 @@ class AdminUserRolesDetailView(APIView):
                 approved_by=request.user.id,
                 approved_at=timezone.now()
             )
+
+        # Clean up duplicate approved role rows (legacy data without unique constraints).
+        approved_roles = UserRole.objects.filter(user_id=user_id, status="approved").order_by("id")
+        seen = set()
+        duplicate_ids = []
+        for ur in approved_roles:
+            if ur.role in seen:
+                duplicate_ids.append(ur.id)
+            else:
+                seen.add(ur.role)
+        if duplicate_ids:
+            UserRole.objects.filter(id__in=duplicate_ids).delete()
             
         role_priority = {"admin": 4, "editor": 3, "reviewer": 2, "author": 1}
         primary_role = max(roles, key=lambda r: role_priority.get(r, 0))
         user.role = primary_role
         user.save()
         
-        updated_roles = UserRole.objects.filter(user_id=user_id, status="approved")
+        updated_roles = UserRole.objects.filter(user_id=user_id, status="approved").order_by("id")
         
         return Response({
             "success": True,

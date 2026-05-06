@@ -34,6 +34,11 @@ const AdminUsers = () => {
 
   const roles = ['admin', 'author', 'editor', 'reviewer'];
 
+  const uniqueRoles = (rolesList = []) => {
+    const normalized = Array.isArray(rolesList) ? rolesList : [];
+    return [...new Set(normalized.filter(Boolean))];
+  };
+
   // Fetch all users once on mount
   const fetchUsers = async () => {
     try {
@@ -80,7 +85,7 @@ const AdminUsers = () => {
     if (roleFilter) {
       result = result.filter(user => {
         // Check if roleFilter is in all_roles array or matches primary role
-        const userAllRoles = user.all_roles || [user.role];
+        const userAllRoles = uniqueRoles(user.all_roles && user.all_roles.length > 0 ? user.all_roles : [user.role]);
         return userAllRoles.includes(roleFilter) || user.role === roleFilter;
       });
     }
@@ -110,16 +115,16 @@ const AdminUsers = () => {
     try {
       const response = await acsApi.admin.getUserRoles(user.id);
       // Get roles from the response
-      const assignedRoles = response.roles?.map(r => r.role) || [];
+      const assignedRoles = uniqueRoles(response.roles?.map(r => r.role) || []);
       // If no roles in user_role table, use the primary role from user
       if (assignedRoles.length === 0 && user.role) {
-        setUserRoles([user.role]);
+        setUserRoles(uniqueRoles([user.role]));
       } else {
         setUserRoles(assignedRoles);
       }
     } catch (err) {
       // If endpoint fails, fall back to primary role
-      setUserRoles(user.role ? [user.role] : []);
+      setUserRoles(uniqueRoles(user.role ? [user.role] : []));
     } finally {
       setLoadingRoles(false);
     }
@@ -322,7 +327,7 @@ const AdminUsers = () => {
                           onClick={() => openRoleModal(user)}
                           title="Click to manage roles"
                         >
-                          {(user.all_roles && user.all_roles.length > 0 ? user.all_roles : [user.role]).map(role => (
+                          {uniqueRoles(user.all_roles && user.all_roles.length > 0 ? user.all_roles : [user.role]).map(role => (
                             <span 
                               key={role}
                               className={`${styles.roleChip} ${getRoleBadgeClass(role)}`}
