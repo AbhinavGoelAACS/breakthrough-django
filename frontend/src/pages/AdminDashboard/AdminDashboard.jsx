@@ -1,16 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useRole } from '../../hooks/useRole';
-import { useToast } from '../../hooks/useToast';
 import acsApi from '../../api/apiService.js';
-import { formatAnnouncementContent } from '../../utils/announcementContent';
-import RichTextEditor from '../../components/RichTextEditor/RichTextEditor';
 import styles from './AdminDashboard.module.css';
 
 export const AdminDashboard = () => {
   useRole();
-  const { success, error: showError } = useToast();
-  const toastRef = useRef({ success, showError });
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     total_users: 0,
@@ -20,73 +15,8 @@ export const AdminDashboard = () => {
     published_papers: 0,
   });
   const [recentPapers, setRecentPapers] = useState([]);
-  const [journals, setJournals] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
-  const [savingAnnouncement, setSavingAnnouncement] = useState(false);
-  const [editingAnnouncementId, setEditingAnnouncementId] = useState(null);
-  const [announcementForm, setAnnouncementForm] = useState({
-    title: '',
-    description: '',
-    journal_id: '',
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    toastRef.current = { success, showError };
-  }, [success, showError]);
-
-  const formatDate = (isoDate) => {
-    if (!isoDate) return '';
-    const parsed = new Date(isoDate);
-    if (Number.isNaN(parsed.getTime())) return '';
-    return parsed.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  const normalizeNewsResponse = (response) => {
-    if (Array.isArray(response)) return response;
-    if (Array.isArray(response?.news)) return response.news;
-    if (Array.isArray(response?.results)) return response.results;
-    if (Array.isArray(response?.data?.news)) return response.data.news;
-    if (Array.isArray(response?.data)) return response.data;
-    return [];
-  };
-
-  const fetchAnnouncements = useCallback(async () => {
-    try {
-      setAnnouncementsLoading(true);
-      const response = await acsApi.admin.listNews(0, 6);
-      const news = normalizeNewsResponse(response);
-      setAnnouncements(news);
-    } catch (err) {
-      console.error('Failed to fetch announcements:', err);
-      setAnnouncements([]);
-      toastRef.current.showError('Failed to load announcements');
-    } finally {
-      setAnnouncementsLoading(false);
-    }
-  }, []);
-
-  const fetchJournals = useCallback(async () => {
-    try {
-      const response = await acsApi.admin.listAllJournals(0, 50);
-      const nextJournals = response?.journals || response || [];
-      setJournals(Array.isArray(nextJournals) ? nextJournals : []);
-    } catch (err) {
-      console.error('Failed to fetch journals for announcements:', err);
-      setJournals([]);
-    }
-  }, []);
-
-  const resetAnnouncementForm = () => {
-    setAnnouncementForm({ title: '', description: '', journal_id: '' });
-    setEditingAnnouncementId(null);
-  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -119,72 +49,12 @@ export const AdminDashboard = () => {
         console.error('Failed to fetch dashboard data:', err);
         setError(err.response?.data?.detail || 'Failed to load dashboard data');
       } finally {
-        await Promise.allSettled([fetchAnnouncements(), fetchJournals()]);
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, [fetchAnnouncements, fetchJournals]);
-
-  const handleAnnouncementSubmit = async (event) => {
-    event.preventDefault();
-    setSavingAnnouncement(true);
-
-    const payload = {
-      title: announcementForm.title.trim(),
-      description: announcementForm.description.trim(),
-      journal_id: announcementForm.journal_id ? Number(announcementForm.journal_id) : null,
-    };
-
-    try {
-      if (editingAnnouncementId) {
-        await acsApi.admin.updateNews(editingAnnouncementId, payload);
-        toastRef.current.success('Announcement updated successfully');
-      } else {
-        await acsApi.admin.createNews(payload);
-        toastRef.current.success('Announcement created successfully');
-      }
-
-      resetAnnouncementForm();
-      await fetchAnnouncements();
-    } catch (err) {
-      console.error('Failed to save announcement:', err);
-      toastRef.current.showError('Failed to save announcement');
-    } finally {
-      setSavingAnnouncement(false);
-    }
-  };
-
-  const handleEditAnnouncement = (announcement) => {
-    setAnnouncementForm({
-      title: announcement.title || '',
-      description: announcement.description || '',
-      journal_id: announcement.journal_id ? String(announcement.journal_id) : '',
-    });
-    setEditingAnnouncementId(announcement.id);
-  };
-
-  const handleDeleteAnnouncement = async (announcementId) => {
-    if (!window.confirm('Are you sure you want to delete this announcement?')) {
-      return;
-    }
-
-    setSavingAnnouncement(true);
-    try {
-      await acsApi.admin.deleteNews(announcementId);
-      toastRef.current.success('Announcement deleted successfully');
-      if (editingAnnouncementId === announcementId) {
-        resetAnnouncementForm();
-      }
-      await fetchAnnouncements();
-    } catch (err) {
-      console.error('Failed to delete announcement:', err);
-      toastRef.current.showError('Failed to delete announcement');
-    } finally {
-      setSavingAnnouncement(false);
-    }
-  };
+  }, []);
 
   const getStatusColorClass = (status) => {
     const statusLower = status?.toLowerCase() || '';
@@ -325,106 +195,6 @@ export const AdminDashboard = () => {
 
         {/* Sidebar */}
         <div className={styles.dashboardSidebar}>
-          <div className={`${styles.dashboardCard} ${styles.announcementsCard}`}>
-            <div className={styles.cardHeader}>
-              <h3>News & Announcements</h3>
-              <Link to="/admin/settings" className={styles.viewAllLink}>Open Settings</Link>
-            </div>
-
-            <form className={styles.announcementForm} onSubmit={handleAnnouncementSubmit}>
-              <input
-                type="text"
-                className={styles.announcementInput}
-                placeholder="Announcement title"
-                value={announcementForm.title}
-                onChange={(event) => setAnnouncementForm((current) => ({ ...current, title: event.target.value }))}
-                required
-              />
-              <RichTextEditor
-                value={announcementForm.description}
-                onChange={(value) => setAnnouncementForm((current) => ({ ...current, description: value }))}
-                placeholder="Write announcement details"
-              />
-              <select
-                className={styles.announcementSelect}
-                value={announcementForm.journal_id}
-                onChange={(event) => setAnnouncementForm((current) => ({ ...current, journal_id: event.target.value }))}
-              >
-                <option value="">General announcement</option>
-                {journals.map((journal) => (
-                  <option key={journal.id || journal.fld_id} value={journal.id || journal.fld_id}>
-                    {journal.name || journal.fld_journal_name}
-                  </option>
-                ))}
-              </select>
-              <div className={styles.announcementFormActions}>
-                <button type="submit" className={styles.primaryActionBtn} disabled={savingAnnouncement}>
-                  {savingAnnouncement ? 'Saving...' : editingAnnouncementId ? 'Update' : 'Publish'}
-                </button>
-                {editingAnnouncementId ? (
-                  <button type="button" className={styles.secondaryActionBtn} onClick={resetAnnouncementForm} disabled={savingAnnouncement}>
-                    Cancel
-                  </button>
-                ) : null}
-              </div>
-            </form>
-
-            <div className={styles.announcementList}>
-              {announcementsLoading ? (
-                <div className={styles.noData}>
-                  <span className="material-symbols-rounded">hourglass_empty</span>
-                  <p>Loading announcements...</p>
-                </div>
-              ) : announcements.length > 0 ? (
-                announcements.map((announcement) => (
-                  <article
-                    key={announcement.id}
-                    className={`${styles.announcementItem} ${announcement.journal_id ? styles.newsBanner : styles.announcementBanner}`}
-                  >
-                    <div className={styles.announcementItemHeader}>
-                      <div>
-                        <h4>{announcement.title || 'Untitled announcement'}</h4>
-                        <p className={styles.announcementMetaText}>
-                          {announcement.journal_name || 'General Announcement'}
-                          {announcement.added_on ? ` • ${formatDate(announcement.added_on)}` : ''}
-                        </p>
-                      </div>
-                      <span className={announcement.journal_id ? styles.newsTypePill : styles.announcementTypePill}>
-                        {announcement.journal_id ? 'Journal News' : 'General Announcement'}
-                      </span>
-                      <div className={styles.announcementActions}>
-                        <button
-                          type="button"
-                          className={styles.inlineEditBtn}
-                          onClick={() => handleEditAnnouncement(announcement)}
-                          disabled={savingAnnouncement}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.inlineDeleteBtn}
-                          onClick={() => handleDeleteAnnouncement(announcement.id)}
-                          disabled={savingAnnouncement}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                    <p className={styles.announcementBody}>
-                      {formatAnnouncementContent(announcement.description || 'No description available.')}
-                    </p>
-                  </article>
-                ))
-              ) : (
-                <div className={styles.noData}>
-                  <span className="material-symbols-rounded">campaign</span>
-                  <p>No announcements available</p>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Analytics Preview */}
           <div className={`${styles.dashboardCard} ${styles.trendsCard}`}>
             <h3>Analytics</h3>

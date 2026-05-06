@@ -50,10 +50,7 @@ const JournalHomePage = () => {
             ? newsData.news
             : [];
 
-        const filtered = normalized.filter((item) => {
-          const itemJournalId = item?.journal_id;
-          return itemJournalId === null || itemJournalId === undefined || Number(itemJournalId) === Number(currentJournal.id);
-        });
+        const filtered = normalized.filter((item) => Number(item?.journal_id) === Number(currentJournal.id));
 
         setAnnouncements(filtered.slice(0, 6));
       } catch (err) {
@@ -282,16 +279,14 @@ const JournalHomePage = () => {
       </section>
 
       {/* Announcements */}
-      <section className="jhp-announcements">
-        <div className="jhp-announcements-inner">
-          <div className="jhp-announcements-header">
-            <h2 className="jhp-section-title">Announcements</h2>
-            <p className="jhp-announcements-subtitle">Latest notices from the editorial office</p>
-          </div>
+      {!announcementsLoading && announcements.length > 0 && (
+        <section className="jhp-announcements">
+          <div className="jhp-announcements-inner">
+            <div className="jhp-announcements-header">
+              <h2 className="jhp-section-title">Announcements</h2>
+              <p className="jhp-announcements-subtitle">Latest notices from the editorial office</p>
+            </div>
 
-          {announcementsLoading ? (
-            <p className="jhp-announcements-empty">Loading announcements...</p>
-          ) : announcements.length > 0 ? (
             <div className="jhp-announcement-banner-list">
               {announcements.map((item) => (
                 <article key={item.id} className="jhp-announcement-banner">
@@ -302,16 +297,14 @@ const JournalHomePage = () => {
                   </div>
                   <div className="jhp-announcement-meta">
                     <span>{formatDate(item.added_on)}</span>
-                    {item.journal_name ? <span>{item.journal_name}</span> : <span>General</span>}
+                    <span>{item.journal_name || currentJournal.name}</span>
                   </div>
                 </article>
               ))}
             </div>
-          ) : (
-            <p className="jhp-announcements-empty">No announcements available.</p>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="jhp-footer">
