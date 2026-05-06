@@ -30,7 +30,8 @@ def decode_references(text: str) -> str:
     if not text:
         return text
     decoded = html.unescape(text)
-    decoded = re.sub(r"</div>\s*", "\n", decoded, flags=re.IGNORECASE)
+    decoded = re.sub(r"<br\s*/?>", "\n", decoded, flags=re.IGNORECASE)
+    decoded = re.sub(r"</(div|p|li|ul|ol)>\s*", "\n", decoded, flags=re.IGNORECASE)
     decoded = re.sub(r"<[^>]+>", "", decoded)
     lines = [line.strip() for line in decoded.split("\n")]
     return "\n".join(line for line in lines if line)
@@ -124,9 +125,36 @@ class ArticleDetailView(APIView):
             import json
             if paper:
                 authors_list = []
+                seen_author_keys = set()
+
+                def build_author_key(name: str, email: str) -> str:
+                    clean_name = (name or "").strip().lower()
+                    clean_email = (email or "").strip().lower()
+                    if clean_email:
+                        return f"email:{clean_email}"
+                    return f"name:{clean_name}"
+
+                def upsert_author(author_obj: dict):
+                    key = build_author_key(author_obj.get("name", ""), author_obj.get("email", ""))
+                    if key in seen_author_keys:
+                        for existing in authors_list:
+                            existing_key = build_author_key(existing.get("name", ""), existing.get("email", ""))
+                            if existing_key == key:
+                                # Merge missing details and preserve corresponding flag.
+                                if not existing.get("affiliation") and author_obj.get("affiliation"):
+                                    existing["affiliation"] = author_obj["affiliation"]
+                                if not existing.get("email") and author_obj.get("email"):
+                                    existing["email"] = author_obj["email"]
+                                existing["is_corresponding"] = bool(existing.get("is_corresponding")) or bool(author_obj.get("is_corresponding"))
+                                return
+                        return
+
+                    seen_author_keys.add(key)
+                    authors_list.append(author_obj)
+
                 author_user = User.objects.filter(id=int(paper.added_by)).first() if paper.added_by and str(paper.added_by).isdigit() else None
                 if author_user:
-                    authors_list.append({
+                    upsert_author({
                         "name": f"{author_user.fname or ''} {author_user.lname or ''}".strip() or author_user.email,
                         "email": author_user.email,
                         "affiliation": author_user.affiliation or author_user.organisation or "",
@@ -136,7 +164,7 @@ class ArticleDetailView(APIView):
                 try:
                     co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).defer('user_id', 'invitation_token')
                     for ca in co_authors:
-                        authors_list.append({
+                        upsert_author({
                             "name": f"{ca.first_name or ''} {ca.middle_name or ''} {ca.last_name or ''}".strip(),
                             "email": ca.email or "",
                             "affiliation": ca.organisation or "",

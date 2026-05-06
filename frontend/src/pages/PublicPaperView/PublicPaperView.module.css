@@ -462,16 +462,16 @@
 
 .referencesList {
   margin: 0;
-  padding-left: 1.5rem;
-  list-style-type: decimal;
+  padding-left: 0;
+  list-style: none;
 }
 
 .referenceItem {
   margin-bottom: 1rem;
-  padding-left: 0.5rem;
+  padding-left: 0;
   line-height: 1.7;
   color: #374151;
-  text-align: justify;
+  text-align: left;
 }
 
 /* Timeline */

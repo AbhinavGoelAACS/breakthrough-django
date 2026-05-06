@@ -118,10 +118,57 @@ const PublicPaperView = () => {
 
   const parseReferences = (refString) => {
     if (!refString) return [];
-    return refString
+    const normalized = refString
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .trim();
+
+    let refs = normalized
       .split('\n')
       .map((ref) => ref.trim())
       .filter((ref) => ref.length > 5);
+
+    // Some legacy records may have all references in one line.
+    if (refs.length <= 1) {
+      refs = normalized
+        .split(/(?=\[\d+\]\.?\s*)/)
+        .map((ref) => ref.trim())
+        .filter((ref) => ref.length > 5);
+    }
+
+    return refs;
+  };
+
+  const dedupeStructuredAuthors = (authorsList) => {
+    if (!Array.isArray(authorsList)) return [];
+
+    const map = new Map();
+    authorsList.forEach((author) => {
+      const name = (author?.name || '').trim();
+      const email = (author?.email || '').trim().toLowerCase();
+      const key = email || name.toLowerCase();
+      if (!key) return;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          ...author,
+          name,
+          email,
+          affiliation: author?.affiliation || '',
+          is_corresponding: Boolean(author?.is_corresponding),
+        });
+        return;
+      }
+
+      const existing = map.get(key);
+      if (!existing.affiliation && author?.affiliation) {
+        existing.affiliation = author.affiliation;
+      }
+      existing.is_corresponding = existing.is_corresponding || Boolean(author?.is_corresponding);
+      map.set(key, existing);
+    });
+
+    return Array.from(map.values());
   };
 
   const isZipDocx = (arrayBuffer) => {
@@ -290,7 +337,7 @@ const PublicPaperView = () => {
   }
 
   const authors = parseAuthors(article?.author);
-  const structuredAuthors = parseCoAuthorsJson(article?.co_authors_json);
+  const structuredAuthors = dedupeStructuredAuthors(parseCoAuthorsJson(article?.co_authors_json));
   const keywords = parseKeywords(article?.keyword);
 
   const handleDownloadFile = () => {
@@ -471,11 +518,11 @@ const PublicPaperView = () => {
             References
           </h2>
           <div className={styles.references}>
-            <ol className={styles.referencesList}>
+            <ul className={styles.referencesList}>
               {parseReferences(article.p_reference).map((ref, idx) => (
                 <li key={idx} className={styles.referenceItem}>{ref}</li>
               ))}
-            </ol>
+            </ul>
           </div>
         </section>
       )}
