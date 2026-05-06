@@ -1738,7 +1738,7 @@ class AdminNewsListCreateView(APIView):
             "description": news.description,
             "added_on": news.added_on.isoformat() if news.added_on else None,
             "journal_id": news.journal_id,
-            "journal_name": Journal.objects.filter(id=news.journal_id).values_list("name", flat=True).first() if news.journal_id else None,
+            "journal_name": Journal.objects.filter(fld_id=news.journal_id).values_list("fld_journal_name", flat=True).first() if news.journal_id else None,
             "message": "News item created successfully"
         }, status=status.HTTP_201_CREATED)
 
@@ -1765,7 +1765,7 @@ class AdminNewsDetailView(APIView):
             "description": news.description,
             "added_on": news.added_on.isoformat() if news.added_on else None,
             "journal_id": news.journal_id,
-            "journal_name": Journal.objects.filter(id=news.journal_id).values_list("name", flat=True).first() if news.journal_id else None,
+            "journal_name": Journal.objects.filter(fld_id=news.journal_id).values_list("fld_journal_name", flat=True).first() if news.journal_id else None,
         }, status=status.HTTP_200_OK)
 
     def put(self, request, news_id):
@@ -1795,7 +1795,7 @@ class AdminNewsDetailView(APIView):
             "description": news.description,
             "added_on": news.added_on.isoformat() if news.added_on else None,
             "journal_id": news.journal_id,
-            "journal_name": Journal.objects.filter(id=news.journal_id).values_list("name", flat=True).first() if news.journal_id else None,
+            "journal_name": Journal.objects.filter(fld_id=news.journal_id).values_list("fld_journal_name", flat=True).first() if news.journal_id else None,
             "message": "News item updated successfully"
         }, status=status.HTTP_200_OK)
 
