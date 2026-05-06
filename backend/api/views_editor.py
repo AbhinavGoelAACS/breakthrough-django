@@ -1240,7 +1240,7 @@ class EditorPublishPaperView(APIView):
                 "is_primary": True,
                 "is_corresponding": True,
             })
-        co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).defer('user_id', 'invitation_token')
+        co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).order_by('author_order').defer('user_id', 'invitation_token')
         for ca in co_authors:
             authors_list.append({
                 "name": f"{ca.first_name or ''} {ca.middle_name or ''} {ca.last_name or ''}".strip(),
@@ -1698,7 +1698,7 @@ class EditorPublishPaperWithFileView(APIView):
                 "is_primary": True,
                 "is_corresponding": True,
             })
-        co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).defer('user_id', 'invitation_token')
+        co_authors = PaperCoAuthor.objects.filter(paper_id=paper.id).order_by('author_order').defer('user_id', 'invitation_token')
         for ca in co_authors:
             authors_list.append({
                 "name": f"{ca.first_name or ''} {ca.middle_name or ''} {ca.last_name or ''}".strip(),

@@ -820,7 +820,7 @@ class IssuePapersView(APIView):
                             "is_corresponding": True,
                         })
                     try:
-                        co_authors = PaperCoAuthor.objects.filter(paper_id=sub_paper.id).defer('user_id', 'invitation_token')
+                        co_authors = PaperCoAuthor.objects.filter(paper_id=sub_paper.id).order_by('author_order').defer('user_id', 'invitation_token')
                         for ca in co_authors:
                             authors_list_built.append({
                                 "name": f"{ca.first_name or ''} {ca.middle_name or ''} {ca.last_name or ''}".strip(),
@@ -834,6 +834,23 @@ class IssuePapersView(APIView):
                     if authors_list_built:
                         co_authors_json = json.dumps(authors_list_built)
                         author_display = ", ".join(a["name"] for a in authors_list_built)
+            elif co_authors_json and paper.paper_submission_id:
+                # Re-sort already-stored co_authors_json by author_order from PaperCoAuthor table
+                import json
+                try:
+                    _parsed = json.loads(co_authors_json) if isinstance(co_authors_json, str) else co_authors_json
+                    if isinstance(_parsed, list):
+                        _ca_order = {
+                            ca.email.strip().lower(): ca.author_order
+                            for ca in PaperCoAuthor.objects.filter(paper_id=paper.paper_submission_id).only('email', 'author_order')
+                            if ca.email
+                        }
+                        if _ca_order:
+                            _parsed.sort(key=lambda a: _ca_order.get((a.get('email') or '').strip().lower(), 999))
+                            co_authors_json = json.dumps(_parsed)
+                            author_display = ", ".join(a["name"] for a in _parsed)
+                except Exception:
+                    pass
 
             papers_list.append(
                 {
