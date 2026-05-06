@@ -12,6 +12,34 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Add the project directory to the Python path
 sys.path.insert(0, SCRIPT_DIR)
 
+
+def legacy_env_is_production_safe(env_path):
+    if not os.path.exists(env_path):
+        return False
+
+    try:
+        with open(env_path, 'r', encoding='utf-8') as env_file:
+            lines = env_file.readlines()
+    except OSError:
+        return False
+
+    values = {}
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        values[key.strip()] = value.strip().strip('"').strip("'")
+
+    env_name = values.get('DJANGO_ENV', '').strip().lower()
+    debug_value = values.get('DJANGO_DEBUG') or values.get('DEBUG') or ''
+    debug_is_true = debug_value.strip().lower() == 'true'
+
+    if env_name in {'production', 'prod'}:
+        return True
+
+    return not debug_is_true
+
 # Passenger runs only in deployed hosting, so default to production mode.
 os.environ.setdefault('DJANGO_ENV', 'production')
 
@@ -38,6 +66,13 @@ if os.path.exists(prod_env_path):
         load_dotenv(prod_env_path, override=False)
     except ImportError:
         # Don't crash app startup if python-dotenv is missing in production.
+        pass
+elif legacy_env_is_production_safe(os.path.join(SCRIPT_DIR, '.env')):
+    legacy_env_path = os.path.join(SCRIPT_DIR, '.env')
+    try:
+        load_dotenv = importlib.import_module('dotenv').load_dotenv
+        load_dotenv(legacy_env_path, override=False)
+    except ImportError:
         pass
 elif os.environ.get('ALLOW_DOTENV_IN_PROD', 'false').strip().lower() == 'true':
     legacy_env_path = os.path.join(SCRIPT_DIR, '.env')
