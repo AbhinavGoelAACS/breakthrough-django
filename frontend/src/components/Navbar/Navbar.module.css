@@ -366,6 +366,8 @@
   border-radius: 10px;
   cursor: pointer;
   transition: var(--transition);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sidebarItem:hover {
@@ -377,6 +379,16 @@
 .sidebarItem.active {
   background: rgba(193, 236, 212, 0.3);
   color: var(--primary);
+}
+
+.sidebarItem:focus {
+  outline: none;
+}
+
+.sidebarItem:focus-visible {
+  background: rgba(193, 236, 212, 0.3);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 2px rgba(1, 45, 29, 0.18);
 }
 
 .sidebarItem .material-symbols-rounded {
@@ -442,10 +454,20 @@
   cursor: pointer;
   color: var(--text-primary);
   transition: var(--transition);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobileMenuBtn:hover {
   background: var(--bg-light);
+}
+
+.mobileMenuBtn:focus {
+  outline: none;
+}
+
+.mobileMenuBtn:focus-visible {
+  box-shadow: 0 0 0 2px rgba(1, 45, 29, 0.16);
 }
 
 .mobileMenuBtn .material-symbols-rounded {
