@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import apiService from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
 import styles from './AdminSettings.module.css';
@@ -28,22 +28,14 @@ const AdminSettings = () => {
     maxLoginAttempts: 5,
   });
 
-  useEffect(() => {
-    if (activeTab === 'news') {
-      fetchNews();
-      fetchJournals();
-    }
-  }, [activeTab]);
-
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiService.admin.listNews();
-      const data = response?.data;
-      if (data && Array.isArray(data.news)) {
-        setNewsList(data.news);
-      } else if (Array.isArray(data)) {
-        setNewsList(data);
+      if (Array.isArray(response?.news)) {
+        setNewsList(response.news);
+      } else if (Array.isArray(response)) {
+        setNewsList(response);
       } else {
         setNewsList([]);
       }
@@ -53,24 +45,29 @@ const AdminSettings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
-  const fetchJournals = async () => {
+  const fetchJournals = useCallback(async () => {
     try {
       const response = await apiService.getJournals();
-      // Handle both array and object response formats
-      const journalData = response.data;
-      if (Array.isArray(journalData)) {
-        setJournals(journalData);
-      } else if (journalData && journalData.journals) {
-        setJournals(journalData.journals);
+      if (Array.isArray(response)) {
+        setJournals(response);
+      } else if (response && Array.isArray(response.journals)) {
+        setJournals(response.journals);
       } else {
         setJournals([]);
       }
     } catch (error) {
       console.error('Error fetching journals:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'news') {
+      fetchNews();
+      fetchJournals();
+    }
+  }, [activeTab, fetchNews, fetchJournals]);
 
   const handleNewsSubmit = async (e) => {
     e.preventDefault();
@@ -135,7 +132,7 @@ const AdminSettings = () => {
     try {
       // In a real app, this would save to backend
       success('Settings saved successfully');
-    } catch (error) {
+    } catch {
       showError('Failed to save settings');
     } finally {
       setLoading(false);
@@ -148,7 +145,6 @@ const AdminSettings = () => {
     { id: 'notifications', label: 'Notifications' },
     { id: 'review', label: 'Review Settings' },
     { id: 'security', label: 'Security' },
-    { id: 'maintenance', label: 'Maintenance' },
   ];
 
   return (
@@ -394,34 +390,6 @@ const AdminSettings = () => {
           </div>
         )}
 
-        {/* Maintenance Tab */}
-        {activeTab === 'maintenance' && (
-          <div className={styles.settingsSection}>
-            <h2>Maintenance</h2>
-            <div className={styles.maintenanceActions}>
-              <div className={styles.maintenanceCard}>
-                <h3>Database Backup</h3>
-                <p>Create a backup of the database.</p>
-                <button className={styles.secondaryBtn}>Create Backup</button>
-              </div>
-              <div className={styles.maintenanceCard}>
-                <h3>Clear Cache</h3>
-                <p>Clear system cache to free up memory.</p>
-                <button className={styles.secondaryBtn}>Clear Cache</button>
-              </div>
-              <div className={styles.maintenanceCard}>
-                <h3>Reindex Search</h3>
-                <p>Rebuild the search index for better results.</p>
-                <button className={styles.secondaryBtn}>Reindex</button>
-              </div>
-              <div className={`${styles.maintenanceCard} ${styles.dangerCard}`}>
-                <h3>Maintenance Mode</h3>
-                <p>Put the site in maintenance mode.</p>
-                <button className={styles.dangerBtn}>Enable Maintenance Mode</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
