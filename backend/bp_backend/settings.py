@@ -25,15 +25,30 @@ except ImportError:
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from backend/.env using an absolute path.
-load_dotenv(BASE_DIR / ".env")
+# Environment selection.
+DJANGO_ENV = os.environ.get("DJANGO_ENV", "development").strip().lower()
+IS_PRODUCTION = DJANGO_ENV in {"production", "prod"}
+
+# Environment variable loading strategy:
+# - development: load backend/.env
+# - production: prefer backend/.env.production only (never backend/.env by default)
+if IS_PRODUCTION:
+    prod_env_path = BASE_DIR / ".env.production"
+    if prod_env_path.exists():
+        load_dotenv(prod_env_path, override=False)
+    elif os.environ.get("ALLOW_DOTENV_IN_PROD", "false").strip().lower() == "true":
+        load_dotenv(BASE_DIR / ".env", override=False)
+else:
+    load_dotenv(BASE_DIR / ".env", override=False)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
+DEBUG = os.environ.get("DJANGO_DEBUG", "false" if IS_PRODUCTION else "true").lower() == "true"
+if IS_PRODUCTION and DEBUG:
+    raise ImproperlyConfigured("DJANGO_DEBUG must be false in production")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # Accept both names to match different deployment environments.

@@ -5,6 +5,7 @@ from django.db.models import Count, Q
 from django.db import transaction
 from django.utils import timezone
 from datetime import datetime, timedelta
+import uuid
 
 from .models import (
     User, Paper, Journal, PaperPublished, UserRole, PaperCorrespondence,
@@ -16,6 +17,7 @@ from .access_utils import (
     update_published_paper_access,
     validate_access_type,
 )
+from .jwt_utils import hash_password
 
 
 def check_admin_role(user):
@@ -308,13 +310,53 @@ class AdminUserDeleteView(APIView):
     def delete(self, request, user_id):
         if not check_admin_role(request.user):
             return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        if request.user.id == user_id:
+            return Response({"detail": "You cannot deactivate your own account"}, status=status.HTTP_400_BAD_REQUEST)
             
         user = User.objects.filter(id=user_id).first()
         if not user:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-        user.delete()
-        return Response({"message": f"User {user_id} deleted successfully"}, status=status.HTTP_200_OK)
+
+        # Never hard-delete user records in production to avoid accidental data loss.
+        # Deactivate account and revoke roles instead.
+        now_stamp = timezone.now().strftime("%Y%m%d%H%M%S")
+        base_email = f"deleted_{user.id}_{now_stamp}@disabled.local"
+        new_email = base_email
+        suffix = 1
+        while User.objects.filter(email=new_email).exclude(id=user.id).exists():
+            new_email = f"deleted_{user.id}_{now_stamp}_{suffix}@disabled.local"
+            suffix += 1
+
+        with transaction.atomic():
+            UserRole.objects.filter(user_id=user.id).delete()
+
+            user.email = new_email
+            user.password = hash_password(uuid.uuid4().hex)
+            user.role = "disabled"
+            user.fname = "Deactivated"
+            user.lname = f"User {user.id}"
+            user.mname = ""
+            user.title = ""
+            user.affiliation = ""
+            user.specialization = ""
+            user.contact = ""
+            user.address = ""
+            user.salutation = ""
+            user.designation = ""
+            user.department = ""
+            user.organisation = ""
+            user.profile_picture = ""
+            user.save()
+
+        return Response(
+            {
+                "message": f"User {user_id} deactivated successfully",
+                "user_id": user_id,
+                "status": "deactivated",
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class AdminPapersListView(APIView):

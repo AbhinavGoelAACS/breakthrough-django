@@ -53,7 +53,7 @@ jobs:
           echo "Files to deploy:"
           ls -la ../deploy_package
 
-      - name: Generate backend .env from GitHub config
+      - name: Generate backend .env.production from GitHub config
         env:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -87,6 +87,7 @@ jobs:
 
           # Safe write via shell variables (avoids mangling secrets containing '$').
           {
+            echo "DJANGO_ENV=production"
             echo "DB_NAME=$DB_NAME"
             echo "DB_USER=$DB_USER"
             echo "DB_PASSWORD=$DB_PASSWORD"
@@ -102,9 +103,9 @@ jobs:
             echo "EMAIL_HOST_PASSWORD=$EMAIL_HOST_PASSWORD"
             echo "DEFAULT_FROM_EMAIL=$DEFAULT_FROM_EMAIL"
             echo "FRONTEND_URL=$FRONTEND_URL"
-          } > deploy_package/.env
+          } > deploy_package/.env.production
 
-          echo "Wrote deploy_package/.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
+          echo "Wrote deploy_package/.env.production (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
           
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

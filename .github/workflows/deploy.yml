@@ -58,7 +58,7 @@ jobs:
             --exclude 'tests/' \
             --exclude '*.sqlite3'
 
-      - name: Generate backend .env from GitHub config
+      - name: Generate backend .env.production from GitHub config
         env:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -90,6 +90,7 @@ jobs:
           test -n "$DEFAULT_FROM_EMAIL" || { echo "DEFAULT_FROM_EMAIL is empty"; exit 1; }
 
           {
+            echo "DJANGO_ENV=production"
             echo "DB_NAME=$DB_NAME"
             echo "DB_USER=$DB_USER"
             echo "DB_PASSWORD=$DB_PASSWORD"
@@ -105,7 +106,7 @@ jobs:
             echo "EMAIL_HOST_PASSWORD=$EMAIL_HOST_PASSWORD"
             echo "DEFAULT_FROM_EMAIL=$DEFAULT_FROM_EMAIL"
             echo "FRONTEND_URL=$FRONTEND_URL"
-          } > deploy_backend/.env
+          } > deploy_backend/.env.production
             
       - name: Deploy Backend via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
