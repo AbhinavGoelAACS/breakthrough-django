@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useRole } from '../../hooks/useRole';
 import { useToast } from '../../hooks/useToast';
@@ -31,21 +31,42 @@ export const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchAnnouncements = async () => {
+  const formatDate = (isoDate) => {
+    if (!isoDate) return '';
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const normalizeNewsResponse = (response) => {
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.news)) return response.news;
+    if (Array.isArray(response?.results)) return response.results;
+    if (Array.isArray(response?.data?.news)) return response.data.news;
+    if (Array.isArray(response?.data)) return response.data;
+    return [];
+  };
+
+  const fetchAnnouncements = useCallback(async () => {
     try {
       setAnnouncementsLoading(true);
       const response = await acsApi.admin.listNews(0, 6);
-      const news = response?.news || response || [];
-      setAnnouncements(Array.isArray(news) ? news : []);
+      const news = normalizeNewsResponse(response);
+      setAnnouncements(news);
     } catch (err) {
       console.error('Failed to fetch announcements:', err);
       setAnnouncements([]);
+      showError('Failed to load announcements');
     } finally {
       setAnnouncementsLoading(false);
     }
-  };
+  }, [showError]);
 
-  const fetchJournals = async () => {
+  const fetchJournals = useCallback(async () => {
     try {
       const response = await acsApi.admin.listAllJournals(0, 50);
       const nextJournals = response?.journals || response || [];
@@ -54,7 +75,7 @@ export const AdminDashboard = () => {
       console.error('Failed to fetch journals for announcements:', err);
       setJournals([]);
     }
-  };
+  }, []);
 
   const resetAnnouncementForm = () => {
     setAnnouncementForm({ title: '', description: '', journal_id: '' });
@@ -87,18 +108,18 @@ export const AdminDashboard = () => {
           setRecentPapers([]);
         }
 
-        await Promise.all([fetchAnnouncements(), fetchJournals()]);
-        
         setLoading(false);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
         setError(err.response?.data?.detail || 'Failed to load dashboard data');
+      } finally {
+        await Promise.allSettled([fetchAnnouncements(), fetchJournals()]);
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [fetchAnnouncements, fetchJournals]);
 
   const handleAnnouncementSubmit = async (event) => {
     event.preventDefault();
@@ -352,15 +373,21 @@ export const AdminDashboard = () => {
                 </div>
               ) : announcements.length > 0 ? (
                 announcements.map((announcement) => (
-                  <article key={announcement.id} className={styles.announcementItem}>
+                  <article
+                    key={announcement.id}
+                    className={`${styles.announcementItem} ${announcement.journal_id ? styles.newsBanner : styles.announcementBanner}`}
+                  >
                     <div className={styles.announcementItemHeader}>
                       <div>
                         <h4>{announcement.title || 'Untitled announcement'}</h4>
                         <p className={styles.announcementMetaText}>
-                          {announcement.journal_name || 'General'}
-                          {announcement.added_on ? ` • ${announcement.added_on}` : ''}
+                          {announcement.journal_name || 'General Announcement'}
+                          {announcement.added_on ? ` • ${formatDate(announcement.added_on)}` : ''}
                         </p>
                       </div>
+                      <span className={announcement.journal_id ? styles.newsTypePill : styles.announcementTypePill}>
+                        {announcement.journal_id ? 'Journal News' : 'General Announcement'}
+                      </span>
                       <div className={styles.announcementActions}>
                         <button
                           type="button"

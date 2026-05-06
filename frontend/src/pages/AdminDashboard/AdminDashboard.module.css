@@ -202,6 +202,22 @@
 
 .announcementsCard {
   padding-bottom: 20px;
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 65%, #1f3347 100%);
+  border: none;
+  color: #e2e8f0;
+}
+
+.announcementsCard .cardHeader {
+  background: transparent;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.announcementsCard .cardHeader h3 {
+  color: #e2e8f0;
+}
+
+.announcementsCard .viewAllLink {
+  color: #93c5fd;
 }
 
 .announcementForm {
@@ -209,19 +225,24 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
 }
 
 .announcementInput,
 .announcementTextarea,
 .announcementSelect {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.45);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 14px;
-  color: #0f172a;
-  background: #fff;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.announcementInput::placeholder,
+.announcementTextarea::placeholder {
+  color: #94a3b8;
 }
 
 .announcementTextarea {
@@ -233,8 +254,8 @@
 .announcementTextarea:focus,
 .announcementSelect:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
 }
 
 .announcementFormActions {
@@ -260,13 +281,13 @@
 }
 
 .primaryActionBtn {
-  background: #2563eb;
-  color: #fff;
+  background: linear-gradient(120deg, #f8fafc 0%, #dbeafe 100%);
+  color: #0f172a;
 }
 
 .secondaryActionBtn {
-  background: #e2e8f0;
-  color: #334155;
+  background: rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
 }
 
 .inlineEditBtn,
@@ -275,13 +296,13 @@
 }
 
 .inlineEditBtn {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: rgba(125, 211, 252, 0.2);
+  color: #7dd3fc;
 }
 
 .inlineDeleteBtn {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: rgba(254, 202, 202, 0.22);
+  color: #fecaca;
 }
 
 .primaryActionBtn:hover,
@@ -304,15 +325,23 @@
 .announcementList {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 0;
 }
 
 .announcementItem {
-  padding: 16px 24px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 14px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  backdrop-filter: blur(2px);
 }
 
-.announcementItem:last-child {
-  border-bottom: none;
+.announcementBanner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.65) 0%, rgba(30, 64, 175, 0.38) 100%);
+}
+
+.newsBanner {
+  background: linear-gradient(135deg, rgba(22, 101, 52, 0.28) 0%, rgba(15, 118, 110, 0.35) 100%);
 }
 
 .announcementItemHeader {
@@ -326,13 +355,34 @@
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: #f8fafc;
 }
 
 .announcementMetaText {
   margin: 6px 0 0;
   font-size: 12px;
-  color: #64748b;
+  color: #cbd5e1;
+}
+
+.announcementTypePill,
+.newsTypePill {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 6px 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.announcementTypePill {
+  background: rgba(147, 197, 253, 0.18);
+  color: #bfdbfe;
+}
+
+.newsTypePill {
+  background: rgba(134, 239, 172, 0.18);
+  color: #bbf7d0;
 }
 
 .announcementActions {
@@ -345,7 +395,7 @@
   margin: 10px 0 0;
   font-size: 13px;
   line-height: 1.55;
-  color: #475569;
+  color: #e2e8f0;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -483,7 +533,7 @@
   justify-content: center;
   gap: 10px;
   padding: 28px 24px;
-  color: #64748b;
+  color: #cbd5e1;
   text-align: center;
 }
 

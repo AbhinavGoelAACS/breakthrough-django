@@ -1693,12 +1693,17 @@ class AdminNewsListCreateView(APIView):
         
         result = []
         for item in news_items:
+            journal_name = None
+            if item.journal_id:
+                journal = Journal.objects.filter(id=item.journal_id).first()
+                journal_name = journal.name if journal else None
             result.append({
                 "id": item.id,
                 "title": item.title,
                 "description": item.description,
                 "added_on": item.added_on.isoformat() if item.added_on else None,
-                "journal_id": item.journal_id
+                "journal_id": item.journal_id,
+                "journal_name": journal_name,
             })
         
         return Response({
@@ -1733,6 +1738,7 @@ class AdminNewsListCreateView(APIView):
             "description": news.description,
             "added_on": news.added_on.isoformat() if news.added_on else None,
             "journal_id": news.journal_id,
+            "journal_name": Journal.objects.filter(id=news.journal_id).values_list("name", flat=True).first() if news.journal_id else None,
             "message": "News item created successfully"
         }, status=status.HTTP_201_CREATED)
 
@@ -1758,7 +1764,8 @@ class AdminNewsDetailView(APIView):
             "title": news.title,
             "description": news.description,
             "added_on": news.added_on.isoformat() if news.added_on else None,
-            "journal_id": news.journal_id
+            "journal_id": news.journal_id,
+            "journal_name": Journal.objects.filter(id=news.journal_id).values_list("name", flat=True).first() if news.journal_id else None,
         }, status=status.HTTP_200_OK)
 
     def put(self, request, news_id):
@@ -1788,6 +1795,7 @@ class AdminNewsDetailView(APIView):
             "description": news.description,
             "added_on": news.added_on.isoformat() if news.added_on else None,
             "journal_id": news.journal_id,
+            "journal_name": Journal.objects.filter(id=news.journal_id).values_list("name", flat=True).first() if news.journal_id else None,
             "message": "News item updated successfully"
         }, status=status.HTTP_200_OK)
 
