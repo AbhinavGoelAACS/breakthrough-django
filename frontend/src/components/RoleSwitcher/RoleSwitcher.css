@@ -18,10 +18,20 @@
   font-weight: 500;
   transition: all 0.2s ease;
   border: 1px solid #41644A;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .role-switcher-trigger:hover {
   transform: translateY(-1px);
+}
+
+.role-switcher-trigger:focus {
+  outline: none;
+}
+
+.role-switcher-trigger:focus-visible {
+  box-shadow: 0 0 0 2px rgba(13, 71, 21, 0.16);
 }
 
 .role-switcher-trigger:disabled {
@@ -97,10 +107,20 @@
   cursor: pointer;
   text-align: left;
   transition: all 0.15s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .role-option:hover:not(:disabled) {
   background: #F5F5F5;
+}
+
+.role-option:focus {
+  outline: none;
+}
+
+.role-option:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(13, 71, 21, 0.16);
 }
 
 .role-option:disabled {
@@ -182,11 +202,21 @@
   font-weight: 500;
   color: #0D4715;
   transition: all 0.15s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .request-access-btn:hover {
   background: #F5F5F5;
   border-style: solid;
+}
+
+.request-access-btn:focus {
+  outline: none;
+}
+
+.request-access-btn:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(13, 71, 21, 0.16);
 }
 
 .request-access-btn span.material-symbols-rounded {
