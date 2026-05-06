@@ -1,10 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import apiService from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
+import RichTextEditor from '../../components/RichTextEditor/RichTextEditor';
+import { formatAnnouncementContent } from '../../utils/announcementContent';
 import styles from './AdminSettings.module.css';
 
 const AdminSettings = () => {
   const { success, error: showError } = useToast();
+  const toastRef = useRef({ success, showError });
   const [activeTab, setActiveTab] = useState('news');
   const [loading, setLoading] = useState(false);
   
@@ -28,6 +31,10 @@ const AdminSettings = () => {
     maxLoginAttempts: 5,
   });
 
+  useEffect(() => {
+    toastRef.current = { success, showError };
+  }, [success, showError]);
+
   const fetchNews = useCallback(async () => {
     setLoading(true);
     try {
@@ -41,11 +48,11 @@ const AdminSettings = () => {
       }
     } catch (error) {
       console.error('Error fetching news:', error);
-      showError('Failed to fetch news');
+      toastRef.current.showError('Failed to fetch news');
     } finally {
       setLoading(false);
     }
-  }, [showError]);
+  }, []);
 
   const fetchJournals = useCallback(async () => {
     try {
@@ -81,10 +88,10 @@ const AdminSettings = () => {
       
       if (editingNewsId) {
         await apiService.admin.updateNews(editingNewsId, newsData);
-        success('News updated successfully');
+        toastRef.current.success('News updated successfully');
       } else {
         await apiService.admin.createNews(newsData);
-        success('News created successfully');
+        toastRef.current.success('News created successfully');
       }
       
       setNewsForm({ title: '', description: '', journal_id: '' });
@@ -92,7 +99,7 @@ const AdminSettings = () => {
       fetchNews();
     } catch (error) {
       console.error('Error saving news:', error);
-      showError('Failed to save news');
+      toastRef.current.showError('Failed to save news');
     } finally {
       setLoading(false);
     }
@@ -113,11 +120,11 @@ const AdminSettings = () => {
     setLoading(true);
     try {
       await apiService.admin.deleteNews(newsId);
-      success('News deleted successfully');
+      toastRef.current.success('News deleted successfully');
       fetchNews();
     } catch (error) {
       console.error('Error deleting news:', error);
-      showError('Failed to delete news');
+      toastRef.current.showError('Failed to delete news');
     } finally {
       setLoading(false);
     }
@@ -131,9 +138,9 @@ const AdminSettings = () => {
     setLoading(true);
     try {
       // In a real app, this would save to backend
-      success('Settings saved successfully');
+      toastRef.current.success('Settings saved successfully');
     } catch {
-      showError('Failed to save settings');
+      toastRef.current.showError('Failed to save settings');
     } finally {
       setLoading(false);
     }
@@ -182,11 +189,9 @@ const AdminSettings = () => {
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
+                <RichTextEditor
                   value={newsForm.description}
-                  onChange={(e) => setNewsForm({ ...newsForm, description: e.target.value })}
-                  rows={4}
+                  onChange={(value) => setNewsForm({ ...newsForm, description: value })}
                   placeholder="Enter news description"
                 />
               </div>
@@ -236,7 +241,7 @@ const AdminSettings = () => {
                     <h3>{news.title}</h3>
                     <span className={styles.newsDate}>{news.added_on}</span>
                   </div>
-                  <p>{news.description}</p>
+                  <p>{formatAnnouncementContent(news.description || '')}</p>
                   {news.journal_name && (
                     <span className={styles.journalTag}>{news.journal_name}</span>
                   )}

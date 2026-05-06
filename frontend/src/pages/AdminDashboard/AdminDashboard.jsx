@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useRole } from '../../hooks/useRole';
 import { useToast } from '../../hooks/useToast';
 import acsApi from '../../api/apiService.js';
 import { formatAnnouncementContent } from '../../utils/announcementContent';
+import RichTextEditor from '../../components/RichTextEditor/RichTextEditor';
 import styles from './AdminDashboard.module.css';
 
 export const AdminDashboard = () => {
   useRole();
   const { success, error: showError } = useToast();
+  const toastRef = useRef({ success, showError });
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     total_users: 0,
@@ -30,6 +32,10 @@ export const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    toastRef.current = { success, showError };
+  }, [success, showError]);
 
   const formatDate = (isoDate) => {
     if (!isoDate) return '';
@@ -60,11 +66,11 @@ export const AdminDashboard = () => {
     } catch (err) {
       console.error('Failed to fetch announcements:', err);
       setAnnouncements([]);
-      showError('Failed to load announcements');
+      toastRef.current.showError('Failed to load announcements');
     } finally {
       setAnnouncementsLoading(false);
     }
-  }, [showError]);
+  }, []);
 
   const fetchJournals = useCallback(async () => {
     try {
@@ -134,17 +140,17 @@ export const AdminDashboard = () => {
     try {
       if (editingAnnouncementId) {
         await acsApi.admin.updateNews(editingAnnouncementId, payload);
-        success('Announcement updated successfully');
+        toastRef.current.success('Announcement updated successfully');
       } else {
         await acsApi.admin.createNews(payload);
-        success('Announcement created successfully');
+        toastRef.current.success('Announcement created successfully');
       }
 
       resetAnnouncementForm();
       await fetchAnnouncements();
     } catch (err) {
       console.error('Failed to save announcement:', err);
-      showError('Failed to save announcement');
+      toastRef.current.showError('Failed to save announcement');
     } finally {
       setSavingAnnouncement(false);
     }
@@ -167,14 +173,14 @@ export const AdminDashboard = () => {
     setSavingAnnouncement(true);
     try {
       await acsApi.admin.deleteNews(announcementId);
-      success('Announcement deleted successfully');
+      toastRef.current.success('Announcement deleted successfully');
       if (editingAnnouncementId === announcementId) {
         resetAnnouncementForm();
       }
       await fetchAnnouncements();
     } catch (err) {
       console.error('Failed to delete announcement:', err);
-      showError('Failed to delete announcement');
+      toastRef.current.showError('Failed to delete announcement');
     } finally {
       setSavingAnnouncement(false);
     }
@@ -334,12 +340,10 @@ export const AdminDashboard = () => {
                 onChange={(event) => setAnnouncementForm((current) => ({ ...current, title: event.target.value }))}
                 required
               />
-              <textarea
-                className={styles.announcementTextarea}
-                placeholder="Write announcement details"
+              <RichTextEditor
                 value={announcementForm.description}
-                onChange={(event) => setAnnouncementForm((current) => ({ ...current, description: event.target.value }))}
-                rows={4}
+                onChange={(value) => setAnnouncementForm((current) => ({ ...current, description: value }))}
+                placeholder="Write announcement details"
               />
               <select
                 className={styles.announcementSelect}
