@@ -4,44 +4,12 @@ This file is the entry point for the Python application on cPanel.
 """
 import os
 import sys
-import importlib
 
 # Get the directory where this file is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Add the project directory to the Python path
 sys.path.insert(0, SCRIPT_DIR)
-
-
-def legacy_env_is_production_safe(env_path):
-    if not os.path.exists(env_path):
-        return False
-
-    try:
-        with open(env_path, 'r', encoding='utf-8') as env_file:
-            lines = env_file.readlines()
-    except OSError:
-        return False
-
-    values = {}
-    for raw_line in lines:
-        line = raw_line.strip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, value = line.split('=', 1)
-        values[key.strip()] = value.strip().strip('"').strip("'")
-
-    env_name = values.get('DJANGO_ENV', '').strip().lower()
-    debug_value = values.get('DJANGO_DEBUG') or values.get('DEBUG') or ''
-    debug_is_true = debug_value.strip().lower() == 'true'
-
-    if env_name in {'production', 'prod'}:
-        return True
-
-    return not debug_is_true
-
-# Passenger runs only in deployed hosting, so default to production mode.
-os.environ.setdefault('DJANGO_ENV', 'production')
 
 # Set up the virtual environment (if exists)
 VENV_PATH = os.path.join(SCRIPT_DIR, 'venv')
@@ -56,32 +24,6 @@ if os.path.exists(VENV_PATH):
             sys.version_info.major, sys.version_info.minor), 'site-packages')
         if os.path.exists(site_packages):
             sys.path.insert(0, site_packages)
-
-# Load environment variables from production env file (optional).
-# This prevents accidental use of development values from backend/.env.
-prod_env_path = os.path.join(SCRIPT_DIR, '.env.production')
-if os.path.exists(prod_env_path):
-    try:
-        load_dotenv = importlib.import_module('dotenv').load_dotenv
-        load_dotenv(prod_env_path, override=False)
-    except ImportError:
-        # Don't crash app startup if python-dotenv is missing in production.
-        pass
-elif legacy_env_is_production_safe(os.path.join(SCRIPT_DIR, '.env')):
-    legacy_env_path = os.path.join(SCRIPT_DIR, '.env')
-    try:
-        load_dotenv = importlib.import_module('dotenv').load_dotenv
-        load_dotenv(legacy_env_path, override=False)
-    except ImportError:
-        pass
-elif os.environ.get('ALLOW_DOTENV_IN_PROD', 'false').strip().lower() == 'true':
-    legacy_env_path = os.path.join(SCRIPT_DIR, '.env')
-    if os.path.exists(legacy_env_path):
-        try:
-            load_dotenv = importlib.import_module('dotenv').load_dotenv
-            load_dotenv(legacy_env_path, override=False)
-        except ImportError:
-            pass
 
 # Set Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bp_backend.settings')

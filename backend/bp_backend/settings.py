@@ -25,51 +25,18 @@ except ImportError:
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-def legacy_env_is_production_safe(env_path: Path) -> bool:
-    if not env_path.exists():
-        return False
-
-    try:
-        content = env_path.read_text(encoding="utf-8")
-    except OSError:
-        return False
-
-    values = {}
-    for raw_line in content.splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        values[key.strip()] = value.strip().strip('"').strip("'")
-
-    env_name = values.get("DJANGO_ENV", "").strip().lower()
-    debug_value = values.get("DJANGO_DEBUG") or values.get("DEBUG") or ""
-    debug_is_true = debug_value.strip().lower() == "true"
-
-    if env_name in {"production", "prod"}:
-        return True
-
-    return not debug_is_true
+# Load environment variables from file before resolving runtime mode.
+# Prefer production env file when present, otherwise fall back to legacy .env.
+prod_env_path = BASE_DIR / ".env.production"
+default_env_path = BASE_DIR / ".env"
+if prod_env_path.exists():
+    load_dotenv(prod_env_path, override=False)
+elif default_env_path.exists():
+    load_dotenv(default_env_path, override=False)
 
 # Environment selection.
 DJANGO_ENV = os.environ.get("DJANGO_ENV", "development").strip().lower()
 IS_PRODUCTION = DJANGO_ENV in {"production", "prod"}
-
-# Environment variable loading strategy:
-# - development: load backend/.env
-# - production: prefer backend/.env.production only (never backend/.env by default)
-if IS_PRODUCTION:
-    prod_env_path = BASE_DIR / ".env.production"
-    legacy_env_path = BASE_DIR / ".env"
-    if prod_env_path.exists():
-        load_dotenv(prod_env_path, override=False)
-    elif legacy_env_is_production_safe(legacy_env_path):
-        load_dotenv(legacy_env_path, override=False)
-    elif os.environ.get("ALLOW_DOTENV_IN_PROD", "false").strip().lower() == "true":
-        load_dotenv(legacy_env_path, override=False)
-else:
-    load_dotenv(BASE_DIR / ".env", override=False)
 
 
 # Quick-start development settings - unsuitable for production
