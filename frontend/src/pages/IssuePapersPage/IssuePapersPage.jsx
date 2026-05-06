@@ -14,6 +14,37 @@ const parseCoAuthorsJson = (jsonString) => {
   }
 };
 
+const dedupeStructuredAuthors = (authorsList) => {
+  if (!Array.isArray(authorsList)) return [];
+  const emailMap = new Map();
+  const nameMap = new Map();
+  const result = [];
+  authorsList.forEach((author) => {
+    const name = (author?.name || '').trim();
+    const email = (author?.email || '').trim().toLowerCase();
+    const normalizedName = name.toLowerCase();
+    if (!name) return;
+    if (email && emailMap.has(email)) {
+      const existing = emailMap.get(email);
+      if (!existing.affiliation && author?.affiliation) existing.affiliation = author.affiliation;
+      existing.is_corresponding = existing.is_corresponding || Boolean(author?.is_corresponding);
+      return;
+    }
+    if (normalizedName && nameMap.has(normalizedName)) {
+      const existing = nameMap.get(normalizedName);
+      if (!existing.affiliation && author?.affiliation) existing.affiliation = author.affiliation;
+      if (!existing.email && email) { existing.email = email; emailMap.set(email, existing); }
+      existing.is_corresponding = existing.is_corresponding || Boolean(author?.is_corresponding);
+      return;
+    }
+    const entry = { ...author, name, email, affiliation: author?.affiliation || '', is_corresponding: Boolean(author?.is_corresponding) };
+    if (email) emailMap.set(email, entry);
+    if (normalizedName) nameMap.set(normalizedName, entry);
+    result.push(entry);
+  });
+  return result;
+};
+
 const parseAuthors = (authorString) => {
   if (!authorString) return [];
   return authorString.split(',').map(a => a.trim()).filter(a => a);
@@ -187,7 +218,7 @@ const IssuePapersPage = () => {
                   <div className="paper-content">
                     <h3 className="paper-title">{paper.title}</h3>
                     <AuthorChips
-                      structuredAuthors={parseCoAuthorsJson(paper.co_authors_json)}
+                      structuredAuthors={dedupeStructuredAuthors(parseCoAuthorsJson(paper.co_authors_json))}
                       fallbackAuthor={paper.author || paper.authors}
                     />
                     <div className="paper-meta">

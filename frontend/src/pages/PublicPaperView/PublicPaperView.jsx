@@ -142,33 +142,49 @@ const PublicPaperView = () => {
   const dedupeStructuredAuthors = (authorsList) => {
     if (!Array.isArray(authorsList)) return [];
 
-    const map = new Map();
+    const emailMap = new Map();
+    const nameMap = new Map();
+    const result = [];
+
     authorsList.forEach((author) => {
       const name = (author?.name || '').trim();
       const email = (author?.email || '').trim().toLowerCase();
-      const key = email || name.toLowerCase();
-      if (!key) return;
+      const normalizedName = name.toLowerCase();
+      if (!name) return;
 
-      if (!map.has(key)) {
-        map.set(key, {
-          ...author,
-          name,
-          email,
-          affiliation: author?.affiliation || '',
-          is_corresponding: Boolean(author?.is_corresponding),
-        });
+      // Dedup by email first
+      if (email && emailMap.has(email)) {
+        const existing = emailMap.get(email);
+        if (!existing.affiliation && author?.affiliation) existing.affiliation = author.affiliation;
+        existing.is_corresponding = existing.is_corresponding || Boolean(author?.is_corresponding);
         return;
       }
 
-      const existing = map.get(key);
-      if (!existing.affiliation && author?.affiliation) {
-        existing.affiliation = author.affiliation;
+      // Dedup by normalized name (catches same person with/without email)
+      if (normalizedName && nameMap.has(normalizedName)) {
+        const existing = nameMap.get(normalizedName);
+        if (!existing.affiliation && author?.affiliation) existing.affiliation = author.affiliation;
+        if (!existing.email && email) {
+          existing.email = email;
+          emailMap.set(email, existing);
+        }
+        existing.is_corresponding = existing.is_corresponding || Boolean(author?.is_corresponding);
+        return;
       }
-      existing.is_corresponding = existing.is_corresponding || Boolean(author?.is_corresponding);
-      map.set(key, existing);
+
+      const entry = {
+        ...author,
+        name,
+        email,
+        affiliation: author?.affiliation || '',
+        is_corresponding: Boolean(author?.is_corresponding),
+      };
+      if (email) emailMap.set(email, entry);
+      if (normalizedName) nameMap.set(normalizedName, entry);
+      result.push(entry);
     });
 
-    return Array.from(map.values());
+    return result;
   };
 
   const isZipDocx = (arrayBuffer) => {

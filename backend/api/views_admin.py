@@ -1695,8 +1695,8 @@ class AdminNewsListCreateView(APIView):
         for item in news_items:
             journal_name = None
             if item.journal_id:
-                journal = Journal.objects.filter(id=item.journal_id).first()
-                journal_name = journal.name if journal else None
+                journal = Journal.objects.filter(fld_id=item.journal_id).first()
+                journal_name = journal.fld_journal_name if journal else None
             result.append({
                 "id": item.id,
                 "title": item.title,
