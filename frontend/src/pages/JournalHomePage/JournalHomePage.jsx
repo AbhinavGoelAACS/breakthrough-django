@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useJournalContext } from '../../contexts/JournalContext';
 import { acsApi } from '../../api/apiService';
+import { formatAnnouncementContent } from '../../utils/announcementContent';
 import './JournalHomePage.css';
 
 const JournalHomePage = () => {
@@ -297,7 +298,7 @@ const JournalHomePage = () => {
                   <div className="jhp-announcement-accent" aria-hidden="true" />
                   <div className="jhp-announcement-content">
                     <h3 className="jhp-announcement-title">{item.title || 'Announcement'}</h3>
-                    <p className="jhp-announcement-body">{stripHtmlTags(item.description || '')}</p>
+                    <p className="jhp-announcement-body">{formatAnnouncementContent(item.description || '')}</p>
                   </div>
                   <div className="jhp-announcement-meta">
                     <span>{formatDate(item.added_on)}</span>

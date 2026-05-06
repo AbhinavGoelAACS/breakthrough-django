@@ -477,6 +477,8 @@
   font-size: 0.87rem;
   line-height: 1.45;
   color: var(--j-on-surface-variant, #44483e);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .announcementBannerMeta {

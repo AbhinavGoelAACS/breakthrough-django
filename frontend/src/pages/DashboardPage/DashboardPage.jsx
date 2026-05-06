@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
 import { useAuth } from '../../hooks/useAuth';
+import { formatAnnouncementContent } from '../../utils/announcementContent';
 import styles from './DashboardPage.module.css';
 
 const GUIDELINES_BY_ROLE = {
@@ -215,7 +216,7 @@ export const DashboardPage = () => {
                   <div className={styles.announcementBannerContent}>
                     <h3 className={styles.announcementBannerTitle}>{item.title || 'Announcement'}</h3>
                     <p className={styles.announcementBannerBody}>
-                      {stripHtml(item.description || 'No description available.')}
+                      {formatAnnouncementContent(item.description || 'No description available.')}
                     </p>
                   </div>
                   <div className={styles.announcementBannerMeta}>

@@ -714,6 +714,8 @@
   font-size: 0.88rem;
   color: var(--j-on-surface-variant);
   line-height: 1.45;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .jhp-announcement-meta {
