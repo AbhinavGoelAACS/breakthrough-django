@@ -127,6 +127,9 @@ DATABASES = {
         "HOST": get_required_env("DB_HOST"),
         "PORT": get_required_env("DB_PORT"),
         "OPTIONS": {
+            "charset": "utf8mb4",
+            "use_unicode": True,
+            "collation": "utf8mb4_unicode_ci",
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }

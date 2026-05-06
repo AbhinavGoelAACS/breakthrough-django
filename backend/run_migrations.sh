@@ -2,6 +2,8 @@
 # Auto-run migrations script for cPanel deployment
 # This script can be called from your deployment hooks or Git post-receive hooks
 
+set -e
+
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -22,11 +24,9 @@ cd "$SCRIPT_DIR"
 echo "[BreakThrough] Running database migrations..."
 python manage.py migrate api --verbosity 2
 
-# Check if migrations were successful
-if [ $? -eq 0 ]; then
-    echo "[BreakThrough] ✓ Migrations completed successfully"
-    exit 0
-else
-    echo "[BreakThrough] ✗ Migration failed - check logs"
-    exit 1
-fi
+# Ensure managed=False table columns also match expected schema/encoding
+echo "[BreakThrough] Verifying managed=False schema..."
+python manage.py ensure_schema
+
+echo "[BreakThrough] ✓ Migrations completed successfully"
+exit 0
