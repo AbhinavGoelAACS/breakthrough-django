@@ -559,14 +559,14 @@ const PublicPaperView = () => {
         </h2>
         <div className={styles.citation}>
           <p className={styles.citationText}>
-            {article?.author} ({new Date(article?.date).getFullYear()}).
+            {(structuredAuthors?.length > 0 ? structuredAuthors.map(a => a.name).join(', ') : article?.author)} ({new Date(article?.date).getFullYear()}).
             {article?.title}. <em>{article?.journal}</em>,
             {article?.volume}({article?.issue}), {article?.pages || 'pp. N/A'}.
             {` ${displayDoiUrl}`}
           </p>
           <button
             onClick={() => navigator.clipboard.writeText(
-              `${article?.author} (${new Date(article?.date).getFullYear()}). ${article?.title}. ${article?.journal}, ${article?.volume}(${article?.issue}), ${article?.pages || 'pp. N/A'}. ${displayDoiUrl}`
+              `${structuredAuthors?.length > 0 ? structuredAuthors.map(a => a.name).join(', ') : article?.author} (${new Date(article?.date).getFullYear()}). ${article?.title}. ${article?.journal}, ${article?.volume}(${article?.issue}), ${article?.pages || 'pp. N/A'}. ${displayDoiUrl}`
             )}
             className={styles.copyBtn}
           >
