@@ -8,6 +8,7 @@ import styles from './AdminSettings.module.css';
 const AdminSettings = () => {
   const { success, error: showError } = useToast();
   const toastRef = useRef({ success, showError });
+  const newsFormRef = useRef(null);
   const [activeTab, setActiveTab] = useState('news');
   const [loading, setLoading] = useState(false);
   
@@ -107,11 +108,14 @@ const AdminSettings = () => {
 
   const handleEditNews = (news) => {
     setNewsForm({
-      title: news.title,
+      title: news.title || '',
       description: news.description || '',
-      journal_id: news.journal_id || '',
+      journal_id: news.journal_id ? String(news.journal_id) : '',
     });
     setEditingNewsId(news.id);
+    requestAnimationFrame(() => {
+      newsFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const handleDeleteNews = async (newsId) => {
@@ -175,7 +179,7 @@ const AdminSettings = () => {
         {activeTab === 'news' && (
           <div className={styles.newsTab}>
             <h2>{editingNewsId ? 'Edit News' : 'Add News/Announcement'}</h2>
-            <form onSubmit={handleNewsSubmit} className={styles.newsForm}>
+            <form ref={newsFormRef} onSubmit={handleNewsSubmit} className={styles.newsForm}>
               <div className={styles.formGroup}>
                 <label htmlFor="title">Title *</label>
                 <input
@@ -190,6 +194,7 @@ const AdminSettings = () => {
               <div className={styles.formGroup}>
                 <label htmlFor="description">Description</label>
                 <RichTextEditor
+                  key={editingNewsId || 'new-news'}
                   value={newsForm.description}
                   onChange={(value) => setNewsForm({ ...newsForm, description: value })}
                   placeholder="Enter news description"
@@ -246,10 +251,10 @@ const AdminSettings = () => {
                     <span className={styles.journalTag}>{news.journal_name}</span>
                   )}
                   <div className={styles.newsActions}>
-                    <button onClick={() => handleEditNews(news)} className={styles.editBtn}>
+                    <button type="button" onClick={() => handleEditNews(news)} className={styles.editBtn}>
                       Edit
                     </button>
-                    <button onClick={() => handleDeleteNews(news.id)} className={styles.deleteBtn}>
+                    <button type="button" onClick={() => handleDeleteNews(news.id)} className={styles.deleteBtn}>
                       Delete
                     </button>
                   </div>
