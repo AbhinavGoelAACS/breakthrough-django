@@ -80,7 +80,9 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
 
           {/* Right: Actions */}
           <div className={styles.headerRight}>
-            <Link to="/submit" className={styles.submitBtn}>Submit Paper</Link>
+            {isAuthenticated && (
+              <Link to="/submit" className={styles.submitBtn}>Submit Paper</Link>
+            )}
 
             {isAuthenticated ? (
               <>
@@ -121,9 +123,10 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
                 </div>
               </>
             ) : (
-              <button className={styles.personBtn} onClick={() => navigate('/login')}>
-                <span className="material-symbols-outlined">person</span>
-              </button>
+              <div className={styles.authButtons}>
+                <Link to="/login" className={styles.loginBtn}>Log In</Link>
+                <Link to="/register" className={styles.signupBtn}>Sign Up</Link>
+              </div>
             )}
 
             <button
