@@ -4,6 +4,7 @@ This file is the entry point for the Python application on cPanel.
 """
 import os
 import sys
+import traceback
 
 # Get the directory where this file is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,4 +37,12 @@ os.environ.setdefault('MKL_NUM_THREADS', '1')
 os.environ.setdefault('NUMEXPR_NUM_THREADS', '1')
 
 # Import Django WSGI application
-from bp_backend.wsgi import application
+try:
+    from bp_backend.wsgi import application
+except Exception:
+    log_path = os.path.join(SCRIPT_DIR, 'stderr.log')
+    with open(log_path, 'a', encoding='utf-8') as log_file:
+        log_file.write('\n=== Passenger startup failure ===\n')
+        log_file.write(traceback.format_exc())
+        log_file.write('\n')
+    raise
