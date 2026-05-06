@@ -167,6 +167,12 @@
   overflow: hidden;
 }
 
+.dashboardSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .cardHeader {
   display: flex;
   align-items: center;
@@ -192,6 +198,156 @@
 
 .viewAllLink:hover {
   text-decoration: underline;
+}
+
+.announcementsCard {
+  padding-bottom: 20px;
+}
+
+.announcementForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.announcementInput,
+.announcementTextarea,
+.announcementSelect {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #fff;
+}
+
+.announcementTextarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.announcementInput:focus,
+.announcementTextarea:focus,
+.announcementSelect:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.announcementFormActions {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryActionBtn,
+.secondaryActionBtn,
+.inlineEditBtn,
+.inlineDeleteBtn {
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.primaryActionBtn,
+.secondaryActionBtn {
+  padding: 10px 14px;
+}
+
+.primaryActionBtn {
+  background: #2563eb;
+  color: #fff;
+}
+
+.secondaryActionBtn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.inlineEditBtn,
+.inlineDeleteBtn {
+  padding: 8px 10px;
+}
+
+.inlineEditBtn {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.inlineDeleteBtn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.primaryActionBtn:hover,
+.secondaryActionBtn:hover,
+.inlineEditBtn:hover,
+.inlineDeleteBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.primaryActionBtn:disabled,
+.secondaryActionBtn:disabled,
+.inlineEditBtn:disabled,
+.inlineDeleteBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.announcementList {
+  display: flex;
+  flex-direction: column;
+}
+
+.announcementItem {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.announcementItem:last-child {
+  border-bottom: none;
+}
+
+.announcementItemHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.announcementItemHeader h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.announcementMetaText {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.announcementActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.announcementBody {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #475569;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 /* Submissions List */
@@ -318,6 +474,21 @@
 .statusBadgeSlate {
   background: #f1f5f9;
   color: #475569;
+}
+
+.noData {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 24px;
+  color: #64748b;
+  text-align: center;
+}
+
+.noData span {
+  font-size: 24px;
 }
 
 .paperInfo {
