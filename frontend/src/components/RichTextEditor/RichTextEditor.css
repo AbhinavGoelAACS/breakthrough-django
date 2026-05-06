@@ -51,41 +51,45 @@
 }
 
 .editor-content {
-  padding: 12px;
   min-height: 200px;
   font-size: 14px;
   line-height: 1.6;
   color: #333;
+  display: flex;
 }
 
-.editor-content :global(.ProseMirror) {
+.editor-content .ProseMirror {
   outline: none;
-  padding: 0;
+  width: 100%;
+  min-height: 200px;
+  box-sizing: border-box;
+  padding: 12px;
+  cursor: text;
 }
 
-.editor-content :global(.ProseMirror p) {
+.editor-content .ProseMirror p {
   margin: 0.5em 0;
 }
 
-.editor-content :global(.ProseMirror ul),
-.editor-content :global(.ProseMirror ol) {
+.editor-content .ProseMirror ul,
+.editor-content .ProseMirror ol {
   margin: 0.5em 0;
   padding-left: 1.5em;
 }
 
-.editor-content :global(.ProseMirror li) {
+.editor-content .ProseMirror li {
   margin: 0.25em 0;
 }
 
-.editor-content :global(.ProseMirror strong) {
+.editor-content .ProseMirror strong {
   font-weight: bold;
 }
 
-.editor-content :global(.ProseMirror em) {
+.editor-content .ProseMirror em {
   font-style: italic;
 }
 
-.editor-content :global(.ProseMirror code) {
+.editor-content .ProseMirror code {
   background-color: #f5f5f5;
   padding: 0.2em 0.4em;
   border-radius: 3px;
@@ -93,12 +97,12 @@
   font-size: 0.9em;
 }
 
-.editor-content :global(.ProseMirror a) {
+.editor-content .ProseMirror a {
   color: #0066cc;
   text-decoration: underline;
   cursor: pointer;
 }
 
-.editor-content :global(.ProseMirror a:hover) {
+.editor-content .ProseMirror a:hover {
   text-decoration: none;
 }
