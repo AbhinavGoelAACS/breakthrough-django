@@ -19,7 +19,20 @@ const stripHtml = (html) => {
 export const DashboardPage = () => {
   const { activeRole } = useAuth();
   const [journals, setJournals] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return '';
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,6 +49,28 @@ export const DashboardPage = () => {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        setAnnouncementsLoading(true);
+        const newsData = await acsApi.news.list(0, 6);
+        const normalized = Array.isArray(newsData)
+          ? newsData
+          : Array.isArray(newsData?.news)
+            ? newsData.news
+            : [];
+        setAnnouncements(normalized);
+      } catch (err) {
+        console.error('Error fetching announcements:', err);
+        setAnnouncements([]);
+      } finally {
+        setAnnouncementsLoading(false);
+      }
+    };
+
+    fetchAnnouncements();
   }, []);
 
   return (
@@ -159,6 +194,40 @@ export const DashboardPage = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Announcements Section ── */}
+      <section className={styles.announcements}>
+        <div className={styles.announcementsInner}>
+          <div className={styles.announcementsHeader}>
+            <span className={styles.announcementsLabel}>Updates</span>
+            <h2 className={styles.announcementsTitle}>Announcements</h2>
+          </div>
+
+          {announcementsLoading ? (
+            <p className={styles.announcementsEmpty}>Loading announcements...</p>
+          ) : announcements.length > 0 ? (
+            <div className={styles.announcementsBannerList}>
+              {announcements.map((item) => (
+                <article key={item.id} className={styles.announcementBanner}>
+                  <div className={styles.announcementBannerAccent} aria-hidden="true" />
+                  <div className={styles.announcementBannerContent}>
+                    <h3 className={styles.announcementBannerTitle}>{item.title || 'Announcement'}</h3>
+                    <p className={styles.announcementBannerBody}>
+                      {stripHtml(item.description || 'No description available.')}
+                    </p>
+                  </div>
+                  <div className={styles.announcementBannerMeta}>
+                    <span>{formatDate(item.added_on)}</span>
+                    {item.journal_name ? <span>{item.journal_name}</span> : <span>General</span>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.announcementsEmpty}>No announcements available right now.</p>
+          )}
         </div>
       </section>
 

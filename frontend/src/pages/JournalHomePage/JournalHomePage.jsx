@@ -14,6 +14,8 @@ import './JournalHomePage.css';
 const JournalHomePage = () => {
   const { currentJournal, journalDetails, loading: contextLoading } = useJournalContext();
   const [latestArticles, setLatestArticles] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
   const fetchLatestArticles = useCallback(async () => {
@@ -33,6 +35,47 @@ const JournalHomePage = () => {
       fetchLatestArticles();
     }
   }, [currentJournal?.id, fetchLatestArticles]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      if (!currentJournal?.id) return;
+
+      try {
+        setAnnouncementsLoading(true);
+        const newsData = await acsApi.news.list(0, 20);
+        const normalized = Array.isArray(newsData)
+          ? newsData
+          : Array.isArray(newsData?.news)
+            ? newsData.news
+            : [];
+
+        const filtered = normalized.filter((item) => {
+          const itemJournalId = item?.journal_id;
+          return itemJournalId === null || itemJournalId === undefined || Number(itemJournalId) === Number(currentJournal.id);
+        });
+
+        setAnnouncements(filtered.slice(0, 6));
+      } catch (err) {
+        console.error('Failed to fetch announcements:', err);
+        setAnnouncements([]);
+      } finally {
+        setAnnouncementsLoading(false);
+      }
+    };
+
+    fetchAnnouncements();
+  }, [currentJournal?.id]);
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return '';
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
   // Strip HTML tags from description
   const stripHtmlTags = (html) => {
@@ -234,6 +277,38 @@ const JournalHomePage = () => {
             <span>Rigor</span>
           </div>
           <div className="jhp-cfp-grain"></div>
+        </div>
+      </section>
+
+      {/* Announcements */}
+      <section className="jhp-announcements">
+        <div className="jhp-announcements-inner">
+          <div className="jhp-announcements-header">
+            <h2 className="jhp-section-title">Announcements</h2>
+            <p className="jhp-announcements-subtitle">Latest notices from the editorial office</p>
+          </div>
+
+          {announcementsLoading ? (
+            <p className="jhp-announcements-empty">Loading announcements...</p>
+          ) : announcements.length > 0 ? (
+            <div className="jhp-announcement-banner-list">
+              {announcements.map((item) => (
+                <article key={item.id} className="jhp-announcement-banner">
+                  <div className="jhp-announcement-accent" aria-hidden="true" />
+                  <div className="jhp-announcement-content">
+                    <h3 className="jhp-announcement-title">{item.title || 'Announcement'}</h3>
+                    <p className="jhp-announcement-body">{stripHtmlTags(item.description || '')}</p>
+                  </div>
+                  <div className="jhp-announcement-meta">
+                    <span>{formatDate(item.added_on)}</span>
+                    {item.journal_name ? <span>{item.journal_name}</span> : <span>General</span>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="jhp-announcements-empty">No announcements available.</p>
+          )}
         </div>
       </section>
 
