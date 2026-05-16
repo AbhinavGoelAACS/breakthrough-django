@@ -20,6 +20,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from api.views_scholar import (
+    ScholarPaperView,
+    ScholarBrowseView,
+    ScholarBrowseYearView,
+    ScholarBrowseRecentView,
+    RobotsView,
+    SitemapView,
+    ScholarQAView,
+)
 
 
 def custom_404(request, exception=None):
@@ -32,7 +41,22 @@ def custom_500(request):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("api.urls")),
-    
+
+    # Google Scholar indexing pages — server-rendered, no JS required
+    path("scholar/paper/<str:paper_code>/", ScholarPaperView.as_view(),       name="scholar-paper"),
+
+    # Crawl discovery — browse by date (plain HTML, no JS)
+    path("browse/",                         ScholarBrowseView.as_view(),       name="scholar-browse"),
+    path("browse/recent/",                  ScholarBrowseRecentView.as_view(), name="scholar-browse-recent"),
+    path("browse/<int:year>/",              ScholarBrowseYearView.as_view(),   name="scholar-browse-year"),
+
+    # Crawler infrastructure
+    path("robots.txt",                      RobotsView.as_view(),              name="robots-txt"),
+    path("sitemap.xml",                     SitemapView.as_view(),             name="sitemap-xml"),
+
+    # Scholar QA — editor/admin only
+    path("api/v1/editor/scholar-qa/<str:paper_code>/", ScholarQAView.as_view(), name="scholar-qa"),
+
     # OpenAPI endpoints
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

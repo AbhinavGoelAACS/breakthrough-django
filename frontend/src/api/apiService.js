@@ -378,6 +378,8 @@ export const acsApi = {
       apiService.get(`/api/v1/editor/papers/${paperId}/doi-status`),
     updatePublishedPaperAccess: (publishedPaperId, accessType) =>
       apiService.patch(`/api/v1/editor/published-papers/${publishedPaperId}/access`, { access_type: accessType }),
+    runScholarQA: (paperCode) =>
+      apiService.get(`/api/v1/editor/scholar-qa/${paperCode}/`),
     
     // Email Templates (Editor can also access)
     listEmailTemplates: (category = null) =>

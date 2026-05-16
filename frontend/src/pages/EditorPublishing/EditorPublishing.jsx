@@ -50,7 +50,12 @@ const EditorPublishing = () => {
   const [selectedPublishedPaper, setSelectedPublishedPaper] = useState(null);
   const [pendingAccessType, setPendingAccessType] = useState('open');
   const [updatingAccess, setUpdatingAccess] = useState(false);
-  
+
+  // Scholar QA modal
+  const [showQaModal, setShowQaModal] = useState(false);
+  const [qaResult, setQaResult] = useState(null);
+  const [qaLoading, setQaLoading] = useState(false);
+
   const { success, error: showError, info } = useToast();
 
   const fetchReadyToPublish = useCallback(async (skip = 0) => {
@@ -170,13 +175,18 @@ const EditorPublishing = () => {
       formData.append('access_type', publishData.access_type || 'open');
       if (publishData.references) formData.append('references', publishData.references);
       
-      await acsApi.editor.publishPaperWithFile(selectedPaper.id, formData);
-      
+      const publishResult = await acsApi.editor.publishPaperWithFile(selectedPaper.id, formData);
+
       success(`Paper "${selectedPaper.title}" published successfully!`, 4000);
       closePublishModal();
-      // Refresh the list
       fetchReadyToPublish(pagination.skip);
       fetchPublishedPapers(0);
+
+      // Show Scholar QA report if available
+      if (publishResult?.scholar_qa) {
+        setQaResult(publishResult.scholar_qa);
+        setShowQaModal(true);
+      }
     } catch (err) {
       console.error('Error publishing paper:', err);
       const errorMsg = err.response?.data?.detail || 'Failed to publish paper';
@@ -229,6 +239,21 @@ const EditorPublishing = () => {
   const formatAccessLabel = (accessType) => accessType === 'open' ? 'Open Access' : 'Subscription';
 
   const getAccessIcon = (accessType) => accessType === 'open' ? 'lock_open' : 'lock';
+
+  const handleScholarQA = async (paperCode) => {
+    setQaLoading(true);
+    setQaResult(null);
+    setShowQaModal(true);
+    try {
+      const result = await acsApi.editor.runScholarQA(paperCode);
+      setQaResult(result);
+    } catch (err) {
+      console.error('Scholar QA failed:', err);
+      setQaResult({ error: err.response?.data?.detail || 'Failed to run QA check.' });
+    } finally {
+      setQaLoading(false);
+    }
+  };
 
   // Document Viewer state
   const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
@@ -592,6 +617,16 @@ const EditorPublishing = () => {
                         <span className="material-symbols-rounded">open_in_new</span>
                         View Public Page
                       </a>
+                      {paper.paper_code && (
+                        <button
+                          className={`${styles.btn} ${styles.btnOutline}`}
+                          onClick={() => handleScholarQA(paper.paper_code)}
+                          title="Run Google Scholar QA checklist"
+                        >
+                          <span className="material-symbols-rounded">fact_check</span>
+                          Scholar QA
+                        </button>
+                      )}
                     </div>
                   </article>
                 );
@@ -968,6 +1003,96 @@ const EditorPublishing = () => {
               {!docLoading && !docError && docType === 'docx' && (
                 <div ref={docxContainerRef} className={styles.docxContainer} />
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scholar QA Modal */}
+      {showQaModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowQaModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>
+                <span className="material-symbols-rounded">fact_check</span>
+                Google Scholar QA Report
+              </h2>
+              <button className={styles.closeBtn} onClick={() => setShowQaModal(false)}>
+                <span className="material-symbols-rounded">close</span>
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {qaLoading && (
+                <div className={styles.inlineState}>
+                  <span className="material-symbols-rounded">hourglass_empty</span>
+                  <p>Running Scholar QA checks…</p>
+                </div>
+              )}
+
+              {!qaLoading && qaResult?.error && (
+                <div className={styles.inlineStateError}>
+                  <span className="material-symbols-rounded">error_outline</span>
+                  <p>{qaResult.error}</p>
+                </div>
+              )}
+
+              {!qaLoading && qaResult && !qaResult.error && (
+                <>
+                  {/* Score summary */}
+                  <div className={styles.qaSummary}>
+                    <span className={styles.qaScore} style={{ color: qaResult.fail_count > 0 ? '#d32f2f' : qaResult.warn_count > 0 ? '#e65100' : '#2e7d32' }}>
+                      {qaResult.fail_count === 0 && qaResult.warn_count === 0 ? '✓ All checks passed' : `${qaResult.fail_count} failing · ${qaResult.warn_count} warnings · ${qaResult.pass_count} passing`}
+                    </span>
+                    <a
+                      href={qaResult.scholar_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.qaScholarLink}
+                    >
+                      <span className="material-symbols-rounded">open_in_new</span>
+                      View Scholar page
+                    </a>
+                  </div>
+
+                  {/* Check list */}
+                  <ul className={styles.qaChecklist}>
+                    {qaResult.checks.map((c) => (
+                      <li key={c.id} className={`${styles.qaCheck} ${styles[`qaCheck_${c.status}`]}`}>
+                        <span className={styles.qaCheckIcon}>
+                          {c.status === 'pass' ? '✓' : c.status === 'warn' ? '⚠' : '✗'}
+                        </span>
+                        <div>
+                          <strong>{c.label}</strong>
+                          <p>{c.message}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Google Search Console link */}
+                  <div className={styles.qaSearchConsole}>
+                    <span className="material-symbols-rounded">search</span>
+                    <span>
+                      Submit the sitemap to{' '}
+                      <a
+                        href="https://search.google.com/search-console"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Google Search Console
+                      </a>
+                      {' '}to accelerate Scholar discovery.
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setShowQaModal(false)}>
+                Close
+              </button>
             </div>
           </div>
         </div>

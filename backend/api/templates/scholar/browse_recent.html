@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  <title>Recently Added Articles — Breakthrough Publishers India</title>
+  <meta name="description" content="Scholarly articles added to Breakthrough Publishers India in the last 14 days.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: Georgia, serif; font-size: 16px; line-height: 1.7; color: #1a1a1a; background: #fff; margin: 0; padding: 0; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+    .breadcrumb { font-size: 0.85rem; color: #666; margin-bottom: 20px; }
+    .breadcrumb a { color: #1a5276; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span { margin: 0 6px; }
+    h1 { font-size: 1.5rem; margin: 0 0 6px; color: #0d1b2a; }
+    .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 28px; }
+    .article-list { list-style: none; padding: 0; margin: 0; }
+    .article-list li { border-bottom: 1px solid #ebebeb; padding: 16px 0; }
+    .article-title { display: block; font-size: 1rem; font-weight: 700; color: #1a5276; text-decoration: none; margin-bottom: 4px; }
+    .article-title:hover { text-decoration: underline; }
+    .article-meta { font-size: 0.85rem; color: #555; }
+    .article-meta .sep { margin: 0 6px; color: #bbb; }
+    .empty { color: #888; font-style: italic; }
+    .back-link { display: inline-block; margin-top: 32px; font-family: Arial, sans-serif; font-size: 0.85rem; color: #1a5276; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="breadcrumb">
+      <a href="/browse/">Browse</a>
+      <span>&rsaquo;</span>
+      <span>Recently Added</span>
+    </nav>
+
+    <h1>Recently Added Articles</h1>
+    <p class="subtitle">
+      Articles published since {{ cutoff|date:"F j, Y" }} &mdash; {{ items|length }} article{{ items|length|pluralize }}
+    </p>
+
+    {% if items %}
+    <ul class="article-list">
+      {% for item in items %}
+      <li>
+        <a class="article-title" href="/scholar/paper/{{ item.paper_code }}/">{{ item.title }}</a>
+        <span class="article-meta">
+          {{ item.author }}
+          {% if item.journal %}<span class="sep">&bull;</span>{{ item.journal }}{% endif %}
+          {% if item.date %}<span class="sep">&bull;</span>{{ item.date|date:"F j, Y" }}{% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">No new articles have been added in the last 14 days.</p>
+    {% endif %}
+
+    <a class="back-link" href="/browse/">&larr; Back to year index</a>
+  </div>
+</body>
+</html>

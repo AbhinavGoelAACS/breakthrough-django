@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  <title>Browse Articles by Year — Breakthrough Publishers India</title>
+  <meta name="description" content="Browse all published scholarly articles by publication year.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: Georgia, serif; font-size: 16px; line-height: 1.7; color: #1a1a1a; background: #fff; margin: 0; padding: 0; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+    h1 { font-size: 1.6rem; margin: 0 0 8px; color: #0d1b2a; }
+    .subtitle { color: #555; font-size: 0.95rem; margin-bottom: 32px; }
+    .year-list { list-style: none; padding: 0; margin: 0; }
+    .year-list li { border-bottom: 1px solid #e8e8e8; }
+    .year-list a { display: flex; justify-content: space-between; align-items: center; padding: 14px 4px; text-decoration: none; color: #1a5276; font-size: 1.1rem; font-weight: 600; }
+    .year-list a:hover { background: #f5f9ff; padding-left: 10px; }
+    .count { font-size: 0.85rem; font-weight: 400; color: #666; }
+    .recent-link { display: inline-block; margin-top: 28px; padding: 10px 20px; background: #1a5276; color: #fff; text-decoration: none; border-radius: 4px; font-family: Arial, sans-serif; font-size: 0.9rem; }
+    .empty { color: #888; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Browse Articles by Year</h1>
+    <p class="subtitle">
+      All published scholarly articles indexed for Google Scholar.
+      <a href="/browse/recent/">View recently added articles &rarr;</a>
+    </p>
+
+    {% if years %}
+    <ul class="year-list">
+      {% for y in years %}
+      <li>
+        <a href="/browse/{{ y.year }}/">
+          {{ y.year }}
+          <span class="count">{{ y.count }} article{{ y.count|pluralize }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">No published articles yet.</p>
+    {% endif %}
+
+    <a class="recent-link" href="/browse/recent/">Recently Added (last 14 days)</a>
+  </div>
+</body>
+</html>

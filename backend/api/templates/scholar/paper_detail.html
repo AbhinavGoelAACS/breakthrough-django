@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="{{ article.language|default:'en' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ canonical_url }}">
+
+  {# ------------------------------------------------------------------ #}
+  {# Highwire Press citation meta tags — required by Google Scholar      #}
+  {# ------------------------------------------------------------------ #}
+  <meta name="citation_title" content="{{ clean_title }}">
+
+  {% for author in authors %}
+  <meta name="citation_author" content="{{ author }}">
+  {% endfor %}
+
+  <meta name="citation_publication_date" content="{{ pub_date_meta }}">
+
+  {% if journal_obj %}
+  <meta name="citation_journal_title" content="{{ journal_obj.fld_journal_name }}">
+  {% if journal_obj.issn_ol %}
+  <meta name="citation_issn" content="{{ journal_obj.issn_ol }}">
+  {% endif %}
+  {% if journal_obj.issn_prt %}
+  <meta name="citation_issn" content="{{ journal_obj.issn_prt }}">
+  {% endif %}
+  {% else %}
+  <meta name="citation_journal_title" content="{{ article.journal }}">
+  {% endif %}
+
+  {% if article.volume %}
+  <meta name="citation_volume" content="{{ article.volume }}">
+  {% endif %}
+  {% if article.issue %}
+  <meta name="citation_issue" content="{{ article.issue }}">
+  {% endif %}
+  {% if first_page %}
+  <meta name="citation_firstpage" content="{{ first_page }}">
+  {% endif %}
+  {% if last_page %}
+  <meta name="citation_lastpage" content="{{ last_page }}">
+  {% endif %}
+  {% if article.doi %}
+  <meta name="citation_doi" content="{{ article.doi }}">
+  {% endif %}
+  {% if article.language %}
+  <meta name="citation_language" content="{{ article.language }}">
+  {% endif %}
+
+  <meta name="citation_abstract_html_url" content="{{ canonical_url }}">
+
+  {% if pdf_url %}
+  <meta name="citation_pdf_url" content="{{ pdf_url }}">
+  {% endif %}
+
+  {# ------------------------------------------------------------------ #}
+  {# Standard SEO meta tags                                              #}
+  {# ------------------------------------------------------------------ #}
+  <title>{{ clean_title }} — {% if journal_obj %}{{ journal_obj.fld_journal_name }}{% else %}{{ article.journal }}{% endif %}</title>
+  <meta name="description" content="{{ clean_abstract|truncatechars:300 }}">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: Georgia, "Times New Roman", Times, serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Journal banner */
+    .journal-banner {
+      font-size: 13px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    /* Article title */
+    h1.article-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 0 0 14px;
+      color: #0d1b2a;
+    }
+
+    /* Author list */
+    .authors {
+      font-size: 1rem;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    /* Citation line */
+    .citation-line {
+      font-size: 0.88rem;
+      color: #555;
+      border-left: 3px solid #c8d6e5;
+      padding-left: 10px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* DOI */
+    .doi-line {
+      font-size: 0.88rem;
+      color: #555;
+      margin-bottom: 24px;
+    }
+    .doi-line a { color: #1a5276; }
+
+    /* Abstract */
+    h2.section-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d1b2a;
+      margin: 28px 0 8px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 4px;
+    }
+
+    p.abstract-text {
+      font-size: 1rem;
+      color: #222;
+      margin: 0 0 24px;
+    }
+
+    /* Keywords */
+    .keywords {
+      font-size: 0.9rem;
+      color: #444;
+      margin-bottom: 28px;
+    }
+    .keywords strong { color: #0d1b2a; }
+
+    /* Access badge */
+    .access-badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 20px;
+    }
+    .access-badge.open { background: #d5f5e3; color: #1e8449; }
+    .access-badge.subscription { background: #fdebd0; color: #a04000; }
+
+    /* Action links */
+    .action-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 24px 0 40px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 22px;
+      border-radius: 4px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #1a5276;
+      color: #ffffff;
+    }
+    .btn-secondary {
+      background: #ffffff;
+      color: #1a5276;
+      border: 1px solid #1a5276;
+    }
+
+    /* Footer note */
+    .scholar-note {
+      font-size: 0.8rem;
+      color: #888;
+      border-top: 1px solid #e0e0e0;
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+
+    <!-- Journal / publisher banner -->
+    <p class="journal-banner">
+      {% if journal_obj %}{{ journal_obj.fld_journal_name }}{% else %}{{ article.journal }}{% endif %}
+      {% if article.volume %} &bull; Vol. {{ article.volume }}{% endif %}
+      {% if article.issue %}, No. {{ article.issue }}{% endif %}
+    </p>
+
+    <!-- Article title -->
+    <h1 class="article-title">{{ clean_title }}</h1>
+
+    <!-- Authors -->
+    <p class="authors">
+      {% for author in authors %}{{ author }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+
+    <!-- Access badge -->
+    {% if article.access_type == "open" %}
+    <span class="access-badge open">Open Access</span>
+    {% else %}
+    <span class="access-badge subscription">Subscription</span>
+    {% endif %}
+
+    <!-- Bibliographic citation line -->
+    <div class="citation-line">
+      {% if journal_obj %}{{ journal_obj.fld_journal_name }}{% else %}{{ article.journal }}{% endif %}
+      {% if article.volume %}, Vol. {{ article.volume }}{% endif %}
+      {% if article.issue %}, No. {{ article.issue }}{% endif %}
+      {% if clean_pages %}, pp. {{ clean_pages }}{% endif %}
+      {% if article.date %} ({{ article.date|date:"Y" }}){% endif %}
+    </div>
+
+    <!-- DOI -->
+    {% if article.doi %}
+    <p class="doi-line">
+      DOI: <a href="https://doi.org/{{ article.doi }}" rel="noopener">{{ article.doi }}</a>
+    </p>
+    {% endif %}
+
+    <!-- Abstract — must be immediately visible, no JS, no scroll gate -->
+    <h2 class="section-heading">Abstract</h2>
+    <p class="abstract-text">{{ clean_abstract }}</p>
+
+    <!-- Keywords -->
+    {% if clean_keyword %}
+    <p class="keywords"><strong>Keywords:</strong> {{ clean_keyword }}</p>
+    {% endif %}
+
+    <!-- Action links -->
+    <div class="action-links">
+      <a class="btn btn-primary" href="{{ react_url }}">View Full Article</a>
+      {% if pdf_url %}
+      <a class="btn btn-secondary" href="{{ pdf_url }}" target="_blank" rel="noopener">Download PDF</a>
+      {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <p class="scholar-note">
+      Published by
+      {% if journal_obj %}{{ journal_obj.fld_journal_name }}{% else %}{{ article.journal }}{% endif %}.
+      {% if article.date %}Publication date: {{ article.date|date:"F j, Y" }}.{% endif %}
+      {% if article.doi %}DOI: {{ article.doi }}.{% endif %}
+    </p>
+
+  </div>
+</body>
+</html>

@@ -6,7 +6,7 @@
 }
 
 .journalContainer {
-  padding-top: calc(74px + 1.5rem);
+  padding-top: 1.5rem;
 }
 
 /* Loading & Error States */
@@ -647,7 +647,7 @@
   }
 
   .journalContainer {
-    padding-top: calc(74px + 1rem);
+    padding-top: 1rem;
   }
 
   .title {
@@ -700,7 +700,7 @@
 
 @media (max-width: 480px) {
   .journalContainer {
-    padding-top: calc(74px + 0.75rem);
+    padding-top: 0.75rem;
   }
 
   .pdfViewer {

@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
 from django.db.models import Count, Q
+from pathlib import Path
 
 from .models import User, Paper, OnlineReview, ReviewerInvitation, Journal, ReviewSubmission, PaperPublished, UserRole, Editor, PaperVersion, CopyrightForm, PaperCoAuthor
 from .models import PaperAccessAuditLog
@@ -15,6 +16,60 @@ from .access_utils import (
 
 def _is_admin(user):
     return (getattr(user, 'role', '') or '').lower() == 'admin'
+
+
+_PDF_MAX_BYTES = 5 * 1024 * 1024  # 5 MB — Google Scholar hard limit
+_PDF_MAGIC = b"%PDF-"
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _audit_paper_pdf(paper) -> list[str]:
+    """
+    Resolve *paper.file* on disk and return a list of Scholar compliance
+    warnings (strings).  Never raises — returns an empty list when the
+    file cannot be found (separate storage, CDN, etc.) or passes all checks.
+    """
+    warnings = []
+    raw_path = (paper.file or "").strip()
+    if not raw_path:
+        return ["No PDF file is attached to this paper."]
+
+    # Build candidate paths mirroring ArticlePDFView logic
+    uploads_root = _BACKEND_ROOT.parent / "uploads"
+    normalized = raw_path.replace("\\", "/").lstrip("/")
+    candidates = [
+        Path(raw_path) if Path(raw_path).is_absolute() else None,
+        _BACKEND_ROOT / normalized,
+        uploads_root / normalized,
+        _BACKEND_ROOT.parent / normalized,
+        uploads_root / Path(normalized).name,
+    ]
+    file_path = next(
+        (p for p in candidates if p and p.exists()), None
+    )
+
+    if file_path is None:
+        # File not found locally — skip size/magic checks (may be on NFS/CDN)
+        return []
+
+    size = file_path.stat().st_size
+    if size > _PDF_MAX_BYTES:
+        warnings.append(
+            f"PDF is {size / (1024 * 1024):.1f} MB — Google Scholar requires files under 5 MB."
+        )
+
+    try:
+        with file_path.open("rb") as fh:
+            header = fh.read(5)
+        if header != _PDF_MAGIC:
+            warnings.append(
+                "File does not appear to be a valid PDF (missing %PDF- header). "
+                "Scholar requires text-searchable PDFs."
+            )
+    except OSError:
+        pass
+
+    return warnings
 
 
 def check_editor_role(user):
@@ -1253,6 +1308,11 @@ class EditorPublishPaperView(APIView):
         # Build full author string
         author_str = ", ".join(a["name"] for a in authors_list) if authors_list else (paper.author or "")
 
+        # Audit the paper's PDF for Google Scholar compliance.
+        # This is a non-blocking check — publish proceeds regardless, but warnings
+        # are returned so the editor can request a corrected file from the author.
+        pdf_warnings = _audit_paper_pdf(paper)
+
         # Publish Paper
         published = PaperPublished.objects.create(
             paper_submission_id=paper.id,
@@ -1278,7 +1338,11 @@ class EditorPublishPaperView(APIView):
         
         paper.status = "published"
         paper.save()
-        
+
+        # Run Scholar QA — needs paper_code which is on the Paper object.
+        from api.views_scholar import _run_scholar_qa
+        scholar_qa = _run_scholar_qa(paper.paper_code) if paper.paper_code else None
+
         return Response({
             "success": True,
             "message": "Paper published successfully",
@@ -1286,7 +1350,9 @@ class EditorPublishPaperView(APIView):
                 "id": published.id,
                 "title": paper.title,
                 "doi": published.doi
-            }
+            },
+            "pdf_warnings": pdf_warnings,
+            "scholar_qa": scholar_qa,
         }, status=status.HTTP_200_OK)
 
 
@@ -1456,12 +1522,24 @@ class EditorPublishedPapersView(APIView):
                 if audit.published_paper_id not in audit_map:
                     audit_map[audit.published_paper_id] = audit
 
+        # Batch-fetch paper_code from Paper model (via paper_submission_id)
+        sub_ids = [p.paper_submission_id for p in papers if p.paper_submission_id]
+        paper_code_map = {}
+        if sub_ids:
+            from api.models import Paper as PaperModel
+            for p in PaperModel.objects.filter(id__in=sub_ids).values("id", "paper_code"):
+                paper_code_map[p["id"]] = p["paper_code"]
+
         return Response({
             "total": total,
             "skip": skip,
             "limit": limit,
             "papers": [
-                serialize_published_paper_access(paper, audit_map.get(paper.id))
+                serialize_published_paper_access(
+                    paper,
+                    audit_map.get(paper.id),
+                    paper_code=paper_code_map.get(paper.paper_submission_id, ""),
+                )
                 for paper in papers
             ],
         }, status=status.HTTP_200_OK)

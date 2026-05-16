@@ -6,6 +6,97 @@ import { API_BASE_URL } from '../../api/axios';
 import { formatDateIST } from '../../utils/dateUtils';
 import styles from './PublicPaperView.module.css';
 
+// ---------------------------------------------------------------------------
+// Inject / remove <meta> tags into <head> for Google Scholar and SEO.
+// Using direct DOM manipulation avoids a react-helmet dependency.
+// ---------------------------------------------------------------------------
+function useScholarMeta(article, pdfAbsoluteUrl) {
+  useEffect(() => {
+    if (!article) return;
+
+    // Parse author list — prefer structured co_authors_json, fall back to
+    // the plain comma-separated author string.
+    let authorNames = [];
+    if (article.co_authors_json) {
+      try {
+        const parsed = JSON.parse(article.co_authors_json);
+        if (Array.isArray(parsed)) {
+          authorNames = parsed.map((a) => (a.name || '').trim()).filter(Boolean);
+        }
+      } catch { /* ignore */ }
+    }
+    if (!authorNames.length && article.author) {
+      authorNames = article.author.split(',').map((n) => n.trim()).filter(Boolean);
+    }
+
+    // Publication date in YYYY/MM/DD format.
+    let pubDate = '';
+    if (article.date) {
+      const d = new Date(article.date);
+      if (!isNaN(d)) {
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        pubDate = `${d.getFullYear()}/${mm}/${dd}`;
+      }
+    }
+
+    // First / last page from a range like "101-115".
+    let firstPage = '';
+    let lastPage = '';
+    if (article.pages) {
+      const parts = article.pages.split(/[-–—]/);
+      firstPage = (parts[0] || '').trim();
+      lastPage = (parts[1] || '').trim();
+    }
+
+    // Build the full tag spec.
+    const tags = [
+      // --- mandatory ---
+      { name: 'citation_title',            content: article.title || '' },
+      { name: 'citation_publication_date', content: pubDate },
+      // --- journal ---
+      { name: 'citation_journal_title',    content: article.journal || '' },
+      // --- optional but strongly recommended ---
+      ...(article.volume   ? [{ name: 'citation_volume',    content: article.volume }]    : []),
+      ...(article.issue    ? [{ name: 'citation_issue',     content: article.issue }]     : []),
+      ...(firstPage        ? [{ name: 'citation_firstpage', content: firstPage }]         : []),
+      ...(lastPage         ? [{ name: 'citation_lastpage',  content: lastPage }]          : []),
+      ...(article.doi      ? [{ name: 'citation_doi',       content: article.doi }]       : []),
+      ...(article.language ? [{ name: 'citation_language',  content: article.language }]  : []),
+      // abstract page canonical (this page)
+      { name: 'citation_abstract_html_url', content: window.location.href },
+      // PDF — only for open-access and only when we have a real URL
+      ...(pdfAbsoluteUrl ? [{ name: 'citation_pdf_url', content: pdfAbsoluteUrl }] : []),
+    ];
+
+    // One citation_author tag per author.
+    const authorTags = authorNames.map((name) => ({ name: 'citation_author', content: name }));
+    const allTags = [...tags, ...authorTags];
+
+    // Inject — tag elements are marked with data-scholar so we can remove
+    // them precisely on unmount / article change.
+    const inserted = allTags.map(({ name, content }) => {
+      const el = document.createElement('meta');
+      el.setAttribute('name', name);
+      el.setAttribute('content', content);
+      el.setAttribute('data-scholar', 'true');
+      document.head.appendChild(el);
+      return el;
+    });
+
+    // Update document title to match the paper.
+    const prevTitle = document.title;
+    if (article.title) {
+      document.title = `${article.title}${article.journal ? ` — ${article.journal}` : ''}`;
+    }
+
+    return () => {
+      inserted.forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+      document.title = prevTitle;
+    };
+  }, [article, pdfAbsoluteUrl]);
+}
+
 const PublicPaperView = () => {
   const { id: paperCode } = useParams();
   const navigate = useNavigate();
@@ -211,6 +302,15 @@ const PublicPaperView = () => {
   const isJournalRoute = location.pathname.startsWith('/j/');
   const displayDoi = 'XXXX';
   const displayDoiUrl = `https://doi.org/${displayDoi}`;
+
+  // Absolute PDF URL — only for open-access papers, used by the Scholar meta hook.
+  const pdfAbsoluteUrl =
+    isOpenAccess && article?.id
+      ? `${API_BASE_URL}/api/v1/articles/${article.id}/pdf`
+      : null;
+
+  // Inject citation_* meta tags into <head> for Google Scholar.
+  useScholarMeta(article, pdfAbsoluteUrl);
 
   useEffect(() => {
     if (!article?.id || !isOpenAccess) {

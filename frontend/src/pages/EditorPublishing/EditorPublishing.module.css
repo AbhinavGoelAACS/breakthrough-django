@@ -1085,3 +1085,80 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12) !important;
   margin: 0 auto 24px !important;
 }
+
+/* ── Scholar QA Modal ─────────────────────────────────────────────────── */
+
+.qaSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 16px;
+}
+
+.qaScore {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.qaScholarLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #1565c0;
+  text-decoration: none;
+}
+.qaScholarLink:hover { text-decoration: underline; }
+
+.qaChecklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.qaCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.qaCheck strong { display: block; margin-bottom: 2px; font-size: 0.9rem; }
+.qaCheck p { margin: 0; color: #555; }
+
+.qaCheck_pass { background: #e8f5e9; }
+.qaCheck_warn { background: #fff8e1; }
+.qaCheck_fail { background: #ffebee; }
+
+.qaCheckIcon {
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 20px;
+  padding-top: 1px;
+}
+.qaCheck_pass .qaCheckIcon { color: #2e7d32; }
+.qaCheck_warn .qaCheckIcon { color: #e65100; }
+.qaCheck_fail .qaCheckIcon { color: #c62828; }
+
+.qaSearchConsole {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #e3f2fd;
+  border-radius: 6px;
+  font-size: 0.87rem;
+  color: #1565c0;
+}
+.qaSearchConsole a { color: #1565c0; font-weight: 600; }
+.qaSearchConsole a:hover { text-decoration: underline; }
+

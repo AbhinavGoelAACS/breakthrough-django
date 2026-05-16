@@ -27,10 +27,11 @@ def serialize_access_audit_entry(audit):
     }
 
 
-def serialize_published_paper_access(published_paper, latest_audit=None):
+def serialize_published_paper_access(published_paper, latest_audit=None, paper_code=None):
     return {
         "id": published_paper.id,
         "paper_submission_id": published_paper.paper_submission_id,
+        "paper_code": paper_code or "",
         "title": published_paper.title,
         "author": published_paper.author,
         "journal": published_paper.journal,

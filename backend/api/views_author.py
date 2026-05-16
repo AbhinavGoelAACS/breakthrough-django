@@ -27,6 +27,38 @@ from .jwt_utils import hash_password
 from django.db.models import Q
 
 
+_PDF_MAX_BYTES = 5 * 1024 * 1024  # 5 MB — Google Scholar hard limit
+_PDF_MAGIC = b"%PDF-"
+
+
+def _validate_pdf_upload(django_file) -> str | None:
+    """
+    Validate that *django_file* is a valid, Scholar-compliant PDF.
+    Returns an error message string if invalid, or None if OK.
+    """
+    if django_file is None:
+        return None
+
+    # 1. Content-type check (header sent by browser)
+    ct = getattr(django_file, "content_type", "") or ""
+    if ct and ct not in ("application/pdf", "application/x-pdf"):
+        return "File must be a PDF document."
+
+    # 2. Magic-bytes check — first 5 bytes must be %PDF-
+    django_file.seek(0)
+    header = django_file.read(5)
+    django_file.seek(0)
+    if header != _PDF_MAGIC:
+        return "File does not appear to be a valid PDF (missing %PDF- header)."
+
+    # 3. File size check
+    if django_file.size > _PDF_MAX_BYTES:
+        mb = django_file.size / (1024 * 1024)
+        return f"PDF must be under 5 MB for Google Scholar indexing. Uploaded file is {mb:.1f} MB."
+
+    return None
+
+
 def _generate_paper_code(journal_id):
     """Generate paper code like BAMJ-26-03001 (INITIALS-YY-MMSEQ)."""
     journal = Journal.objects.filter(fld_id=journal_id).first()
@@ -110,6 +142,16 @@ class AuthorPaperResubmitView(APIView):
 
         if not clean_revision_file:
             return Response({"detail": "Clean revision manuscript is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # PDF compliance checks — validate before touching the filesystem.
+        for label, f in (
+            ("Clean revision", clean_revision_file),
+            ("Track-changes", track_changes_file),
+            ("Title page", title_page_file),
+        ):
+            err = _validate_pdf_upload(f)
+            if err:
+                return Response({"detail": f"{label}: {err}"}, status=status.HTTP_400_BAD_REQUEST)
 
         backend_root = Path(__file__).resolve().parent.parent.parent
         upload_dir = backend_root / "uploads" / "papers" / f"user_{user.id}"
@@ -510,6 +552,12 @@ class SubmitPaperView(APIView):
                 {"detail": "Missing required fields"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # PDF compliance checks — reject early so the author corrects before any DB write.
+        for label, f in (("Title page", title_page_file), ("Blinded manuscript", blinded_file)):
+            err = _validate_pdf_upload(f)
+            if err:
+                return Response({"detail": f"{label}: {err}"}, status=status.HTTP_400_BAD_REQUEST)
 
         if str(terms_accepted).lower() not in ("true", "1", "yes", "on"):
             return Response(
