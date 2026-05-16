@@ -8,7 +8,7 @@
   min-height: 100vh;
   background: var(--j-surface-container-lowest, #f6faf3);
   font-family: var(--font-body, 'Manrope', sans-serif);
-  padding-top: 72px;
+  padding-top: 0;
 }
 
 /* ── Loading ── */

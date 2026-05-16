@@ -30,7 +30,7 @@
 .gl-sidebar {
   width: 220px;
   flex-shrink: 0;
-  padding-top: 4rem;
+  padding-top: 1.5rem;
 }
 
 .gl-sidebar-sticky {
@@ -140,7 +140,7 @@
 .gl-main {
   flex: 1;
   min-width: 0;
-  padding-top: 4rem;
+  padding-top: 1.5rem;
   padding-bottom: 4rem;
 }
 
@@ -716,6 +716,9 @@
     padding-left: 1.5rem;
     padding-right: 1.5rem;
     gap: 0;
+  }
+  .gl-main {
+    flex-basis: 100%;
   }
   .gl-title {
     font-size: 2.5rem;

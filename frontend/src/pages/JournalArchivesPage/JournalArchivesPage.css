@@ -37,7 +37,7 @@
 .archives-hero {
   background: var(--j-surface, #faf9f4);
   border-bottom: 1px solid var(--j-outline-variant, #c4c8b9);
-  padding: 4rem 3rem 3.5rem;
+  padding: 2rem 3rem 3.5rem;
 }
 
 .archives-hero-grid {

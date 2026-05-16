@@ -22,7 +22,7 @@
 .jap-main {
   max-width: 1920px;
   margin: 0 auto;
-  padding: 72px 3rem 8rem;
+  padding: 1.5rem 3rem 8rem;
 }
 
 /* ============================================
@@ -497,7 +497,7 @@
 /* lg: 1024px+ */
 @media (min-width: 1024px) {
   .jap-main {
-    padding: 4rem 4rem 8rem;
+    padding: 1.5rem 4rem 8rem;
   }
 
   .jap-hero-title {
