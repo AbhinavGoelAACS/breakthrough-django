@@ -59,6 +59,8 @@ const EMPTY_AUTHOR = {
 };
 
 const MAX_AUTHORS = 10;
+const MAX_FILE_SIZE_MB = 20; // 20MB per file
+const MAX_TOTAL_UPLOAD_MB = 35; // 35MB total for both files
 
 export const SubmitPaperForm = () => {
   const navigate = useNavigate();
@@ -404,9 +406,26 @@ export const SubmitPaperForm = () => {
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      showError('File size must not exceed 50MB');
+    const fileSizeMB = file.size / 1024 / 1024;
+    if (fileSizeMB > MAX_FILE_SIZE_MB) {
+      showError(`File size must not exceed ${MAX_FILE_SIZE_MB}MB (current: ${fileSizeMB.toFixed(2)}MB)`);
       return;
+    }
+
+    // Check total upload size when adding second file
+    let otherFile = null;
+    if (fileType === 'titlePage') {
+      otherFile = formData.blindedManuscriptFile;
+    } else if (fileType === 'blindedManuscript') {
+      otherFile = formData.titlePageFile;
+    }
+    
+    if (otherFile) {
+      const totalSizeMB = (file.size + otherFile.size) / 1024 / 1024;
+      if (totalSizeMB > MAX_TOTAL_UPLOAD_MB) {
+        showError(`Combined file size must not exceed ${MAX_TOTAL_UPLOAD_MB}MB (current: ${totalSizeMB.toFixed(2)}MB)`);
+        return;
+      }
     }
 
     if (fileType === 'titlePage') {
@@ -553,6 +572,15 @@ export const SubmitPaperForm = () => {
   const handleSubmit = async () => {
     if (!validateStep(4)) return;
 
+    // Final validation of total upload size
+    if (formData.titlePageFile && formData.blindedManuscriptFile) {
+      const totalSizeMB = (formData.titlePageFile.size + formData.blindedManuscriptFile.size) / 1024 / 1024;
+      if (totalSizeMB > MAX_TOTAL_UPLOAD_MB) {
+        showError(`Combined file size (${totalSizeMB.toFixed(2)}MB) exceeds the ${MAX_TOTAL_UPLOAD_MB}MB limit. Please use smaller files.`);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const response = await acsApi.author.submitPaper({
@@ -577,8 +605,16 @@ export const SubmitPaperForm = () => {
       setTimeout(() => navigate('/author'), 1500);
     } catch (err) {
       console.error('Submit error:', err);
-      const errorMsg = err.response?.data?.detail || err.message || 'Failed to submit paper';
-      showError(errorMsg);
+      let errorMsg = err.response?.data?.detail || err.message || 'Failed to submit paper';
+      
+      // Provide specific guidance for network errors
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        errorMsg = 'Connection lost during upload. This may be due to: (1) Large file sizes - try using files under 15MB each, (2) Network timeout - check your connection, (3) Server limits - contact support if issue persists.';
+      } else if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        errorMsg = 'Upload timed out. Please try with smaller files or check your internet connection.';
+      }
+      
+      showError(errorMsg, 8000);
     } finally {
       setLoading(false);
     }
@@ -1124,7 +1160,7 @@ export const SubmitPaperForm = () => {
                 <li><strong>Title Page:</strong> Must include paper title, all author names, affiliations, corresponding author email, and any acknowledgments.</li>
                 <li><strong>Blinded Manuscript:</strong> Must NOT contain any identifying information - remove author names, affiliations, and self-citations that reveal identity.</li>
                 <li><strong>File Format:</strong> PDF is preferred. Microsoft Word (.doc, .docx) is also accepted.</li>
-                <li><strong>File Size:</strong> Maximum 50MB per file.</li>
+                <li><strong>File Size:</strong> Maximum 20MB per file, 35MB total for both files.</li>
                 <li><strong>Page Limit:</strong> Research articles should not exceed 25 pages including references and figures.</li>
                 <li><strong>References:</strong> Use consistent citation style (APA, IEEE, or journal-specific format).</li>
                 <li><strong>Figures & Tables:</strong> Include high-resolution images (minimum 300 DPI) embedded in the manuscript.</li>
@@ -1174,7 +1210,7 @@ export const SubmitPaperForm = () => {
                       Browse Files
                     </span>
                     <p className={styles.uploadHint}>
-                      PDF, DOC, DOCX • Max 50MB
+                      PDF, DOC, DOCX • Max 20MB
                     </p>
                   </>
                 )}
@@ -1225,7 +1261,7 @@ export const SubmitPaperForm = () => {
                       Browse Files
                     </span>
                     <p className={styles.uploadHint}>
-                      PDF, DOC, DOCX • Max 50MB
+                      PDF, DOC, DOCX • Max 20MB
                     </p>
                   </>
                 )}

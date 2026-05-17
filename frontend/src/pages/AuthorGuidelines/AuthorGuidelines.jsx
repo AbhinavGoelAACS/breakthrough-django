@@ -34,7 +34,7 @@ const AuthorGuidelines = () => {
           <div className={styles.overviewCard}>
             <span className="material-symbols-rounded">description</span>
             <h3>Accepted Formats</h3>
-            <p>PDF, DOC, DOCX files up to 50MB</p>
+            <p>PDF, DOC, DOCX files up to 20MB per file</p>
           </div>
           <div className={styles.overviewCard}>
             <span className="material-symbols-rounded">schedule</span>

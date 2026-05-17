@@ -513,9 +513,9 @@ const PaperDetailsPage = () => {
         showError(`${label}: Only .docx (Word) documents are allowed`, 4000);
         return false;
       }
-      // 50MB limit
-      if (file.size > 50 * 1024 * 1024) {
-        showError(`${label}: File size must be less than 50MB`, 4000);
+      // 20MB limit per file
+      if (file.size > 20 * 1024 * 1024) {
+        showError(`${label}: File size must be less than 20MB`, 4000);
         return false;
       }
       return true;

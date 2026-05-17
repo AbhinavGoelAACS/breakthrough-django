@@ -167,10 +167,20 @@ apiClient.interceptors.response.use(
 export function getErrorMessage(error) {
   if (!error.response) {
     // Network error / server unreachable
+    // Check if it's likely an upload-related connection issue
+    if (error.code === 'ERR_NETWORK' || error.code === 'ECONNRESET') {
+      return 'Connection reset during request. If uploading files, try using smaller files (under 15MB each) or check your network connection.';
+    }
+    if (error.code === 'ECONNABORTED') {
+      return 'Request timed out. This may be due to large file uploads or slow network connection.';
+    }
     return 'Unable to connect to the server. Please check your internet connection and try again.';
   }
   const status = error.response.status;
   const detail = error.response.data?.detail;
+  if (status === 413) {
+    return 'File upload too large. Please use smaller files (maximum 20MB per file, 35MB total).';
+  }
   if (status === 503) {
     return detail || 'Service temporarily unavailable. Please try again later.';
   }
