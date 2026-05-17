@@ -90,10 +90,7 @@ export const DashboardPage = () => {
           <div className={styles.heroCard}>
             <h1 className={styles.heroTitle}>Breakthrough Publishers India</h1>
             <p className={styles.heroSubtitle}>
-              Advancing the frontiers of scholarly communication through rigorous peer review and global archival excellence.
-            </p>
-            <p className={styles.heroBody}>
-              We provide a platform for researchers to disseminate groundbreaking discoveries that shape the future of their respective disciplines.
+              Advancing the frontiers of scholarly communication through rigorous peer review and global archival excellence.  We provide a platform for researchers to disseminate groundbreaking discoveries that shape the future of their respective disciplines.
             </p>
           </div>
         </div>
