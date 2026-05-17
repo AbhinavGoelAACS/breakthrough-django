@@ -89,7 +89,6 @@ export const DashboardPage = () => {
         <div className={styles.heroContent}>
           <div className={styles.heroCard}>
             <h1 className={styles.heroTitle}>Breakthrough Publishers India</h1>
-            <div className={styles.heroDivider} />
             <p className={styles.heroSubtitle}>
               Advancing the frontiers of scholarly communication through rigorous peer review and global archival excellence.
             </p>
