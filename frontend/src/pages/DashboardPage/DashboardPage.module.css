@@ -82,8 +82,7 @@
 }
 
 .heroSubtitle {
-  font-family: var(--font-headline, 'Newsreader', serif);
-  font-style: italic;
+  font-family: var(--font-body, 'Manrope', sans-serif);
   font-size: 1.125rem;
   color: var(--j-on-surface-variant, #44483e);
   margin: 0 0 0.75rem;
