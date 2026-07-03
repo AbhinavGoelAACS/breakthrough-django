@@ -6,12 +6,17 @@ from django.db import connection
 REQUIRED_COLUMNS = [
     ("user", "profile_picture", "VARCHAR(500) NULL"),
     ("paper", "paper_references", "LONGTEXT NULL"),
+    # Automated reviewer reminders (management command: send_review_reminders)
+    ("reviewer_invitation", "reminder_count", "INT NOT NULL DEFAULT 0"),
+    ("reviewer_invitation", "last_reminder_at", "DATETIME NULL"),
+    ("online_review", "reminder_count", "INT NOT NULL DEFAULT 0"),
+    ("online_review", "last_reminder_at", "DATETIME NULL"),
 ]
 
 # For existing deployments, normalize text columns to utf8mb4 so Unicode input
 # (for example Turkish characters) does not fail during inserts.
 REQUIRED_COLUMN_ALTERS = [
-    ("paper", "paper_references", "LONGTEXT NULL CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"),
+    ("paper", "paper_references", "LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL"),
 ]
 
 

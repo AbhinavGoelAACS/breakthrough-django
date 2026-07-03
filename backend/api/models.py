@@ -284,6 +284,9 @@ class OnlineReview(models.Model):
     review_submission_id = models.IntegerField(null=True, blank=True)
     invitation_id = models.IntegerField(null=True, blank=True)
     due_date = models.DateTimeField(null=True, blank=True)
+    # Automated review reminders (see management command send_review_reminders)
+    reminder_count = models.IntegerField(default=0)
+    last_reminder_at = models.DateTimeField(null=True, blank=True)
 
 
 class Editor(models.Model):
@@ -328,6 +331,9 @@ class ReviewerInvitation(models.Model):
     is_external = models.BooleanField(default=False)
     auto_assign = models.BooleanField(default=False)
     for_version = models.IntegerField(null=True, blank=True)
+    # Automated invitation reminders (see management command send_review_reminders)
+    reminder_count = models.IntegerField(default=0)
+    last_reminder_at = models.DateTimeField(null=True, blank=True)
 
 
 class ReviewSubmission(models.Model):

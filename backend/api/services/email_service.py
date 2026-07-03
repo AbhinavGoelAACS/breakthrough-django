@@ -360,6 +360,144 @@ def send_reviewer_invitation_email(invitation, paper, journal_name, is_external=
     return success
 
 
+def send_reviewer_invitation_reminder(invitation, paper, journal_name, is_final=False):
+    """
+    Remind a reviewer who has not yet responded to a pending review invitation.
+
+    *is_final* marks the last reminder before the invitation expires.
+    """
+    if not invitation.reviewer_email:
+        return False
+
+    reviewer_name = invitation.reviewer_name or "Reviewer"
+    invitation_url = f"{_get_frontend_url()}/invitations/{invitation.invitation_token}"
+    paper_id_display = paper.paper_code or paper.id
+
+    if is_final:
+        subject = f"Final reminder — please respond to review invitation: {paper.title}"
+        opening = (
+            "This is a final reminder that your invitation to review the manuscript below is about to expire. "
+            "If you are able to review, please accept soon so we can grant you access to the paper."
+        )
+    else:
+        subject = f"Reminder — invitation to review: {paper.title}"
+        opening = (
+            "We recently invited you to review the manuscript below and have not yet received your response. "
+            "We would be grateful if you could let us know whether you are able to review."
+        )
+
+    plain_body = (
+        f"Dear {reviewer_name},\n\n"
+        f"{opening}\n\n"
+        f"Journal: {journal_name}\n"
+        f"Title: {paper.title}\n"
+        f"Manuscript ID: {paper_id_display}\n\n"
+        f"To accept or decline this invitation, please use the following link:\n{invitation_url}\n\n"
+    )
+    if invitation.token_expiry:
+        plain_body += f"Please respond by: {invitation.token_expiry.strftime('%B %d, %Y')}\n\n"
+    plain_body += (
+        "If you are unable to review, please decline promptly so we can find an alternative reviewer.\n\n"
+        "Thank you for your contribution to the peer review process.\n\n"
+        "Best regards,\n"
+        "The Editorial Team\n"
+        f"{journal_name}\n"
+        "BreakThrough Publishers\n"
+        "\nThis invitation and manuscript details are confidential.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
+    )
+
+    success, error = send_email(
+        recipient_email=invitation.reviewer_email,
+        subject=subject,
+        plain_body=plain_body,
+    )
+    if not success:
+        logger.error("Failed to send invitation reminder to %s: %s", invitation.reviewer_email, error)
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=invitation.reviewer_email,
+        recipient_name=reviewer_name,
+        subject=subject,
+        body=plain_body,
+        email_type='reviewer_invitation_reminder',
+        sender_role='system',
+        status_at_send=getattr(paper, 'status', None),
+        delivery_status='sent' if success else 'failed',
+    )
+    return success
+
+
+def send_review_due_reminder(paper, journal_name, reviewer_email, reviewer_name,
+                             due_date=None, is_overdue=False):
+    """
+    Remind a reviewer who accepted an assignment but has not yet submitted the review.
+
+    *is_overdue* switches wording between an upcoming-deadline nudge and an
+    overdue nudge.
+    """
+    if not reviewer_email:
+        return False
+
+    reviewer_name = reviewer_name or "Reviewer"
+    dashboard_url = f"{_get_frontend_url()}/reviewer-dashboard"
+    paper_id_display = paper.paper_code or paper.id
+
+    if is_overdue:
+        subject = f"Overdue — review pending for: {paper.title}"
+        opening = (
+            "Our records show that your review for the manuscript below is now past its due date and "
+            "has not yet been submitted. Please complete it at your earliest convenience."
+        )
+    else:
+        subject = f"Reminder — review due soon for: {paper.title}"
+        opening = (
+            "This is a friendly reminder that your review for the manuscript below is due soon "
+            "and has not yet been submitted."
+        )
+
+    plain_body = (
+        f"Dear {reviewer_name},\n\n"
+        f"{opening}\n\n"
+        f"Journal: {journal_name}\n"
+        f"Title: {paper.title}\n"
+        f"Manuscript ID: {paper_id_display}\n"
+    )
+    if due_date:
+        plain_body += f"Due date: {due_date.strftime('%B %d, %Y')}\n"
+    plain_body += (
+        f"\nTo access the manuscript and submit your review, please log in to your reviewer dashboard:\n{dashboard_url}\n\n"
+        "If you are no longer able to complete this review, please contact the editorial office so we can make alternative arrangements.\n\n"
+        "Thank you for your contribution to the peer review process.\n\n"
+        "Best regards,\n"
+        "The Editorial Team\n"
+        f"{journal_name}\n"
+        "BreakThrough Publishers\n"
+        "\nThis manuscript and its details are confidential.\n"
+        "For privacy and data policy, see: https://breakthroughpublishers.com/privacy-policy\n"
+    )
+
+    success, error = send_email(
+        recipient_email=reviewer_email,
+        subject=subject,
+        plain_body=plain_body,
+    )
+    if not success:
+        logger.error("Failed to send review-due reminder to %s: %s", reviewer_email, error)
+    _log_correspondence(
+        paper_id=paper.id,
+        recipient_email=reviewer_email,
+        recipient_name=reviewer_name,
+        subject=subject,
+        body=plain_body,
+        email_type='review_due_reminder',
+        sender_role='system',
+        status_at_send=getattr(paper, 'status', None),
+        delivery_status='sent' if success else 'failed',
+    )
+    return success
+
+
 def notify_editors_new_submission(paper, author, journal):
     """
     Notify all editors of a journal that a new paper has been submitted.
