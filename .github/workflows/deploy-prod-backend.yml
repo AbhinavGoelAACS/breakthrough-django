@@ -74,6 +74,15 @@ jobs:
           test -n "$DB_HOST" || { echo "DB_HOST is empty"; exit 1; }
           test -n "$DB_PORT" || { echo "DB_PORT is empty"; exit 1; }
 
+          # Strip stray whitespace/newlines a pasted secret may carry. DB
+          # identifiers never contain internal whitespace, so removing all of it
+          # is safe and prevents a trailing newline from (a) failing the guard
+          # below and (b) polluting the generated env file.
+          DB_NAME="$(printf '%s' "$DB_NAME" | tr -d '[:space:]')"
+          DB_USER="$(printf '%s' "$DB_USER" | tr -d '[:space:]')"
+          DB_HOST="$(printf '%s' "$DB_HOST" | tr -d '[:space:]')"
+          DB_PORT="$(printf '%s' "$DB_PORT" | tr -d '[:space:]')"
+
           # Guard: a prod deploy must target the PROD database. The value comes
           # from the 'prod' GitHub Environment's DB_NAME secret. If that secret
           # is missing/wrong it silently falls back to the dev DB
@@ -81,7 +90,7 @@ jobs:
           # loudly instead. Update EXPECTED_PROD_DB if the prod DB is ever renamed.
           EXPECTED_PROD_DB="aacsjour_breakthroughProd"
           if [ "$DB_NAME" != "$EXPECTED_PROD_DB" ]; then
-            echo "::error::Prod deploy resolved DB_NAME='$DB_NAME' but expected '$EXPECTED_PROD_DB'. Fix DB_NAME in the repo's 'prod' GitHub Environment (Settings -> Environments -> prod)."
+            echo "::error::Prod deploy DB_NAME does not match the expected prod database. Check DB_NAME in the repo's 'prod' GitHub Environment (Settings -> Environments -> prod) for the wrong value or a stray newline/whitespace."
             exit 1
           fi
 
