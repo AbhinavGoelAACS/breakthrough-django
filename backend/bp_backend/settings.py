@@ -28,13 +28,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from file before resolving runtime mode.
 # Prefer production env file when present, otherwise fall back to a
 # workflow-generated runtime env file, then legacy .env.
+#
+# The workflow-generated files (.env.production / runtime.env) are the single
+# source of truth for the server they were deployed to, so they MUST override
+# any variables already present in the process environment. On cPanel/Passenger,
+# the "Setup Python App" UI injects its own env vars into os.environ before
+# Django loads — if those hold stale dev DB credentials, override=False would
+# make production silently keep using the dev database on every restart despite
+# the deploy writing the correct prod values. override=True prevents that.
+# The local ``.env`` is a developer convenience and defers to explicitly-set
+# shell variables (override=False).
 prod_env_path = BASE_DIR / ".env.production"
 runtime_env_path = BASE_DIR / "runtime.env"
 default_env_path = BASE_DIR / ".env"
 if prod_env_path.exists():
-    load_dotenv(prod_env_path, override=False)
+    load_dotenv(prod_env_path, override=True)
 elif runtime_env_path.exists():
-    load_dotenv(runtime_env_path, override=False)
+    load_dotenv(runtime_env_path, override=True)
 elif default_env_path.exists():
     load_dotenv(default_env_path, override=False)
 
