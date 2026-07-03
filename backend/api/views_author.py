@@ -27,36 +27,57 @@ from .jwt_utils import hash_password
 from django.db.models import Q
 
 
-_PDF_MAX_BYTES = 5 * 1024 * 1024  # 5 MB — Google Scholar hard limit
+_PDF_MAX_BYTES = 5 * 1024 * 1024   # 5 MB — Google Scholar hard limit
+_DOC_MAX_BYTES = 20 * 1024 * 1024  # 20 MB — matches frontend limit for Word files
 _PDF_MAGIC = b"%PDF-"
+_ZIP_MAGIC = b"PK\x03\x04"                           # .docx (OOXML) is a zip archive
+_OLE_MAGIC = b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"     # legacy .doc (OLE2 compound file)
+
+_PDF_CONTENT_TYPES = ("application/pdf", "application/x-pdf")
+_DOC_CONTENT_TYPES = (
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+)
 
 
-def _validate_pdf_upload(django_file) -> str | None:
+def _validate_document_upload(django_file) -> str | None:
     """
-    Validate that *django_file* is a valid, Scholar-compliant PDF.
-    Returns an error message string if invalid, or None if OK.
+    Validate that *django_file* is an accepted manuscript document.
+
+    Accepts PDF (Scholar-compliant, under 5 MB) or Microsoft Word (.doc/.docx,
+    under 20 MB). Returns an error message string if invalid, or None if OK.
     """
     if django_file is None:
         return None
 
-    # 1. Content-type check (header sent by browser)
     ct = getattr(django_file, "content_type", "") or ""
-    if ct and ct not in ("application/pdf", "application/x-pdf"):
-        return "File must be a PDF document."
 
-    # 2. Magic-bytes check — first 5 bytes must be %PDF-
+    # Sniff magic bytes to determine the real file type (browsers are unreliable).
     django_file.seek(0)
-    header = django_file.read(5)
+    header = django_file.read(8)
     django_file.seek(0)
-    if header != _PDF_MAGIC:
+
+    is_pdf = header.startswith(_PDF_MAGIC)
+    is_docx = header.startswith(_ZIP_MAGIC)
+    is_doc = header.startswith(_OLE_MAGIC)
+
+    if is_pdf:
+        if django_file.size > _PDF_MAX_BYTES:
+            mb = django_file.size / (1024 * 1024)
+            return f"PDF must be under 5 MB for Google Scholar indexing. Uploaded file is {mb:.1f} MB."
+        return None
+
+    if is_docx or is_doc:
+        if django_file.size > _DOC_MAX_BYTES:
+            mb = django_file.size / (1024 * 1024)
+            return f"Word document must be under 20 MB. Uploaded file is {mb:.1f} MB."
+        return None
+
+    # Not recognised by magic bytes — fall back to the browser-supplied type for
+    # a clearer message, otherwise reject.
+    if ct in _PDF_CONTENT_TYPES:
         return "File does not appear to be a valid PDF (missing %PDF- header)."
-
-    # 3. File size check
-    if django_file.size > _PDF_MAX_BYTES:
-        mb = django_file.size / (1024 * 1024)
-        return f"PDF must be under 5 MB for Google Scholar indexing. Uploaded file is {mb:.1f} MB."
-
-    return None
+    return "File must be a PDF or Word (.doc, .docx) document."
 
 
 def _generate_paper_code(journal_id):
@@ -143,13 +164,13 @@ class AuthorPaperResubmitView(APIView):
         if not clean_revision_file:
             return Response({"detail": "Clean revision manuscript is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # PDF compliance checks — validate before touching the filesystem.
+        # Document compliance checks — validate before touching the filesystem.
         for label, f in (
             ("Clean revision", clean_revision_file),
             ("Track-changes", track_changes_file),
             ("Title page", title_page_file),
         ):
-            err = _validate_pdf_upload(f)
+            err = _validate_document_upload(f)
             if err:
                 return Response({"detail": f"{label}: {err}"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -553,9 +574,9 @@ class SubmitPaperView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # PDF compliance checks — reject early so the author corrects before any DB write.
+        # Document compliance checks — reject early so the author corrects before any DB write.
         for label, f in (("Title page", title_page_file), ("Blinded manuscript", blinded_file)):
-            err = _validate_pdf_upload(f)
+            err = _validate_document_upload(f)
             if err:
                 return Response({"detail": f"{label}: {err}"}, status=status.HTTP_400_BAD_REQUEST)
 

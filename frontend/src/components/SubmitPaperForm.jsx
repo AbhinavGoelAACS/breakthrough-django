@@ -401,7 +401,12 @@ export const SubmitPaperForm = () => {
     if (!file) return;
 
     const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!validTypes.includes(file.type)) {
+    const validExtensions = ['.pdf', '.doc', '.docx'];
+    const hasValidType = validTypes.includes(file.type);
+    const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    // Browsers report unreliable MIME types for Word files (often empty), so
+    // accept the file if either the MIME type or the extension is valid.
+    if (!hasValidType && !hasValidExtension) {
       showError('Only PDF and Word documents are allowed');
       return;
     }
