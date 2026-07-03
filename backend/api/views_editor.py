@@ -81,6 +81,30 @@ def check_editor_role(user):
         return True
     return False
 
+def grant_reviewer_role(user):
+    """
+    Ensure *user* has an approved reviewer role.
+
+    Accepting a review invitation should be enough to make someone a reviewer —
+    they must not have to separately apply for the role. Adds the approved
+    reviewer entry in UserRole (which is what gates reviewer access) without
+    touching the user's primary ``role``, so existing authors/editors keep their
+    original access. Idempotent: safe to call on users who are already reviewers.
+    """
+    from django.utils import timezone as _tz
+
+    if not user:
+        return
+
+    if not UserRole.objects.filter(user=user, role="reviewer").exists():
+        UserRole.objects.create(
+            user=user,
+            role="reviewer",
+            status="approved",
+            requested_at=_tz.now(),
+        )
+
+
 def get_editor_journal_ids(user):
     if _is_admin(user):
         return list(Journal.objects.values_list('fld_id', flat=True))
@@ -1914,12 +1938,16 @@ class AcceptInvitationView(APIView):
                 "message": "Please log in or register to accept",
                 "requires_registration": True
             }, status=status.HTTP_200_OK)
-            
+
+        # Accepting the invitation makes this user a reviewer — grant the role now
+        # so they don't have to separately apply for it.
+        grant_reviewer_role(user)
+
         existing_review = OnlineReview.objects.filter(
             paper_id=str(invitation.paper_id),
             reviewer_id=str(user.id)
         ).first()
-        
+
         if existing_review:
             return Response({"detail": "You are already assigned as a reviewer."}, status=status.HTTP_409_CONFLICT)
             
@@ -2003,20 +2031,7 @@ class RegisterAcceptInvitationView(APIView):
             existing_user.lname = lname
             if organization:
                 existing_user.organisation = organization
-            if existing_user.role != "reviewer":
-                existing_user.role = "reviewer"
             existing_user.save()
-
-            # Ensure reviewer role exists
-            from django.utils import timezone as tz2
-            if not UserRole.objects.filter(user=existing_user, role="reviewer").exists():
-                UserRole.objects.create(
-                    user=existing_user,
-                    role="reviewer",
-                    status="approved",
-                    requested_at=tz2.now(),
-                )
-
             new_user = existing_user
         else:
             new_user = User.objects.create(
@@ -2029,12 +2044,8 @@ class RegisterAcceptInvitationView(APIView):
                 added_on=tz.now(),
             )
 
-            UserRole.objects.create(
-                user=new_user,
-                role="reviewer",
-                status="approved",
-                requested_at=tz.now(),
-            )
+        # Grant the reviewer role for both new and existing accounts.
+        grant_reviewer_role(new_user)
         
         # Check for duplicate review assignment
         existing_review = OnlineReview.objects.filter(
