@@ -38,6 +38,7 @@ jobs:
             --exclude '*.pyc' \
             --exclude '*.pyo' \
             --exclude '.env' \
+            --exclude '.htaccess' \
             --exclude '.git' \
             --exclude 'db.sqlite3' \
             --exclude '*.log' \
@@ -72,6 +73,18 @@ jobs:
           test -n "$DB_PASSWORD" || { echo "DB_PASSWORD is empty"; exit 1; }
           test -n "$DB_HOST" || { echo "DB_HOST is empty"; exit 1; }
           test -n "$DB_PORT" || { echo "DB_PORT is empty"; exit 1; }
+
+          # Guard: a prod deploy must target the PROD database. The value comes
+          # from the 'prod' GitHub Environment's DB_NAME secret. If that secret
+          # is missing/wrong it silently falls back to the dev DB
+          # (aacsjour_breakthroughPy) and production ends up on dev data. Fail
+          # loudly instead. Update EXPECTED_PROD_DB if the prod DB is ever renamed.
+          EXPECTED_PROD_DB="aacsjour_breakthroughProd"
+          if [ "$DB_NAME" != "$EXPECTED_PROD_DB" ]; then
+            echo "::error::Prod deploy resolved DB_NAME='$DB_NAME' but expected '$EXPECTED_PROD_DB'. Fix DB_NAME in the repo's 'prod' GitHub Environment (Settings -> Environments -> prod)."
+            exit 1
+          fi
+
           test -n "$DJANGO_SECRET_KEY" || { echo "DJANGO_SECRET_KEY is empty"; exit 1; }
           test -n "$EMAIL_BACKEND" || { echo "EMAIL_BACKEND is empty"; exit 1; }
           test -n "$EMAIL_HOST" || { echo "EMAIL_HOST is empty"; exit 1; }
@@ -123,6 +136,7 @@ jobs:
             **/db.sqlite3
             **/*.log
             **/.DS_Store
+            **/.htaccess
 
       - name: Trigger cPanel Python App Restart (via SSH)
         if: ${{ env.HAS_SSH_KEY == 'true' }}

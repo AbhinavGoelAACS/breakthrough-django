@@ -42,6 +42,7 @@ jobs:
             --exclude '*.pyc' \
             --exclude '*.pyo' \
             --exclude '.env' \
+            --exclude '.htaccess' \
             --exclude '.git' \
             --exclude 'db.sqlite3' \
             --exclude '*.log' \
@@ -128,6 +129,7 @@ jobs:
             **/db.sqlite3
             **/*.log
             **/.DS_Store
+            **/.htaccess
             
       - name: Trigger cPanel Python App Restart (via SSH)
         if: ${{ env.HAS_SSH_KEY == 'true' }}

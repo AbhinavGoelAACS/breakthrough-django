@@ -49,6 +49,7 @@ jobs:
             --exclude '*.pyc' \
             --exclude '*.pyo' \
             --exclude '.env' \
+            --exclude '.htaccess' \
             --exclude '.git' \
             --exclude 'db.sqlite3' \
             --exclude '*.log' \
@@ -124,7 +125,8 @@ jobs:
             **/venv/**
             **/__pycache__/**
             **/*.pyc
-            
+            **/.htaccess
+
       - name: Post-deployment setup via SSH
         if: ${{ env.HAS_SSH_KEY == 'true' }}
         env:
