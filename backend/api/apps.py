@@ -15,10 +15,11 @@ class ApiConfig(AppConfig):
             except Exception:
                 pass
 
-            # Start the in-process reviewer-reminder scheduler (no cron needed).
-            try:
-                from api.services.reminder_scheduler import start_reminder_scheduler
-                start_reminder_scheduler()
-            except Exception:
-                import logging
-                logging.getLogger(__name__).exception("Failed to start reminder scheduler")
+        # NOTE: Reviewer reminders are intentionally NOT run from an in-process
+        # thread here. On cPanel/CloudLinux shared hosting each Passenger worker
+        # runs under a tight process/thread (LVE nproc) limit, and a permanent
+        # background thread + held MySQL connection per worker pushed prod into a
+        # boot/kill churn loop (workers SIGTERM'd, respawned, repeat).
+        # Run reminders from a cron job instead:
+        #     * * (hourly) python manage.py send_review_reminders
+        # See DEPLOYMENT.md.

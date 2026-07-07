@@ -278,6 +278,25 @@ touch ~/public_html/backend/tmp/restart.txt
 
 ---
 
+## Automated reviewer reminders (cron)
+
+Reviewer reminder emails are sent by the `send_review_reminders` management
+command. **Do not** run them from an in-process server thread — on cPanel/
+CloudLinux shared hosting a permanent background thread per Passenger worker
+exceeds the LVE process/thread limit and gets the workers SIGTERM-killed in a
+boot/kill loop.
+
+Set up a cPanel **Cron Job** (cPanel → Advanced → Cron Jobs), hourly:
+
+```
+0 * * * * /home2/aacsjour/virtualenv/prodBTPBknd/3.10/bin/python /home2/aacsjour/prodBTPBknd/manage.py send_review_reminders >> /home2/aacsjour/prodBTPBknd/reminders.log 2>&1
+```
+
+Sends are throttled per-record (see `MIN_HOURS_BETWEEN_REMINDERS`), so running
+hourly never produces duplicate emails. Preview with `--dry-run`.
+
+---
+
 ## Support
 
 If you encounter issues:

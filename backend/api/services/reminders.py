@@ -1,10 +1,9 @@
 """
 Core logic for automated reviewer reminders.
 
-This is shared by:
-  * the in-process scheduler (api/services/reminder_scheduler.py), which runs it
-    automatically on a timer inside the running server, and
-  * the ``send_review_reminders`` management command, for manual/dry-run use.
+The entry point is the ``send_review_reminders`` management command, run from
+cron in production (hourly). Not run from an in-process server thread — see
+api/services/reminder_scheduler.py for why.
 
 Two cases are handled:
 

@@ -1,9 +1,10 @@
 """
-Manually run the reviewer-reminder cycle.
+Run the reviewer-reminder cycle.
 
-Reminders normally run automatically inside the server via the in-process
-scheduler (api/services/reminder_scheduler.py) — no cron is required. This
-command exists for manual/one-off runs and for previewing with ``--dry-run``:
+This is the primary entry point for automated reminders in production: run it
+from a cron job (hourly is fine — sends are throttled per-record). Do NOT run
+reminders from an in-process server thread on shared hosting; see
+api/services/reminder_scheduler.py for why.
 
     python manage.py send_review_reminders --dry-run   # show what would be sent
     python manage.py send_review_reminders             # send now (synchronously)

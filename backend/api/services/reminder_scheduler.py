@@ -1,14 +1,20 @@
 """
 In-process scheduler for automated reviewer reminders.
 
-A single daemon thread wakes up on an interval and runs the reminder cycle — no
-external cron or job runner required. Startup is triggered from
-``ApiConfig.ready()`` when the app is served (runserver / Passenger).
+DISABLED IN PRODUCTION. This module is retained for local/dev use only
+(``runserver`` on a machine with no cron). It is deliberately NOT started from
+``ApiConfig.ready()`` anymore.
 
-Multiple server workers each start their own thread, so a MySQL advisory lock
-(``GET_LOCK``) ensures only one worker actually runs a given cycle. The
-per-record throttling in ``reminders`` is the real duplicate-guard; the lock just
-avoids redundant scans and races.
+On cPanel/CloudLinux shared hosting, starting a permanent daemon thread (plus a
+held MySQL connection + ``GET_LOCK``) in every Passenger worker pushed prod into
+a boot/kill churn loop: workers exceeded the LVE process/thread limit, were
+SIGTERM'd, respawned, and repeated. Run reminders from cron instead, using the
+``send_review_reminders`` management command. See DEPLOYMENT.md.
+
+If you ever re-enable this for a dedicated (non-shared) host, note that a single
+daemon thread wakes on an interval and a MySQL advisory lock (``GET_LOCK``)
+ensures only one worker runs a given cycle; per-record throttling in
+``reminders`` is the real duplicate-guard.
 """
 
 import logging
