@@ -668,6 +668,8 @@ class EditorPaperInvitationsView(APIView):
                 "declined_on": inv.declined_on.isoformat() if inv.declined_on else None,
                 "decline_reason": inv.decline_reason,
                 "token_expiry": inv.token_expiry.isoformat() if inv.token_expiry else None,
+                "reminder_count": inv.reminder_count or 0,
+                "last_reminder_at": inv.last_reminder_at.isoformat() if inv.last_reminder_at else None,
             })
 
         return Response({
@@ -700,6 +702,77 @@ class EditorPaperInvitationsView(APIView):
 
         invitation.delete()
         return Response({"success": True, "message": "Invitation deleted successfully"}, status=status.HTTP_200_OK)
+
+
+class EditorRemindInvitationView(APIView):
+    """Manually send a reminder email for a single pending invitation (editor/admin)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, paper_id, invitation_id):
+        from django.utils import timezone
+
+        if not check_editor_role(request.user):
+            return Response({"detail": "Editor access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        paper = Paper.objects.filter(id=paper_id).first()
+        if not paper:
+            return Response({"detail": "Paper not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        allowed_journals = get_editor_journal_ids(request.user)
+        if not _is_admin(request.user) and (not allowed_journals or paper.journal not in allowed_journals):
+            return Response({"detail": "You don't have access to papers from this journal"}, status=status.HTTP_403_FORBIDDEN)
+
+        invitation = ReviewerInvitation.objects.filter(id=invitation_id, paper_id=paper.id).first()
+        if not invitation:
+            return Response({"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if invitation.status != "pending":
+            return Response(
+                {"detail": f"Can only remind pending invitations (this one is {invitation.status})"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        now = timezone.now()
+        # Proactively expire invitations whose token has lapsed instead of reminding.
+        if invitation.token_expiry and invitation.token_expiry < now:
+            invitation.status = "expired"
+            invitation.save(update_fields=["status"])
+            return Response(
+                {"detail": "This invitation has expired; a reminder was not sent."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Final reminder if the invitation is close to expiring (mirrors the cron cadence).
+        from .services.reminders import INVITE_FINAL_REMINDER_HOURS
+        hours_to_expiry = (
+            (invitation.token_expiry - now).total_seconds() / 3600 if invitation.token_expiry else None
+        )
+        is_final = hours_to_expiry is not None and hours_to_expiry <= INVITE_FINAL_REMINDER_HOURS
+
+        journal = Journal.objects.filter(fld_id=paper.journal).first()
+        journal_name = journal.fld_journal_name if journal else "BreakThrough Publishers"
+
+        # Send synchronously so the editor gets a real success/failure result.
+        from .services.email_service import send_reviewer_invitation_reminder
+        email_sent = send_reviewer_invitation_reminder(invitation, paper, journal_name, is_final)
+
+        if not email_sent:
+            return Response(
+                {"detail": f"Reminder email could not be sent to {invitation.reviewer_email}. Please check SMTP configuration."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        invitation.reminder_count = (invitation.reminder_count or 0) + 1
+        invitation.last_reminder_at = now
+        invitation.save(update_fields=["reminder_count", "last_reminder_at"])
+
+        return Response({
+            "success": True,
+            "message": f"Reminder sent to {invitation.reviewer_email}",
+            "reminder_count": invitation.reminder_count,
+            "last_reminder_at": invitation.last_reminder_at.isoformat(),
+            "is_final": is_final,
+        }, status=status.HTTP_200_OK)
 
 
 class EditorAssignReviewerView(APIView):

@@ -11,6 +11,7 @@ const ReviewerInvitationsPage = () => {
   const [error, setError] = useState(null);
   const [invitations, setInvitations] = useState([]);
   const [cancellingId, setCancellingId] = useState(null);
+  const [remindingId, setRemindingId] = useState(null);
 
   const fetchInvitations = async () => {
     try {
@@ -45,6 +46,28 @@ const ReviewerInvitationsPage = () => {
       alert(msg);
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleRemind = async (inv) => {
+    if (!window.confirm(`Send a reminder email to ${inv.reviewer_name || inv.reviewer_email}?`)) {
+      return;
+    }
+    try {
+      setRemindingId(inv.id);
+      const res = await acsApi.editor.remindInvitation(id, inv.id);
+      setInvitations(prev => prev.map(i =>
+        i.id === inv.id
+          ? { ...i, reminder_count: res?.reminder_count ?? (i.reminder_count || 0) + 1, last_reminder_at: res?.last_reminder_at || new Date().toISOString() }
+          : i
+      ));
+      alert(res?.message || `Reminder sent to ${inv.reviewer_email}`);
+    } catch (err) {
+      console.error('Failed to send reminder:', err);
+      const msg = err.response?.data?.detail || 'Failed to send reminder';
+      alert(msg);
+    } finally {
+      setRemindingId(null);
     }
   };
 
@@ -168,6 +191,13 @@ const ReviewerInvitationsPage = () => {
                       Expires: {new Date(inv.token_expiry).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   )}
+                  {inv.reminder_count > 0 && (
+                    <span className={styles.invitationMetaItem}>
+                      <span className="material-symbols-rounded">notifications_active</span>
+                      {inv.reminder_count} reminder{inv.reminder_count === 1 ? '' : 's'} sent
+                      {inv.last_reminder_at ? ` (last ${new Date(inv.last_reminder_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})` : ''}
+                    </span>
+                  )}
                 </div>
                 {inv.decline_reason && (
                   <div className={styles.declineReason}>
@@ -177,6 +207,16 @@ const ReviewerInvitationsPage = () => {
                 )}
                 {(inv.status === 'pending' || inv.status === 'expired') && (
                   <div className={styles.invitationCardActions}>
+                    {inv.status === 'pending' && (
+                      <button
+                        className={styles.remindBtn}
+                        onClick={() => handleRemind(inv)}
+                        disabled={remindingId === inv.id}
+                      >
+                        <span className="material-symbols-rounded">notifications_active</span>
+                        {remindingId === inv.id ? 'Sending...' : 'Send Reminder'}
+                      </button>
+                    )}
                     <button
                       className={styles.cancelBtn}
                       onClick={() => handleCancelInvitation(inv)}

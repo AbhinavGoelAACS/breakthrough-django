@@ -335,6 +335,8 @@ export const acsApi = {
       apiService.get(`/api/v1/editor/papers/${paperId}/invitations`),
     cancelInvitation: (paperId, invitationId) =>
       apiService.delete(`/api/v1/editor/papers/${paperId}/invitations?invitation_id=${invitationId}`),
+    remindInvitation: (paperId, invitationId) =>
+      apiService.post(`/api/v1/editor/papers/${paperId}/invitations/${invitationId}/remind`),
     getPreviousReviewers: (paperId) =>
       apiService.get(`/api/v1/editor/papers/${paperId}/previous-reviewers`),
     assignReviewerToPaper: (paperId, reviewerId, dueDays = 14) =>
