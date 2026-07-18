@@ -133,22 +133,6 @@ jobs:
 
           echo "Wrote deploy_package/.env.production and deploy_package/runtime.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
 
-      - name: Clear stale FTP sync-state (force a full, deterministic upload)
-        env:
-          FTP_HOST: ${{ secrets.BACKEND_FTP_HOST }}
-          FTP_USER: ${{ secrets.BACKEND_FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
-        run: |
-          # FTP-Deploy-Action only uploads files it *thinks* changed, tracked in a
-          # .ftp-deploy-sync-state.json it keeps on the server. If that state drifts
-          # from reality, the action reports success while uploading nothing — the
-          # classic "green pipeline, stale server" bug. Deleting it forces the next
-          # deploy to re-evaluate and upload the whole package.
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" \
-            -e "set ftp:ssl-allow false; rm -f .ftp-deploy-sync-state.json; bye" \
-            || echo "No existing sync-state to remove (ok) — continuing."
-
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
