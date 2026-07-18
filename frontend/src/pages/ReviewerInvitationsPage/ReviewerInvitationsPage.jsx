@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import acsApi from '../../api/apiService';
+import { useModal } from '../../hooks/useModal';
+import { useToast } from '../../hooks/useToast';
 import styles from './ReviewerInvitationsPage.module.css';
 
 const ReviewerInvitationsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { confirm } = useModal();
+  const { success, error: showToastError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,43 +36,56 @@ const ReviewerInvitationsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleCancelInvitation = async (inv) => {
-    if (!window.confirm(`Are you sure you want to cancel the invitation for ${inv.reviewer_name || inv.reviewer_email}?`)) {
-      return;
-    }
-    try {
-      setCancellingId(inv.id);
-      await acsApi.editor.cancelInvitation(id, inv.id);
-      setInvitations(prev => prev.filter(i => i.id !== inv.id));
-    } catch (err) {
-      console.error('Failed to cancel invitation:', err);
-      const msg = err.response?.data?.detail || 'Failed to cancel invitation';
-      alert(msg);
-    } finally {
-      setCancellingId(null);
-    }
+  const handleCancelInvitation = (inv) => {
+    const who = inv.reviewer_name || inv.reviewer_email;
+    confirm({
+      title: 'Cancel Invitation',
+      message: `Are you sure you want to cancel the invitation for ${who}? This cannot be undone.`,
+      confirmText: 'Cancel Invitation',
+      cancelText: 'Keep',
+      type: 'error',
+      onConfirm: async () => {
+        try {
+          setCancellingId(inv.id);
+          await acsApi.editor.cancelInvitation(id, inv.id);
+          setInvitations(prev => prev.filter(i => i.id !== inv.id));
+          success(`Invitation for ${who} cancelled.`, 4000);
+        } catch (err) {
+          console.error('Failed to cancel invitation:', err);
+          showToastError(err.response?.data?.detail || 'Failed to cancel invitation', 5000);
+        } finally {
+          setCancellingId(null);
+        }
+      },
+    });
   };
 
-  const handleRemind = async (inv) => {
-    if (!window.confirm(`Send a reminder email to ${inv.reviewer_name || inv.reviewer_email}?`)) {
-      return;
-    }
-    try {
-      setRemindingId(inv.id);
-      const res = await acsApi.editor.remindInvitation(id, inv.id);
-      setInvitations(prev => prev.map(i =>
-        i.id === inv.id
-          ? { ...i, reminder_count: res?.reminder_count ?? (i.reminder_count || 0) + 1, last_reminder_at: res?.last_reminder_at || new Date().toISOString() }
-          : i
-      ));
-      alert(res?.message || `Reminder sent to ${inv.reviewer_email}`);
-    } catch (err) {
-      console.error('Failed to send reminder:', err);
-      const msg = err.response?.data?.detail || 'Failed to send reminder';
-      alert(msg);
-    } finally {
-      setRemindingId(null);
-    }
+  const handleRemind = (inv) => {
+    const who = inv.reviewer_name || inv.reviewer_email;
+    confirm({
+      title: 'Send Reminder',
+      message: `Send a reminder email to ${who} (${inv.reviewer_email})?`,
+      confirmText: 'Send Reminder',
+      cancelText: 'Cancel',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          setRemindingId(inv.id);
+          const res = await acsApi.editor.remindInvitation(id, inv.id);
+          setInvitations(prev => prev.map(i =>
+            i.id === inv.id
+              ? { ...i, reminder_count: res?.reminder_count ?? (i.reminder_count || 0) + 1, last_reminder_at: res?.last_reminder_at || new Date().toISOString() }
+              : i
+          ));
+          success(res?.message || `Reminder sent to ${inv.reviewer_email}`, 4000);
+        } catch (err) {
+          console.error('Failed to send reminder:', err);
+          showToastError(err.response?.data?.detail || 'Failed to send reminder', 5000);
+        } finally {
+          setRemindingId(null);
+        }
+      },
+    });
   };
 
   const goBack = () => {
