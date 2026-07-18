@@ -105,6 +105,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'api.middleware.ApiJsonErrorMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'api.middleware.DatabaseErrorMiddleware',
     'django.middleware.common.CommonMiddleware',

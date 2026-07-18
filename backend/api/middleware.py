@@ -47,3 +47,44 @@ class DatabaseErrorMiddleware:
                 )
             # Re-raise non-DB errors so Django's normal error handling applies
             raise
+
+
+class ApiJsonErrorMiddleware:
+    """
+    Ensure API routes always respond with JSON on error.
+
+    Django's ``handler404`` / ``handler500`` already return JSON, but only when
+    ``DEBUG=False``. When ``DEBUG=True`` (dev), Django renders an HTML technical
+    error page for unmatched URLs / unhandled exceptions instead — useless to an
+    API client. This converts any HTML error response on an ``/api/`` path into a
+    JSON body, regardless of DEBUG. Non-API paths (server-rendered Scholar/admin
+    pages) are left untouched.
+
+    Must be listed *after* CorsMiddleware so CORS headers are re-applied to the
+    replaced response.
+    """
+
+    _MESSAGES = {
+        400: "Bad request.",
+        403: "Forbidden.",
+        404: "Not found.",
+        405: "Method not allowed.",
+        500: "Internal server error.",
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        if response.status_code < 400 or not request.path.startswith("/api/"):
+            return response
+
+        content_type = response.get("Content-Type", "") or ""
+        if "text/html" not in content_type:
+            # Already JSON (DRF errors, DB-error middleware, etc.) — leave as-is.
+            return response
+
+        detail = self._MESSAGES.get(response.status_code, "Request failed.")
+        return JsonResponse({"detail": detail}, status=response.status_code)
