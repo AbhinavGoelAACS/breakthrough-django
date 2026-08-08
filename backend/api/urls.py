@@ -143,6 +143,17 @@ from .views_copyright import (
     CopyrightSubmitView,
 )
 
+from .views_books import (
+    AdminProposalDetailView,
+    AdminProposalListView,
+    BookDetailView,
+    BookListView,
+    BookProposalCreateView,
+    BookSeriesListView,
+    DownloadAssetListView,
+    ProceedingsProposalCreateView,
+)
+
 urlpatterns = [
     # Auth endpoints
     path("api/v1/auth/login", LoginView.as_view(), name="auth-login"),
@@ -550,5 +561,24 @@ urlpatterns = [
     
     # Phase 10: Article abstract
     path("api/v1/articles/<int:article_id>/abstract", ArticleAbstractView.as_view(), name="article-abstract"),
+    # Books & Conference Proceedings (public)
+    path("api/v1/books/", BookListView.as_view(), name="books-list"),
+    path("api/v1/books/proposals/", BookProposalCreateView.as_view(), name="book-proposal-create"),
+    path("api/v1/books/<slug:slug>", BookDetailView.as_view(), name="book-detail"),
+    path("api/v1/book-series/", BookSeriesListView.as_view(), name="book-series-list"),
+    path("api/v1/proceedings/downloads/", DownloadAssetListView.as_view(), name="proceedings-downloads"),
+    path(
+        "api/v1/proceedings/proposals/",
+        ProceedingsProposalCreateView.as_view(),
+        name="proceedings-proposal-create",
+    ),
+
+    # Editorial queue for incoming proposals (admin/editor only)
+    path("api/v1/admin/proposals/", AdminProposalListView.as_view(), name="admin-proposals-list"),
+    path(
+        "api/v1/admin/proposals/<str:kind>/<int:proposal_id>",
+        AdminProposalDetailView.as_view(),
+        name="admin-proposal-detail",
+    ),
 ]
 

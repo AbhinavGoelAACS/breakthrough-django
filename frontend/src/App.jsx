@@ -14,6 +14,11 @@ import JournalNavbar from './components/JournalNavbar';
 import ToastContainer from './components/toast/ToastContainer';
 import Modal from './components/modal/Modal';
 import { JournalsPage } from './pages/JournalsPage/JournalsPage';
+import BooksPage from './pages/BooksPage/BooksPage';
+import ProceedingsPage from './pages/ProceedingsPage/ProceedingsPage';
+import BookProposalPage from './pages/BookProposalPage/BookProposalPage';
+import ProceedingsProposalPage from './pages/ProceedingsProposalPage/ProceedingsProposalPage';
+import BookDetailPage from './pages/BookDetailPage/BookDetailPage';
 import JournalDetailPage from './pages/JournalDetailPage/JournalDetailPage';
 import { LoginPage } from './pages/LoginPage/LoginPage';
 import { SignupPage } from './pages/SignupPage/SignupPage';
@@ -36,6 +41,7 @@ import AdminSubmissions from './pages/AdminSubmissions/AdminSubmissions.jsx';
 import AdminSettings from './pages/AdminSettings/AdminSettings.jsx';
 import AdminRoleRequests from './pages/AdminRoleRequests/AdminRoleRequests.jsx';
 import AdminAnalytics from './pages/AdminAnalytics/AdminAnalytics.jsx';
+import AdminProposals from './pages/AdminProposals/AdminProposals.jsx';
 // Author layouts and pages
 import AuthorLayout from './layouts/AuthorLayout/AuthorLayout.jsx';
 import AuthorDashboard from './pages/AuthorDashboard/AuthorDashboard.jsx';
@@ -220,6 +226,14 @@ function AppContent() {
           {/* Public routes */}
           <Route path="/" element={<DashboardPage />} />
           <Route path="/journals" element={<JournalsPage />} />
+          <Route path="/books" element={<BooksPage />} />
+          <Route path="/proceedings" element={<ProceedingsPage />} />
+          {/* Sign-in is enforced by the API and by an explanatory gate inside
+              each page, which reads better than a bare redirect to /login. */}
+          <Route path="/books/propose" element={<BookProposalPage />} />
+          <Route path="/proceedings/propose" element={<ProceedingsProposalPage />} />
+          {/* After /books/propose, so "propose" is never matched as a slug */}
+          <Route path="/books/:slug" element={<BookDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -248,6 +262,7 @@ function AppContent() {
               <Route path="submissions/:id/submission-history" element={<SubmissionHistoryPage />} />
               <Route path="submissions/:id/reviewer-invitations" element={<ReviewerInvitationsPage />} />
               <Route path="submissions/:paperId/decision" element={<EditorDecisionPanel />} />
+              <Route path="proposals" element={<AdminProposals />} />
               <Route path="role-requests" element={<AdminRoleRequests />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="profile" element={<ProfilePage />} />

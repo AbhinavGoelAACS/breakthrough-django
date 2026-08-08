@@ -225,6 +225,10 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "api.exception_handler.custom_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        # Book and proceedings proposal submissions, per account.
+        "proposal": "10/hour",
+    },
 }
 
 SPECTACULAR_SETTINGS = {
@@ -268,6 +272,9 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'noreply@breakthroughpublishers.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'BreakThrough Publishers <noreply@breakthroughpublishers.com>')
+
+# Where book and conference-proceedings proposals are routed for review.
+EDITORIAL_EMAIL = os.environ.get('EDITORIAL_EMAIL', 'breakthroughpublishersindia@gmail.com')
 
 # Frontend URL (used in email links)
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://dev.breakthroughpublishers.com')

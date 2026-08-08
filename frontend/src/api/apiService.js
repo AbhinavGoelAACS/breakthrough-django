@@ -112,6 +112,46 @@ export const acsApi = {
     getDetail: (newsId) => apiService.get(`/api/v1/articles/news/${newsId}`, { skipAuth: true }),
   },
 
+  // Books catalogue (public)
+  books: {
+    list: ({ kind, series, openAccess, q, limit = 24, skip = 0 } = {}) => {
+      const params = new URLSearchParams({ skip, limit });
+      if (kind && kind !== 'all') params.set('kind', kind);
+      if (series) params.set('series', series);
+      if (openAccess) params.set('open_access', 'true');
+      if (q) params.set('q', q);
+      return apiService.get(`/api/v1/books/?${params.toString()}`, { skipAuth: true });
+    },
+    getDetail: (slug) => apiService.get(`/api/v1/books/${slug}`, { skipAuth: true }),
+    listSeries: () => apiService.get('/api/v1/book-series/', { skipAuth: true }),
+    // Sign-in required. Accepts FormData so the optional CV and sample chapter
+    // ride along; the axios client drops the JSON Content-Type for FormData.
+    submitProposal: (data) => apiService.post('/api/v1/books/proposals/', data),
+  },
+
+  // Editorial queue for book & proceedings proposals (admin/editor only)
+  proposals: {
+    list: ({ status, kind, skip = 0, limit = 25 } = {}) => {
+      const params = new URLSearchParams({ skip, limit });
+      if (status && status !== 'all') params.set('status', status);
+      if (kind && kind !== 'all') params.set('kind', kind);
+      return apiService.get(`/api/v1/admin/proposals/?${params.toString()}`);
+    },
+    getDetail: (kind, id) => apiService.get(`/api/v1/admin/proposals/${kind}/${id}`),
+    updateStatus: (kind, id, data) =>
+      apiService.patch(`/api/v1/admin/proposals/${kind}/${id}`, data),
+  },
+
+  // Conference proceedings (public)
+  proceedings: {
+    listDownloads: (audience = null) =>
+      apiService.get(
+        `/api/v1/proceedings/downloads/${audience ? `?audience=${audience}` : ''}`,
+        { skipAuth: true },
+      ),
+    submitProposal: (data) => apiService.post('/api/v1/proceedings/proposals/', data),
+  },
+
   // Legacy methods for backwards compatibility (public)
   getJournals: (skip = 0, limit = 20, search = '') => 
     apiService.get(`/api/v1/journals/?skip=${skip}&limit=${limit}${search ? `&search=${search}` : ''}`, { skipAuth: true }),

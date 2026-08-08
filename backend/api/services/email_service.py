@@ -708,3 +708,117 @@ def send_coauthor_notification_email(coauthor_record, paper, submitting_author):
         delivery_status='sent' if success else 'failed',
     )
     return success
+
+
+# ---------------------------------------------------------------------------
+# Book & conference-proceedings proposals
+# ---------------------------------------------------------------------------
+
+
+def _proposal_reference(proposal, kind):
+    """Human-quotable reference, e.g. BP-2026-000014 / CP-2026-000007."""
+    prefix = "BP" if kind == "book" else "CP"
+    year = proposal.submitted_on.year if proposal.submitted_on else "----"
+    return f"{prefix}-{year}-{proposal.id:06d}"
+
+
+def send_proposal_confirmation(proposal, kind):
+    """Acknowledge a proposal to the person who submitted it.
+
+    Deliberately states no turnaround time — the review timelines live on the
+    public /books and /proceedings pages so there is a single place to change
+    them, and so this email never becomes a commitment we have not agreed.
+    """
+    reference = _proposal_reference(proposal, kind)
+    frontend = _get_frontend_url()
+
+    if kind == "book":
+        what = f'your book proposal, "{proposal.title}"'
+        where = f"{frontend}/books"
+    else:
+        what = f'your proposal to publish the proceedings of {proposal.conference_name}'
+        where = f"{frontend}/proceedings"
+
+    subject = f"We received your proposal ({reference})"
+    plain_body = (
+        f"Dear {proposal.contact_name},\n\n"
+        f"Thank you for sending us {what}.\n\n"
+        f"Your reference number is {reference}. Please quote it in any "
+        f"correspondence about this proposal.\n\n"
+        f"A commissioning editor will read your proposal and get back to you. "
+        f"You can find what happens next, and how long each stage takes, at "
+        f"{where}.\n\n"
+        f"If you need to add anything to your proposal, reply to this email "
+        f"with the reference number in the subject line.\n\n"
+        f"Best regards,\n"
+        f"The Editorial Team\n"
+        f"Breakthrough Publishers India"
+    )
+
+    return send_email(proposal.contact_email, subject, plain_body)
+
+
+def notify_editorial_new_proposal(proposal, kind):
+    """Alert the editorial inbox that a proposal has arrived."""
+    reference = _proposal_reference(proposal, kind)
+    recipient = getattr(settings, "EDITORIAL_EMAIL", None)
+    if not recipient:
+        logger.warning("EDITORIAL_EMAIL is not configured; proposal %s not notified", reference)
+        return False, "EDITORIAL_EMAIL not configured"
+
+    submitter = proposal.submitted_by
+    account = submitter.email if submitter else "(no account)"
+
+    if kind == "book":
+        subject = f"New book proposal: {proposal.title} ({reference})"
+        detail = (
+            f"Title: {proposal.title}\n"
+            f"Type: {proposal.get_kind_display()}\n"
+            f"Series: {proposal.series.name if proposal.series else 'Not specified'}\n"
+            f"Completion: {proposal.get_completion_status_display() if proposal.completion_status else 'Not specified'}\n"
+            f"Expected delivery: {proposal.expected_delivery or 'Not specified'}\n"
+            f"Estimated words: {proposal.estimated_words or 'Not specified'}\n"
+            f"Illustrations: {proposal.illustration_count if proposal.illustration_count is not None else 'Not specified'}\n\n"
+            f"Synopsis:\n{proposal.synopsis}\n\n"
+            f"Audience:\n{proposal.audience or 'Not specified'}\n\n"
+            f"Comparable works:\n{proposal.comparable_works or 'Not specified'}\n\n"
+            f"Suggested reviewers:\n{proposal.suggested_reviewers or 'None suggested'}\n\n"
+            f"CV attached: {'yes' if proposal.cv_file else 'no'}\n"
+            f"Sample chapter attached: {'yes' if proposal.sample_chapter_file else 'no'}\n"
+        )
+    else:
+        subject = f"New proceedings proposal: {proposal.conference_name} ({reference})"
+        detail = (
+            f"Conference: {proposal.conference_name}\n"
+            f"Type: {proposal.get_conference_type_display() if proposal.conference_type else 'Not specified'}\n"
+            f"Organiser: {proposal.organising_body or 'Not specified'}\n"
+            f"Dates: {proposal.conference_start or '?'} to {proposal.conference_end or '?'}\n"
+            f"Venue: {proposal.venue or 'Not specified'}\n"
+            f"Subject area: {proposal.subject_area or 'Not specified'}\n"
+            f"Expected papers: {proposal.expected_papers or 'Not specified'}\n"
+            f"Paper selection: {proposal.get_selection_process_display() if proposal.selection_process else 'Not specified'}\n"
+            f"Website: {proposal.website or 'Not provided'}\n"
+            f"Announcement page: {proposal.announcement_url or 'Not provided'}\n\n"
+            f"Message:\n{proposal.message or '(none)'}\n"
+        )
+
+    plain_body = (
+        f"A new proposal has been submitted.\n\n"
+        f"Reference: {reference}\n"
+        f"Submitted: {proposal.submitted_on:%d %b %Y %H:%M} UTC\n\n"
+        f"{detail}\n"
+        f"--- Contact ---\n"
+        f"Name: {proposal.contact_name}\n"
+        f"Email: {proposal.contact_email}\n"
+        f"Account: {account}\n"
+    )
+
+    if kind == "book":
+        plain_body += f"Affiliation: {proposal.affiliation or 'Not specified'}\n"
+    else:
+        plain_body += (
+            f"Designation: {proposal.contact_designation or 'Not specified'}\n"
+            f"Phone: {proposal.contact_phone or 'Not provided'}\n"
+        )
+
+    return send_email(recipient, subject, plain_body)

@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
-from .models import User, Journal, JournalDetails, PaperPublished, News
+from .models import (
+    User, Journal, JournalDetails, PaperPublished, News,
+    Book, BookSeries, BookContributor, BookChapter,
+    DownloadAsset, ProceedingsProposal, BookProposal,
+)
 
 
 def _build_journal_media_url(value, request=None):
@@ -355,3 +359,170 @@ class WebhookPayloadSerializer(serializers.Serializer):
     error_message = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
 
+
+
+# ---------------------------------------------------------------------------
+# Books & Conference Proceedings
+# ---------------------------------------------------------------------------
+
+
+def _build_media_url(value, request=None):
+    """Absolute URL for a file stored under MEDIA_ROOT.
+
+    The SPA is served from a different origin than the API, so a bare
+    "/media/..." path would resolve against the frontend and 404. Same approach
+    as _build_journal_media_url above, minus the legacy-CDN fallback.
+    """
+    if not value:
+        return None
+    if value.startswith(("http://", "https://")):
+        return value
+    path = value.lstrip("/")
+    if path.startswith("media/"):
+        path = path[len("media/"):]
+    if request:
+        return request.build_absolute_uri(f"/media/{path}")
+    return f"/media/{path}"
+
+
+class BookSeriesSerializer(serializers.ModelSerializer):
+    volumes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BookSeries
+        fields = ["id", "abbreviation", "name", "description", "volumes"]
+
+    def get_volumes(self, obj):
+        # Annotated by the view where available, so the list endpoint stays
+        # at one query instead of one per series.
+        count = getattr(obj, "book_count", None)
+        return count if count is not None else obj.books.filter(is_published=True).count()
+
+
+class BookContributorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookContributor
+        fields = ["id", "name", "affiliation", "role", "order"]
+
+
+class BookChapterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookChapter
+        fields = ["id", "title", "authors", "doi", "start_page", "end_page", "order"]
+
+
+class BookListSerializer(serializers.ModelSerializer):
+    series_abbreviation = serializers.CharField(source="series.abbreviation", default=None, read_only=True)
+    cover_image = serializers.SerializerMethodField()
+    series_line = serializers.SerializerMethodField()
+    contributors_line = serializers.SerializerMethodField()
+    kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    year = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Book
+        fields = [
+            "id", "title", "subtitle", "slug", "kind", "kind_label",
+            "series_abbreviation", "series_line", "volume_no",
+            "contributors_line", "isbn", "doi", "pages", "year",
+            "cover_image", "is_open_access",
+        ]
+
+    def get_cover_image(self, obj):
+        return _build_media_url(obj.cover_image, self.context.get("request"))
+
+    def get_year(self, obj):
+        return obj.published_on.year if obj.published_on else None
+
+    def get_series_line(self, obj):
+        if obj.kind == Book.KIND_PROCEEDINGS and obj.conference_name:
+            return f"Proceedings · {obj.conference_name}"
+        if obj.is_open_access:
+            return "Open access"
+        if obj.series and obj.volume_no:
+            return f"{obj.series.abbreviation} · Vol. {obj.volume_no}"
+        if obj.series:
+            return obj.series.abbreviation
+        if obj.edition:
+            return f"{obj.get_kind_display()} · {obj.edition}"
+        return obj.get_kind_display()
+
+    def get_contributors_line(self, obj):
+        people = list(obj.contributors.all())
+        if not people:
+            return ""
+        names = [p.name for p in people]
+        suffix = " (eds.)" if people[0].role == BookContributor.ROLE_EDITOR else ""
+        if len(names) > 3:
+            return f"{names[0]} et al.{suffix}"
+        return ", ".join(names) + suffix
+
+
+class BookDetailSerializer(BookListSerializer):
+    contributors = BookContributorSerializer(many=True, read_only=True)
+    chapters = BookChapterSerializer(many=True, read_only=True)
+
+    class Meta(BookListSerializer.Meta):
+        fields = BookListSerializer.Meta.fields + [
+            "abstract", "edition", "language", "published_on",
+            "conference_name", "contributors", "chapters",
+        ]
+
+
+class DownloadAssetSerializer(serializers.ModelSerializer):
+    audience_label = serializers.CharField(source="get_audience_display", read_only=True)
+    size_label = serializers.SerializerMethodField()
+    file = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DownloadAsset
+        fields = [
+            "id", "label", "audience", "audience_label", "file",
+            "file_format", "size_label", "note", "revised_on",
+        ]
+
+    def get_file(self, obj):
+        return _build_media_url(obj.file, self.context.get("request"))
+
+    def get_size_label(self, obj):
+        if not obj.size_bytes:
+            return None
+        kb = obj.size_bytes / 1024
+        if kb < 1024:
+            return f"{kb:.0f} KB"
+        return f"{kb / 1024:.1f} MB"
+
+
+class ProceedingsProposalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProceedingsProposal
+        fields = [
+            "id", "conference_name", "conference_type", "organising_body",
+            "subject_area", "conference_start", "conference_end", "venue",
+            "expected_papers", "selection_process", "website",
+            "announcement_url", "message", "contact_name", "contact_email",
+            "contact_phone", "contact_designation", "status", "submitted_on",
+        ]
+        read_only_fields = ["id", "status", "submitted_on"]
+
+    def validate(self, attrs):
+        start, end = attrs.get("conference_start"), attrs.get("conference_end")
+        if start and end and end < start:
+            raise serializers.ValidationError(
+                {"conference_end": "The end date cannot be before the start date."}
+            )
+        return attrs
+
+
+class BookProposalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookProposal
+        fields = [
+            "id", "title", "kind", "series", "synopsis", "outline",
+            "audience", "comparable_works", "completion_status",
+            "expected_delivery", "estimated_pages", "estimated_words",
+            "illustration_count", "previously_published", "author_bio",
+            "suggested_reviewers", "contact_name", "contact_email",
+            "affiliation", "status", "submitted_on",
+        ]
+        read_only_fields = ["id", "status", "submitted_on"]

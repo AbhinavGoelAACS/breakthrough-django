@@ -43,7 +43,9 @@ const Navbar = ({ sections = [], portalName = "Portal" }) => {
   };
 
   const navLinks = [
-    { label: 'Journals', path: '/journals' }
+    { label: 'Journals', path: '/journals' },
+    { label: 'Books', path: '/books' },
+    { label: 'Proceedings', path: '/proceedings' }
   ];
 
   return (

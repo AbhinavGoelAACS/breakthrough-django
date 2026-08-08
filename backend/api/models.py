@@ -483,3 +483,298 @@ class CopyrightForm(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
 
 
+
+# ---------------------------------------------------------------------------
+# Books & Conference Proceedings
+#
+# These are new tables, so unlike the legacy models above they are
+# managed = True and created by a real Django migration.
+# ---------------------------------------------------------------------------
+
+
+class BookSeries(models.Model):
+    class Meta:
+        db_table = "book_series"
+        managed = True
+        ordering = ["name"]
+        verbose_name_plural = "book series"
+
+    id = models.AutoField(primary_key=True)
+    abbreviation = models.CharField(max_length=16, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+    series_editor = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="series_editor_id", related_name="edited_series",
+    )
+    is_active = models.BooleanField(default=True)
+    added_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.abbreviation} — {self.name}"
+
+
+class Book(models.Model):
+    KIND_MONOGRAPH = "monograph"
+    KIND_EDITED = "edited"
+    KIND_TEXTBOOK = "textbook"
+    KIND_PROCEEDINGS = "proceedings"
+    KIND_CHOICES = [
+        (KIND_MONOGRAPH, "Monograph"),
+        (KIND_EDITED, "Edited volume"),
+        (KIND_TEXTBOOK, "Textbook"),
+        (KIND_PROCEEDINGS, "Proceedings"),
+    ]
+
+    class Meta:
+        db_table = "book"
+        managed = True
+        ordering = ["-published_on", "-id"]
+
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=500)
+    subtitle = models.CharField(max_length=500, null=True, blank=True)
+    slug = models.SlugField(max_length=255, unique=True)
+    series = models.ForeignKey(
+        BookSeries, on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="series_id", related_name="books",
+    )
+    volume_no = models.IntegerField(null=True, blank=True)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, default=KIND_MONOGRAPH)
+    abstract = models.TextField(null=True, blank=True)
+    isbn = models.CharField(max_length=32, null=True, blank=True)
+    doi = models.CharField(max_length=100, null=True, blank=True)
+    pages = models.IntegerField(null=True, blank=True)
+    edition = models.CharField(max_length=50, null=True, blank=True)
+    language = models.CharField(max_length=32, default="English")
+    cover_image = models.CharField(max_length=500, null=True, blank=True)
+    is_open_access = models.BooleanField(default=False)
+    is_published = models.BooleanField(default=True)
+    published_on = models.DateField(null=True, blank=True)
+    # Set when the volume came out of the proceedings programme
+    conference_name = models.CharField(max_length=500, null=True, blank=True)
+    added_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class BookContributor(models.Model):
+    ROLE_AUTHOR = "author"
+    ROLE_EDITOR = "editor"
+    ROLE_CHOICES = [(ROLE_AUTHOR, "Author"), (ROLE_EDITOR, "Editor")]
+
+    class Meta:
+        db_table = "book_contributor"
+        managed = True
+        ordering = ["book_id", "order"]
+
+    id = models.AutoField(primary_key=True)
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, db_column="book_id", related_name="contributors",
+    )
+    user = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True, db_column="user_id",
+    )
+    name = models.CharField(max_length=255)
+    affiliation = models.CharField(max_length=500, null=True, blank=True)
+    role = models.CharField(max_length=16, choices=ROLE_CHOICES, default=ROLE_AUTHOR)
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.name} ({self.role})"
+
+
+class BookChapter(models.Model):
+    class Meta:
+        db_table = "book_chapter"
+        managed = True
+        ordering = ["book_id", "order"]
+
+    id = models.AutoField(primary_key=True)
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, db_column="book_id", related_name="chapters",
+    )
+    title = models.CharField(max_length=500)
+    authors = models.CharField(max_length=1000, null=True, blank=True)
+    abstract = models.TextField(null=True, blank=True)
+    doi = models.CharField(max_length=100, null=True, blank=True)
+    start_page = models.IntegerField(null=True, blank=True)
+    end_page = models.IntegerField(null=True, blank=True)
+    pdf = models.CharField(max_length=500, null=True, blank=True)
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.title
+
+
+class DownloadAsset(models.Model):
+    """Templates, guidelines and forms listed on the proceedings page.
+
+    Kept in the database so a revised template does not need a frontend
+    release — only the file and its revision date change.
+    """
+
+    AUDIENCE_AUTHOR = "author"
+    AUDIENCE_EDITOR = "editor"
+    AUDIENCE_FORMS = "forms"
+    AUDIENCE_REFERENCE = "reference"
+    AUDIENCE_CHOICES = [
+        (AUDIENCE_AUTHOR, "Authors"),
+        (AUDIENCE_EDITOR, "Editors"),
+        (AUDIENCE_FORMS, "Forms"),
+        (AUDIENCE_REFERENCE, "Reference"),
+    ]
+
+    class Meta:
+        db_table = "download_asset"
+        managed = True
+        ordering = ["audience", "order", "label"]
+
+    id = models.AutoField(primary_key=True)
+    label = models.CharField(max_length=255)
+    audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default=AUDIENCE_AUTHOR)
+    file = models.CharField(max_length=500)
+    file_format = models.CharField(max_length=16, null=True, blank=True)
+    size_bytes = models.BigIntegerField(null=True, blank=True)
+    note = models.CharField(max_length=255, null=True, blank=True)
+    revised_on = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.label
+
+
+class ProceedingsProposal(models.Model):
+    CONFERENCE_TYPE_CHOICES = [
+        ("national", "National"),
+        ("international", "International"),
+    ]
+    SELECTION_PROCESS_CHOICES = [
+        ("peer_reviewed", "Peer-reviewed"),
+        ("non_reviewed", "Not peer-reviewed"),
+    ]
+    STATUS_CHOICES = [
+        ("submitted", "Submitted"),
+        ("under_review", "Under review"),
+        ("accepted", "Accepted"),
+        ("declined", "Declined"),
+    ]
+
+    class Meta:
+        db_table = "proceedings_proposal"
+        managed = True
+        ordering = ["-submitted_on"]
+
+    id = models.AutoField(primary_key=True)
+    conference_name = models.CharField(max_length=500)
+    organising_body = models.CharField(max_length=500, null=True, blank=True)
+    subject_area = models.CharField(max_length=255, null=True, blank=True)
+    conference_start = models.DateField(null=True, blank=True)
+    conference_end = models.DateField(null=True, blank=True)
+    expected_papers = models.IntegerField(null=True, blank=True)
+    website = models.CharField(max_length=500, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
+    # Conference detail (asked for by every proceedings publisher we surveyed)
+    conference_type = models.CharField(
+        max_length=20, choices=CONFERENCE_TYPE_CHOICES, null=True, blank=True,
+    )
+    venue = models.CharField(max_length=500, null=True, blank=True)
+    # A real conference has a public announcement page — cheap authenticity check
+    announcement_url = models.CharField(max_length=500, null=True, blank=True)
+    selection_process = models.CharField(
+        max_length=20, choices=SELECTION_PROCESS_CHOICES, null=True, blank=True,
+    )
+
+    contact_name = models.CharField(max_length=255)
+    contact_email = models.EmailField(max_length=255)
+    contact_phone = models.CharField(max_length=32, null=True, blank=True)
+    contact_designation = models.CharField(max_length=255, null=True, blank=True)
+    consent_given = models.BooleanField(default=False)
+
+    submitted_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True, db_column="submitted_by_id",
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="submitted")
+    submitted_on = models.DateTimeField(auto_now_add=True)
+
+    # Editorial decision
+    decided_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="decided_by_id", related_name="decided_proceedings_proposals",
+    )
+    decided_on = models.DateTimeField(null=True, blank=True)
+    decision_note = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.conference_name
+
+
+class BookProposal(models.Model):
+    COMPLETION_CHOICES = [
+        ("idea", "Idea stage"),
+        ("partial", "Partially drafted"),
+        ("substantially", "Substantially complete"),
+        ("complete", "Complete manuscript"),
+    ]
+    STATUS_CHOICES = [
+        ("submitted", "Submitted"),
+        ("under_review", "Under review"),
+        ("accepted", "Accepted"),
+        ("declined", "Declined"),
+    ]
+
+    class Meta:
+        db_table = "book_proposal"
+        managed = True
+        ordering = ["-submitted_on"]
+
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=500)
+    kind = models.CharField(max_length=20, choices=Book.KIND_CHOICES, default=Book.KIND_MONOGRAPH)
+    series = models.ForeignKey(
+        BookSeries, on_delete=models.SET_NULL, null=True, blank=True, db_column="series_id",
+    )
+    synopsis = models.TextField()
+    outline = models.TextField(null=True, blank=True)
+    audience = models.TextField(null=True, blank=True)
+    estimated_pages = models.IntegerField(null=True, blank=True)
+    # What acquisitions editors actually decide on
+    comparable_works = models.TextField(null=True, blank=True)
+    completion_status = models.CharField(
+        max_length=24, choices=COMPLETION_CHOICES, null=True, blank=True,
+    )
+    expected_delivery = models.DateField(null=True, blank=True)
+    estimated_words = models.IntegerField(null=True, blank=True)
+    illustration_count = models.IntegerField(null=True, blank=True)
+    previously_published = models.TextField(null=True, blank=True)
+    author_bio = models.TextField(null=True, blank=True)
+    suggested_reviewers = models.TextField(null=True, blank=True)
+
+    # Optional attachments, stored under MEDIA_ROOT/proposals/<id>/
+    outline_file = models.CharField(max_length=500, null=True, blank=True)
+    cv_file = models.CharField(max_length=500, null=True, blank=True)
+    sample_chapter_file = models.CharField(max_length=500, null=True, blank=True)
+
+    contact_name = models.CharField(max_length=255)
+    contact_email = models.EmailField(max_length=255)
+    affiliation = models.CharField(max_length=500, null=True, blank=True)
+    consent_given = models.BooleanField(default=False)
+
+    submitted_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True, db_column="submitted_by_id",
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="submitted")
+    submitted_on = models.DateTimeField(auto_now_add=True)
+
+    # Editorial decision
+    decided_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="decided_by_id", related_name="decided_book_proposals",
+    )
+    decided_on = models.DateTimeField(null=True, blank=True)
+    decision_note = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
