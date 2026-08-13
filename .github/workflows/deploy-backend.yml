@@ -140,6 +140,34 @@ jobs:
             -e "set ftp:ssl-allow false; rm -f .ftp-deploy-sync-state.json; rm -f .ftp-deploy-sync-state-v2.json; bye" \
             || echo "No existing sync-state to remove (ok) — continuing."
 
+      # Workflow logs are not readable without repo auth, so these probes encode
+      # their answer in the step CONCLUSION rather than in printed output: each
+      # passes only if that candidate path holds the Django entrypoint.
+      # Read-only except D, continue-on-error, removed once the path is known.
+      - name: "PROBE A - app is in FTP home"
+        continue-on-error: true
+        env: {FTP_HOST: "${{ secrets.BACKEND_FTP_HOST }}", FTP_USER: "${{ secrets.BACKEND_FTP_USERNAME }}", FTP_PASS: "${{ secrets.BACKEND_FTP_PASSWORD }}"}
+        run: lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "set ftp:ssl-allow false; ls passenger_wsgi.py; bye" | grep -q passenger_wsgi.py
+
+      - name: "PROBE B - app is in public_html/backend"
+        continue-on-error: true
+        env: {FTP_HOST: "${{ secrets.BACKEND_FTP_HOST }}", FTP_USER: "${{ secrets.BACKEND_FTP_USERNAME }}", FTP_PASS: "${{ secrets.BACKEND_FTP_PASSWORD }}"}
+        run: lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "set ftp:ssl-allow false; ls public_html/backend/passenger_wsgi.py; bye" | grep -q passenger_wsgi.py
+
+      - name: "PROBE C - app is in BreakThrough"
+        continue-on-error: true
+        env: {FTP_HOST: "${{ secrets.BACKEND_FTP_HOST }}", FTP_USER: "${{ secrets.BACKEND_FTP_USERNAME }}", FTP_PASS: "${{ secrets.BACKEND_FTP_PASSWORD }}"}
+        run: lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "set ftp:ssl-allow false; ls BreakThrough/passenger_wsgi.py; bye" | grep -q passenger_wsgi.py
+
+      - name: "PROBE D - FTP home is what devapi serves"
+        continue-on-error: true
+        env: {FTP_HOST: "${{ secrets.BACKEND_FTP_HOST }}", FTP_USER: "${{ secrets.BACKEND_FTP_USERNAME }}", FTP_PASS: "${{ secrets.BACKEND_FTP_PASSWORD }}"}
+        run: |
+          echo "probe-$GITHUB_RUN_ID" > /tmp/probe.txt
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "set ftp:ssl-allow false; put /tmp/probe.txt -o deploy-probe.txt; bye"
+          sleep 5
+          curl -sf --max-time 20 "https://devapi.breakthroughpublishers.com/deploy-probe.txt" | grep -q "probe-$GITHUB_RUN_ID"
+
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
