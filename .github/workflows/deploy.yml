@@ -1,9 +1,13 @@
 name: Deploy Full Application to cPanel
 
+# Manual only. This workflow deploys BOTH tiers to the same cPanel
+# directories as deploy-backend.yml / deploy-frontend.yml. When it also ran on
+# push, two FTP sessions raced for the same server-dir and shared sync-state
+# file on every commit, so uploads were silently skipped and the running app
+# kept serving old code while every workflow reported success.
+# Push deploys are handled by the two per-tier workflows; keep this as a
+# deliberate "redeploy everything" button.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       deploy_backend:
@@ -20,6 +24,10 @@ on:
 env:
   PYTHON_VERSION: '3.10'
   NODE_VERSION: '18'
+
+concurrency:
+  group: full-app-deploy
+  cancel-in-progress: false
 
 jobs:
   # ============================================
