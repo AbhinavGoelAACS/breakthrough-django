@@ -121,6 +121,25 @@ jobs:
 
           echo "Wrote deploy_package/.env.production and deploy_package/runtime.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
 
+      - name: Clear FTP sync-state (force a full, deterministic upload)
+        env:
+          FTP_HOST: ${{ secrets.BACKEND_FTP_HOST }}
+          FTP_USER: ${{ secrets.BACKEND_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
+        run: |
+          # FTP-Deploy-Action uploads only what it believes changed, tracked in a
+          # state file on the server. When that state drifts the step reports
+          # success while transferring nothing.
+          #
+          # This was removed on 2026-07-19 (e5b9160) and backend deploys silently
+          # stopped landing that same day: the server's tmp/restart.txt sat at
+          # 2026-07-18T19:02:01Z for 27 days while every run went green. Setting
+          # state-name alone did not fix it; deleting the state does. Restored.
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" \
+            -e "set ftp:ssl-allow false; rm -f .ftp-deploy-sync-state.json; rm -f .ftp-deploy-sync-state-v2.json; bye" \
+            || echo "No existing sync-state to remove (ok) — continuing."
+
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -156,6 +175,24 @@ jobs:
       # run from here. They are applied by api/apps.py::ApiConfig.ready() when
       # Passenger boots the app — the FTP upload of tmp/restart.txt above is
       # what triggers that reload. See DEPLOYMENT.md.
+
+      - name: Verify the server actually received this deploy
+        run: |
+          # The failure mode this guards against is a green pipeline over a stale
+          # server. tmp/restart.txt is baked fresh into every package, so if the
+          # deployed copy does not match what we just built, nothing landed.
+          expected="$(cat deploy_package/tmp/restart.txt)"
+          echo "expected: $expected"
+
+          for attempt in 1 2 3 4 5 6; do
+            actual="$(curl -sf --max-time 20 https://devapi.breakthroughpublishers.com/tmp/restart.txt || true)"
+            echo "attempt $attempt -> ${actual:-<no response>}"
+            [ "$actual" = "$expected" ] && { echo "✅ server is serving this build"; exit 0; }
+            sleep 10
+          done
+
+          echo "::error::Upload did not reach the server. tmp/restart.txt on the host does not match this build, so the running app is still on older code."
+          exit 1
 
       - name: Deployment Summary
         run: |
