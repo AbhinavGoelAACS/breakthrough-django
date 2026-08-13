@@ -80,10 +80,10 @@ export const BooksPage = () => {
                 <span className="material-symbols-rounded">menu_book</span>
                 Browse the catalogue
               </a>
-              <a href="#propose" className={`${styles.btnSecondary} ${styles.btnGhostOnDark}`}>
+              <Link to="/books/propose" className={`${styles.btnSecondary} ${styles.btnGhostOnDark}`}>
                 <span className="material-symbols-rounded">edit_document</span>
                 Propose a book
-              </a>
+              </Link>
             </div>
           </div>
 
