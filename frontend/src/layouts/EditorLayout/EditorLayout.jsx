@@ -25,6 +25,14 @@ const EditorLayout = () => {
       ]
     },
     {
+      title: 'Books & Proceedings',
+      items: [
+        { icon: 'drafts', label: 'Proposals', path: '/editor/proposals' },
+        { icon: 'menu_book', label: 'Catalogue', path: '/editor/books' },
+        { icon: 'folder_zip', label: 'Downloads', path: '/editor/downloads' }
+      ]
+    },
+    {
       title: 'Team',
       items: [
         { icon: 'help', label: 'Guidelines', path: '/editor/guidelines' },

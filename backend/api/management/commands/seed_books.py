@@ -120,6 +120,7 @@ class Command(BaseCommand):
                     "series": series_map.get(series_abbr),
                     "is_open_access": open_access,
                     "is_published": True,
+                    "production_status": "published",
                 },
             )
             book.contributors.all().delete()

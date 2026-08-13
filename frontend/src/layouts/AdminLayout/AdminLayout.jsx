@@ -17,7 +17,9 @@ const AdminLayout = () => {
         { icon: 'group', label: 'Users', path: '/admin/users' },
         { icon: 'library_books', label: 'Journals', path: '/admin/journals' },
         { icon: 'assignment', label: 'All Submissions', path: '/admin/submissions' },
-        { icon: 'menu_book', label: 'Proposals', path: '/admin/proposals' },
+        { icon: 'drafts', label: 'Proposals', path: '/admin/proposals' },
+        { icon: 'menu_book', label: 'Catalogue', path: '/admin/books' },
+        { icon: 'folder_zip', label: 'Downloads', path: '/admin/downloads' },
         { icon: 'how_to_reg', label: 'Role Requests', path: '/admin/role-requests' }
       ]
     },

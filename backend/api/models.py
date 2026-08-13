@@ -526,6 +526,17 @@ class Book(models.Model):
         (KIND_PROCEEDINGS, "Proceedings"),
     ]
 
+    # The standard sequential production pipeline. Ordered — a title moves
+    # down this list and does not skip back except by explicit editor action.
+    PRODUCTION_CHOICES = [
+        ("commissioned", "Commissioned"),
+        ("manuscript", "Manuscript delivered"),
+        ("copyediting", "Copyediting"),
+        ("typesetting", "Typesetting"),
+        ("proofs", "Proofs with author"),
+        ("published", "Published"),
+    ]
+
     class Meta:
         db_table = "book"
         managed = True
@@ -548,12 +559,25 @@ class Book(models.Model):
     edition = models.CharField(max_length=50, null=True, blank=True)
     language = models.CharField(max_length=32, default="English")
     cover_image = models.CharField(max_length=500, null=True, blank=True)
+    eisbn = models.CharField(max_length=32, null=True, blank=True)
     is_open_access = models.BooleanField(default=False)
+    # Public visibility. Separate from production_status on purpose: a title can
+    # be at "proofs" and still hidden, or published and temporarily withdrawn.
     is_published = models.BooleanField(default=True)
+    production_status = models.CharField(
+        max_length=20, choices=PRODUCTION_CHOICES, default="commissioned",
+    )
+    managing_editor = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="managing_editor_id", related_name="managed_books",
+    )
+    # Set when the title was created from an accepted proposal
+    source_proposal_id = models.IntegerField(null=True, blank=True)
     published_on = models.DateField(null=True, blank=True)
     # Set when the volume came out of the proceedings programme
     conference_name = models.CharField(max_length=500, null=True, blank=True)
     added_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
@@ -775,6 +799,11 @@ class BookProposal(models.Model):
     )
     decided_on = models.DateTimeField(null=True, blank=True)
     decision_note = models.TextField(null=True, blank=True)
+    # Set once an editor turns this proposal into a catalogue title
+    converted_book = models.ForeignKey(
+        "Book", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="converted_book_id", related_name="+",
+    )
 
     def __str__(self):
         return self.title

@@ -140,6 +140,44 @@ export const acsApi = {
     getDetail: (kind, id) => apiService.get(`/api/v1/admin/proposals/${kind}/${id}`),
     updateStatus: (kind, id, data) =>
       apiService.patch(`/api/v1/admin/proposals/${kind}/${id}`, data),
+    // Accepted book proposal -> draft catalogue title
+    convertToBook: (id) => apiService.post(`/api/v1/admin/proposals/book/${id}/convert`, {}),
+  },
+
+  // Catalogue management (admin/editor only)
+  catalogue: {
+    listBooks: ({ productionStatus, kind, visibility, q, skip = 0, limit = 50 } = {}) => {
+      const params = new URLSearchParams({ skip, limit });
+      if (productionStatus && productionStatus !== 'all') params.set('production_status', productionStatus);
+      if (kind && kind !== 'all') params.set('kind', kind);
+      if (visibility && visibility !== 'all') params.set('visibility', visibility);
+      if (q) params.set('q', q);
+      return apiService.get(`/api/v1/admin/books/?${params.toString()}`);
+    },
+    getBook: (id) => apiService.get(`/api/v1/admin/books/${id}`),
+    // Pass FormData to attach a cover image; plain objects go as JSON.
+    createBook: (data) => apiService.post('/api/v1/admin/books/', data),
+    updateBook: (id, data) => apiService.patch(`/api/v1/admin/books/${id}`, data),
+    deleteBook: (id) => apiService.delete(`/api/v1/admin/books/${id}`),
+
+    setContributors: (bookId, contributors) =>
+      apiService.put(`/api/v1/admin/books/${bookId}/contributors`, { contributors }),
+
+    addChapter: (bookId, data) => apiService.post(`/api/v1/admin/books/${bookId}/chapters/`, data),
+    updateChapter: (bookId, chapterId, data) =>
+      apiService.patch(`/api/v1/admin/books/${bookId}/chapters/${chapterId}`, data),
+    deleteChapter: (bookId, chapterId) =>
+      apiService.delete(`/api/v1/admin/books/${bookId}/chapters/${chapterId}`),
+
+    listSeries: () => apiService.get('/api/v1/admin/book-series/'),
+    createSeries: (data) => apiService.post('/api/v1/admin/book-series/', data),
+    updateSeries: (id, data) => apiService.patch(`/api/v1/admin/book-series/${id}`, data),
+    deleteSeries: (id) => apiService.delete(`/api/v1/admin/book-series/${id}`),
+
+    listDownloads: () => apiService.get('/api/v1/admin/downloads/'),
+    createDownload: (formData) => apiService.post('/api/v1/admin/downloads/', formData),
+    updateDownload: (id, data) => apiService.patch(`/api/v1/admin/downloads/${id}`, data),
+    deleteDownload: (id) => apiService.delete(`/api/v1/admin/downloads/${id}`),
   },
 
   // Conference proceedings (public)

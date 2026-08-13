@@ -526,3 +526,96 @@ class BookProposalSerializer(serializers.ModelSerializer):
             "affiliation", "status", "submitted_on",
         ]
         read_only_fields = ["id", "status", "submitted_on"]
+
+
+# ---------------------------------------------------------------------------
+# Staff-facing serializers (admin / editor)
+# ---------------------------------------------------------------------------
+
+
+class AdminBookSeriesSerializer(serializers.ModelSerializer):
+    book_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BookSeries
+        fields = ["id", "abbreviation", "name", "description", "is_active", "book_count"]
+
+    def get_book_count(self, obj):
+        count = getattr(obj, "annotated_count", None)
+        return count if count is not None else obj.books.count()
+
+
+class AdminBookChapterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookChapter
+        fields = [
+            "id", "title", "authors", "abstract", "doi",
+            "start_page", "end_page", "pdf", "order",
+        ]
+
+    def validate(self, attrs):
+        start = attrs.get("start_page", getattr(self.instance, "start_page", None))
+        end = attrs.get("end_page", getattr(self.instance, "end_page", None))
+        if start is not None and end is not None and end < start:
+            raise serializers.ValidationError(
+                {"end_page": "The last page cannot come before the first."}
+            )
+        return attrs
+
+
+class AdminBookSerializer(serializers.ModelSerializer):
+    """Full read/write shape for staff. Contributors and chapters are nested
+    read-only; chapters have their own endpoints, contributors are written as a
+    flat list via `contributor_names`."""
+
+    series_abbreviation = serializers.CharField(
+        source="series.abbreviation", default=None, read_only=True
+    )
+    kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    production_label = serializers.CharField(source="get_production_status_display", read_only=True)
+    managing_editor_email = serializers.CharField(
+        source="managing_editor.email", default=None, read_only=True
+    )
+    chapters = AdminBookChapterSerializer(many=True, read_only=True)
+    contributors = BookContributorSerializer(many=True, read_only=True)
+    chapter_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Book
+        fields = [
+            "id", "title", "subtitle", "slug", "series", "series_abbreviation",
+            "volume_no", "kind", "kind_label", "abstract", "isbn", "eisbn",
+            "doi", "pages", "edition", "language", "cover_image",
+            "is_open_access", "is_published", "production_status",
+            "production_label", "managing_editor", "managing_editor_email",
+            "source_proposal_id", "published_on", "conference_name",
+            "added_on", "updated_on", "chapters", "contributors", "chapter_count",
+        ]
+        read_only_fields = ["id", "added_on", "updated_on", "source_proposal_id"]
+
+    def get_chapter_count(self, obj):
+        return obj.chapters.count()
+
+    def validate_slug(self, value):
+        qs = Book.objects.filter(slug=value)
+        if self.instance:
+            qs = qs.exclude(id=self.instance.id)
+        if qs.exists():
+            raise serializers.ValidationError("Another title already uses this slug.")
+        return value
+
+
+class AdminDownloadAssetSerializer(serializers.ModelSerializer):
+    audience_label = serializers.CharField(source="get_audience_display", read_only=True)
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DownloadAsset
+        fields = [
+            "id", "label", "audience", "audience_label", "file", "file_url",
+            "file_format", "size_bytes", "note", "revised_on", "is_active", "order",
+        ]
+        read_only_fields = ["id", "file", "file_format", "size_bytes"]
+
+    def get_file_url(self, obj):
+        return _build_media_url(obj.file, self.context.get("request"))

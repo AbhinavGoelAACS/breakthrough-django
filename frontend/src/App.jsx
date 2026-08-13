@@ -42,6 +42,8 @@ import AdminSettings from './pages/AdminSettings/AdminSettings.jsx';
 import AdminRoleRequests from './pages/AdminRoleRequests/AdminRoleRequests.jsx';
 import AdminAnalytics from './pages/AdminAnalytics/AdminAnalytics.jsx';
 import AdminProposals from './pages/AdminProposals/AdminProposals.jsx';
+import AdminBooks from './pages/AdminBooks/AdminBooks.jsx';
+import AdminDownloads from './pages/AdminDownloads/AdminDownloads.jsx';
 // Author layouts and pages
 import AuthorLayout from './layouts/AuthorLayout/AuthorLayout.jsx';
 import AuthorDashboard from './pages/AuthorDashboard/AuthorDashboard.jsx';
@@ -263,6 +265,8 @@ function AppContent() {
               <Route path="submissions/:id/reviewer-invitations" element={<ReviewerInvitationsPage />} />
               <Route path="submissions/:paperId/decision" element={<EditorDecisionPanel />} />
               <Route path="proposals" element={<AdminProposals />} />
+              <Route path="books" element={<AdminBooks />} />
+              <Route path="downloads" element={<AdminDownloads />} />
               <Route path="role-requests" element={<AdminRoleRequests />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="profile" element={<ProfilePage />} />
@@ -293,6 +297,9 @@ function AppContent() {
               <Route path="papers/:id/reviewer-invitations" element={<ReviewerInvitationsPage />} />
               <Route path="papers/:paperId/decision" element={<EditorDecisionPanel />} />
               <Route path="publishing" element={<EditorPublishing />} />
+              <Route path="proposals" element={<AdminProposals />} />
+              <Route path="books" element={<AdminBooks />} />
+              <Route path="downloads" element={<AdminDownloads />} />
               <Route path="guidelines" element={<EditorGuidelines />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="*" element={<Navigate to="/editor/dashboard" replace />} />

@@ -143,6 +143,18 @@ from .views_copyright import (
     CopyrightSubmitView,
 )
 
+from .views_books_admin import (
+    AdminBookChapterDetailView,
+    AdminBookChapterListView,
+    AdminBookContributorsView,
+    AdminBookDetailView,
+    AdminBookListView,
+    AdminBookSeriesDetailView,
+    AdminBookSeriesListView,
+    AdminDownloadDetailView,
+    AdminDownloadListView,
+    AdminProposalConvertView,
+)
 from .views_books import (
     AdminProposalDetailView,
     AdminProposalListView,
@@ -579,6 +591,42 @@ urlpatterns = [
         "api/v1/admin/proposals/<str:kind>/<int:proposal_id>",
         AdminProposalDetailView.as_view(),
         name="admin-proposal-detail",
+    ),
+    path(
+        "api/v1/admin/proposals/book/<int:proposal_id>/convert",
+        AdminProposalConvertView.as_view(),
+        name="admin-proposal-convert",
+    ),
+
+    # Catalogue management (admin/editor only)
+    path("api/v1/admin/books/", AdminBookListView.as_view(), name="admin-books-list"),
+    path("api/v1/admin/books/<int:book_id>", AdminBookDetailView.as_view(), name="admin-book-detail"),
+    path(
+        "api/v1/admin/books/<int:book_id>/contributors",
+        AdminBookContributorsView.as_view(),
+        name="admin-book-contributors",
+    ),
+    path(
+        "api/v1/admin/books/<int:book_id>/chapters/",
+        AdminBookChapterListView.as_view(),
+        name="admin-book-chapters",
+    ),
+    path(
+        "api/v1/admin/books/<int:book_id>/chapters/<int:chapter_id>",
+        AdminBookChapterDetailView.as_view(),
+        name="admin-book-chapter-detail",
+    ),
+    path("api/v1/admin/book-series/", AdminBookSeriesListView.as_view(), name="admin-series-list"),
+    path(
+        "api/v1/admin/book-series/<int:series_id>",
+        AdminBookSeriesDetailView.as_view(),
+        name="admin-series-detail",
+    ),
+    path("api/v1/admin/downloads/", AdminDownloadListView.as_view(), name="admin-downloads-list"),
+    path(
+        "api/v1/admin/downloads/<int:asset_id>",
+        AdminDownloadDetailView.as_view(),
+        name="admin-download-detail",
     ),
 ]
 

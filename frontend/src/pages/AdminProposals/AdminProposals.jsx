@@ -115,8 +115,26 @@ const AdminProposals = () => {
     }
   };
 
+  // The step that connects the queue to the catalogue: an accepted book
+  // proposal becomes a draft title an editor can then produce.
+  const convertToBook = async () => {
+    if (!selected) return;
+    try {
+      setSaving(true);
+      const book = await acsApi.proposals.convertToBook(selected.id);
+      success(`“${book.title}” added to the catalogue as a draft.`);
+      setSelected((prev) => ({ ...prev, converted_book_id: book.id }));
+      fetchProposals();
+    } catch (err) {
+      showError(err.response?.data?.detail || 'Could not create a title from this proposal.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const isBook = selected?.kind === 'book';
   const attachments = selected?.attachments || {};
+  const canConvert = isBook && selected?.status === 'accepted' && !selected?.converted_book_id;
 
   return (
     <div className="ap-page">
@@ -385,6 +403,36 @@ const AdminProposals = () => {
                       email the proposer — reply to {selected.contact_email} yourself.
                     </p>
                   </section>
+
+                  {isBook && (
+                    <section className="ap-block">
+                      <h3>Catalogue</h3>
+                      {selected.converted_book_id ? (
+                        <p className="ap-note" style={{ marginTop: 0 }}>
+                          Already in the catalogue as a draft title. Find it under Catalogue to add
+                          metadata, contributors and chapters.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="ap-note" style={{ marginTop: 0 }}>
+                            {canConvert
+                              ? 'Creates a hidden draft title pre-filled from this proposal, at the “commissioned” stage.'
+                              : 'Accept this proposal first, then you can turn it into a catalogue title.'}
+                          </p>
+                          <div className="ap-decide">
+                            <button
+                              type="button"
+                              className="ap-btn ap-btn-accept"
+                              disabled={saving || !canConvert}
+                              onClick={convertToBook}
+                            >
+                              Create book from this proposal
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </section>
+                  )}
                 </>
               )}
             </div>
