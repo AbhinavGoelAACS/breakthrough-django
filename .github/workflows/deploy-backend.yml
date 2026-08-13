@@ -126,6 +126,17 @@ jobs:
           protocol: ftp
           local-dir: ./deploy_package/
           server-dir: ./
+          # FTP-Deploy-Action only uploads what it believes changed, based on a
+          # state file it keeps on the server. A stale state makes the step
+          # report success while transferring nothing — which is how new
+          # endpoints ended up 404ing with a green build. Naming the state
+          # explicitly lets us force a full re-upload by bumping the suffix.
+          # A missing state means "everything is new", so all files upload; it
+          # does NOT delete anything on the server (never use
+          # dangerous-clean-slate here — media/, .env and .htaccess are
+          # deliberately excluded from the package and would be destroyed).
+          state-name: .ftp-deploy-sync-state-v2.json
+          log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**

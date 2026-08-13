@@ -309,3 +309,54 @@ If you encounter issues:
 ---
 
 *Last updated: March 2026*
+
+
+## Migrations on cPanel (no SSH)
+
+This cPanel account has **no SSH access**, so `manage.py migrate` cannot be run
+by hand or from the deploy workflow. The deploy pipeline is FTP-only.
+
+Migrations are therefore applied by the application itself, in
+`api/apps.py :: ApiConfig.ready()`, which runs when Passenger boots a worker.
+The chain is:
+
+1. GitHub Actions rsyncs `backend/` into a package and bakes a fresh
+   `tmp/restart.txt` with the current timestamp.
+2. FTP uploads the package. The changed `restart.txt` makes Passenger reload
+   the app on the next request.
+3. On boot, `ApiConfig.ready()` applies any unapplied migrations, then runs
+   `ensure_schema` for the legacy `managed = False` tables.
+
+Safeguards, because this runs unattended on every worker boot:
+
+- **Cheap no-op.** One read of `django_migrations`; if nothing is pending it
+  returns immediately without taking a lock. Measured at ~0.3s on boot.
+- **One migrator.** Workers contend on a non-blocking `flock` at
+  `tmp/migrate.lock`. Whichever worker wins migrates; the others skip rather
+  than queue, so no worker is held up behind a long migration.
+- **Failures do not take the site down.** A migration error is written to
+  `stderr.log` and the worker continues booting, so existing endpoints keep
+  serving instead of every request failing.
+- **Never during management commands.** The hook only fires when `runserver` is
+  in `sys.argv` or `passenger_wsgi` is loaded, so `migrate`, `makemigrations`,
+  `test` and `shell` are unaffected.
+
+### Checking what happened after a deploy
+
+`stderr.log` in the backend root is the only visibility available without a
+console:
+
+```text
+[startup] applying migrations: api.0013_bookguesteditor
+[startup] migrations applied
+```
+
+A `[startup] MIGRATION FAILED: ...` line means the code deployed but the schema
+did not change — expect 500s from anything touching the new tables.
+
+### Known failure mode: new routes return 404
+
+If newly added endpoints 404 while existing ones still work, the code did not
+reach the running process. That is a *deploy* problem, not a code problem —
+Passenger is still serving the old module from memory. Check that the Actions
+run succeeded and that `tmp/restart.txt` was uploaded with a new timestamp.
