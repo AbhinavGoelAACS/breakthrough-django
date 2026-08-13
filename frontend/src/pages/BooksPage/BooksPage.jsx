@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
+import { describeApiError } from '../../utils/apiError';
 import { BOOK_KINDS, PROPOSAL_STEPS } from './booksData';
 import styles from './BooksPage.module.css';
 
@@ -13,23 +14,30 @@ export const BooksPage = () => {
   const [books, setBooks] = useState([]);
   const [series, setSeries] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Tracked separately from `books` so a failed request is never rendered as
+  // "no titles" — the reader needs to know it is worth retrying.
+  const [error, setError] = useState(null);
+  const [seriesError, setSeriesError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await acsApi.books.list({ kind: activeKind, limit: 24 });
         const list = Array.isArray(data) ? data : data?.books || [];
         setBooks(list);
       } catch (err) {
         console.error('Error fetching books:', err);
+        setError(describeApiError(err, 'We could not load the catalogue.'));
         setBooks([]);
       } finally {
         setLoading(false);
       }
     };
     fetchBooks();
-  }, [activeKind]);
+  }, [activeKind, reloadKey]);
 
   useEffect(() => {
     const fetchSeries = async () => {
@@ -39,6 +47,7 @@ export const BooksPage = () => {
         setSeries(list);
       } catch (err) {
         console.error('Error fetching book series:', err);
+        setSeriesError(describeApiError(err, 'We could not load the series list.'));
         setSeries([]);
       }
     };
@@ -112,13 +121,24 @@ export const BooksPage = () => {
               </button>
             ))}
             <span className={styles.filterCount}>
-              {loading ? 'Loading…' : `${books.length} ${books.length === 1 ? 'title' : 'titles'}`}
+              {loading || error ? '' : `${books.length} ${books.length === 1 ? 'title' : 'titles'}`}
             </span>
           </div>
 
           <div className={styles.bookGrid}>
             {loading ? (
               <p className={styles.bookEmpty}>Loading catalogue...</p>
+            ) : error ? (
+              <div className={styles.loadError}>
+                <span className="material-symbols-rounded">cloud_off</span>
+                <div>
+                  <p className={styles.loadErrorTitle}>{error}</p>
+                  <button type="button" className={styles.retryBtn}
+                    onClick={() => setReloadKey((k) => k + 1)}>
+                    Try again
+                  </button>
+                </div>
+              </div>
             ) : books.length === 0 ? (
               <p className={styles.bookEmpty}>No titles in this category yet.</p>
             ) : (
@@ -180,7 +200,9 @@ export const BooksPage = () => {
           </div>
 
           <div className={styles.seriesList}>
-            {series.length === 0 ? (
+            {seriesError ? (
+              <p className={styles.bookEmpty}>{seriesError}</p>
+            ) : series.length === 0 ? (
               <p className={styles.bookEmpty}>No series published yet.</p>
             ) : (
               series.map((item) => (

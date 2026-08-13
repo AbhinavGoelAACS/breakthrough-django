@@ -574,8 +574,18 @@ class Book(models.Model):
     # Set when the title was created from an accepted proposal
     source_proposal_id = models.IntegerField(null=True, blank=True)
     published_on = models.DateField(null=True, blank=True)
-    # Set when the volume came out of the proceedings programme
+    # Conference metadata, for volumes from the proceedings programme.
+    # Crossref registers proceedings as a distinct record type and wants event
+    # metadata (name required; acronym, number, location and date encouraged) —
+    # a single conference_name string cannot produce that deposit.
     conference_name = models.CharField(max_length=500, null=True, blank=True)
+    conference_acronym = models.CharField(max_length=64, null=True, blank=True)
+    conference_number = models.IntegerField(null=True, blank=True)
+    conference_start = models.DateField(null=True, blank=True)
+    conference_end = models.DateField(null=True, blank=True)
+    conference_venue = models.CharField(max_length=500, null=True, blank=True)
+    conference_organiser = models.CharField(max_length=500, null=True, blank=True)
+    conference_url = models.CharField(max_length=500, null=True, blank=True)
     added_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
@@ -626,6 +636,9 @@ class BookChapter(models.Model):
     start_page = models.IntegerField(null=True, blank=True)
     end_page = models.IntegerField(null=True, blank=True)
     pdf = models.CharField(max_length=500, null=True, blank=True)
+    # Needed to check the open-choice ceiling: above 40% of papers, the whole
+    # volume should be published open access instead.
+    is_open_access = models.BooleanField(default=False)
     order = models.IntegerField(default=0)
 
     def __str__(self):
@@ -730,6 +743,11 @@ class ProceedingsProposal(models.Model):
     )
     decided_on = models.DateTimeField(null=True, blank=True)
     decision_note = models.TextField(null=True, blank=True)
+    # Set once an editor turns this proposal into a catalogue volume
+    converted_book = models.ForeignKey(
+        "Book", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="converted_book_id", related_name="+",
+    )
 
     def __str__(self):
         return self.conference_name

@@ -140,8 +140,8 @@ export const acsApi = {
     getDetail: (kind, id) => apiService.get(`/api/v1/admin/proposals/${kind}/${id}`),
     updateStatus: (kind, id, data) =>
       apiService.patch(`/api/v1/admin/proposals/${kind}/${id}`, data),
-    // Accepted book proposal -> draft catalogue title
-    convertToBook: (id) => apiService.post(`/api/v1/admin/proposals/book/${id}/convert`, {}),
+    // Accepted proposal -> draft catalogue title (both kinds)
+    convert: (kind, id) => apiService.post(`/api/v1/admin/proposals/${kind}/${id}/convert`, {}),
   },
 
   // Catalogue management (admin/editor only)

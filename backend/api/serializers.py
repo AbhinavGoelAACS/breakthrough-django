@@ -408,7 +408,10 @@ class BookContributorSerializer(serializers.ModelSerializer):
 class BookChapterSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookChapter
-        fields = ["id", "title", "authors", "doi", "start_page", "end_page", "order"]
+        fields = [
+            "id", "title", "authors", "doi", "start_page", "end_page",
+            "is_open_access", "order",
+        ]
 
 
 class BookListSerializer(serializers.ModelSerializer):
@@ -465,7 +468,9 @@ class BookDetailSerializer(BookListSerializer):
     class Meta(BookListSerializer.Meta):
         fields = BookListSerializer.Meta.fields + [
             "abstract", "edition", "language", "published_on",
-            "conference_name", "contributors", "chapters",
+            "conference_name", "conference_acronym", "conference_start",
+            "conference_end", "conference_venue", "conference_organiser",
+            "conference_url", "contributors", "chapters",
         ]
 
 
@@ -550,7 +555,7 @@ class AdminBookChapterSerializer(serializers.ModelSerializer):
         model = BookChapter
         fields = [
             "id", "title", "authors", "abstract", "doi",
-            "start_page", "end_page", "pdf", "order",
+            "start_page", "end_page", "pdf", "is_open_access", "order",
         ]
 
     def validate(self, attrs):
@@ -588,7 +593,10 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "doi", "pages", "edition", "language", "cover_image",
             "is_open_access", "is_published", "production_status",
             "production_label", "managing_editor", "managing_editor_email",
-            "source_proposal_id", "published_on", "conference_name",
+            "source_proposal_id", "published_on",
+            "conference_name", "conference_acronym", "conference_number",
+            "conference_start", "conference_end", "conference_venue",
+            "conference_organiser", "conference_url",
             "added_on", "updated_on", "chapters", "contributors", "chapter_count",
         ]
         read_only_fields = ["id", "added_on", "updated_on", "source_proposal_id"]

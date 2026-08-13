@@ -593,7 +593,7 @@ urlpatterns = [
         name="admin-proposal-detail",
     ),
     path(
-        "api/v1/admin/proposals/book/<int:proposal_id>/convert",
+        "api/v1/admin/proposals/<str:kind>/<int:proposal_id>/convert",
         AdminProposalConvertView.as_view(),
         name="admin-proposal-convert",
     ),

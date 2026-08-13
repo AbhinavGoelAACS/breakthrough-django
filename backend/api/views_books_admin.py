@@ -26,6 +26,7 @@ from .models import (
     BookProposal,
     BookSeries,
     DownloadAsset,
+    ProceedingsProposal,
 )
 from .serializers import (
     AdminBookChapterSerializer,
@@ -272,10 +273,9 @@ class AdminBookDetailView(APIView):
         book = self._get(book_id)
         if not book:
             return Response({"detail": "Book not found."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(
-            AdminBookSerializer(book, context={"request": request}).data,
-            status=status.HTTP_200_OK,
-        )
+        data = AdminBookSerializer(book, context={"request": request}).data
+        data["warnings"] = proceedings_warnings(book)
+        return Response(data, status=status.HTTP_200_OK)
 
     def patch(self, request, book_id):
         if not check_admin_or_editor_role(request.user):
@@ -305,10 +305,9 @@ class AdminBookDetailView(APIView):
             book.production_status = "published"
             book.save(update_fields=["production_status"])
 
-        return Response(
-            AdminBookSerializer(book, context={"request": request}).data,
-            status=status.HTTP_200_OK,
-        )
+        data = AdminBookSerializer(book, context={"request": request}).data
+        data["warnings"] = proceedings_warnings(book)
+        return Response(data, status=status.HTTP_200_OK)
 
     def delete(self, request, book_id):
         if not check_admin_or_editor_role(request.user):
@@ -355,6 +354,12 @@ class AdminBookContributorsView(APIView):
         if not isinstance(rows, list):
             return Response(
                 {"contributors": ["Send a list of contributors."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not all(isinstance(row, dict) for row in rows):
+            return Response(
+                {"contributors": ["Each contributor must be an object with a name."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -542,25 +547,76 @@ class AdminDownloadDetailView(APIView):
 # ---------------------------------------------------------------------------
 
 
-class AdminProposalConvertView(APIView):
-    """POST /api/v1/admin/proposals/book/<id>/convert
+# Editorial bounds published on the public /proceedings page. Warnings, not
+# errors — editorial can knowingly publish outside them.
+PROCEEDINGS_MIN_PAGES = 120
+PROCEEDINGS_MAX_PAGES = 500
+OPEN_CHOICE_CEILING = 0.40
 
-    Turns an accepted book proposal into a draft catalogue title. This is the
-    step that connects the proposal queue to the catalogue — without it an
-    accepted proposal is a dead end.
+
+def proceedings_warnings(book):
+    """Advisory checks for a proceedings volume, matching what the public
+    proceedings page promises. Returns a list of human-readable strings."""
+    if book.kind != Book.KIND_PROCEEDINGS:
+        return []
+
+    warnings = []
+
+    if book.pages:
+        if book.pages < PROCEEDINGS_MIN_PAGES:
+            warnings.append(
+                f"This volume is {book.pages} pages. The proceedings page states a "
+                f"minimum of {PROCEEDINGS_MIN_PAGES}; consider merging it with another volume."
+            )
+        elif book.pages > PROCEEDINGS_MAX_PAGES:
+            warnings.append(
+                f"This volume is {book.pages} pages. The maximum that fits in one volume "
+                f"is {PROCEEDINGS_MAX_PAGES}; consider splitting it into parts."
+            )
+
+    total = book.chapters.count()
+    if total and not book.is_open_access:
+        open_papers = book.chapters.filter(is_open_access=True).count()
+        share = open_papers / total
+        if share > OPEN_CHOICE_CEILING:
+            warnings.append(
+                f"{open_papers} of {total} papers ({share:.0%}) are open access, above the "
+                f"{OPEN_CHOICE_CEILING:.0%} open-choice ceiling. Publish the whole volume "
+                "open access instead."
+            )
+
+    if not book.conference_name:
+        warnings.append(
+            "No conference name recorded. Crossref requires it to register this as a "
+            "proceedings volume rather than a book."
+        )
+
+    return warnings
+
+
+class AdminProposalConvertView(APIView):
+    """POST /api/v1/admin/proposals/<kind>/<id>/convert
+
+    Turns an accepted proposal into a draft catalogue title. This is the step
+    that connects the proposal queue to the catalogue — without it an accepted
+    proposal is a dead end. Handles both book and proceedings proposals.
     """
 
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, proposal_id):
+    def post(self, request, kind, proposal_id):
         if not check_admin_or_editor_role(request.user):
             return _forbidden()
 
-        try:
-            proposal = BookProposal.objects.select_related("series", "submitted_by").get(
-                id=proposal_id
+        if kind not in ("book", "proceedings"):
+            return Response(
+                {"detail": "Unknown proposal type."}, status=status.HTTP_404_NOT_FOUND
             )
-        except BookProposal.DoesNotExist:
+
+        model = BookProposal if kind == "book" else ProceedingsProposal
+        try:
+            proposal = model.objects.select_related("submitted_by").get(id=proposal_id)
+        except model.DoesNotExist:
             return Response({"detail": "Proposal not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if proposal.status != "accepted":
@@ -577,37 +633,76 @@ class AdminProposalConvertView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        book = Book.objects.create(
-            title=proposal.title,
-            slug=unique_slug(proposal.title),
-            series=proposal.series,
-            kind=proposal.kind,
-            abstract=proposal.synopsis,
-            pages=proposal.estimated_pages,
-            managing_editor=request.user,
-            source_proposal_id=proposal.id,
-            production_status="commissioned",
-            is_published=False,   # a commissioned title is not public yet
-        )
+        # Book.title is CharField(max_length=500); a derived title can overflow it.
+        TITLE_MAX = Book._meta.get_field("title").max_length
+
+        if kind == "book":
+            title = proposal.title
+            if len(title) > TITLE_MAX:
+                return Response(
+                    {"detail": f"The proposal title is longer than {TITLE_MAX} characters. "
+                               "Shorten it on the proposal before converting."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            book = Book.objects.create(
+                title=title,
+                slug=unique_slug(title),
+                series=proposal.series,
+                kind=proposal.kind,
+                abstract=proposal.synopsis,
+                pages=proposal.estimated_pages,
+                managing_editor=request.user,
+                source_proposal_id=proposal.id,
+                production_status="commissioned",
+                is_published=False,
+            )
+            contributor_role = (
+                BookContributor.ROLE_EDITOR
+                if proposal.kind in (Book.KIND_EDITED, Book.KIND_PROCEEDINGS)
+                else BookContributor.ROLE_AUTHOR
+            )
+            affiliation = proposal.affiliation
+        else:
+            # Carry every piece of conference metadata across — it is the whole
+            # reason the proposal form collects it.
+            title = f"Proceedings of {proposal.conference_name}"
+            if len(title) > TITLE_MAX:
+                # Prefer trimming the prefix over truncating the conference name
+                title = proposal.conference_name[:TITLE_MAX]
+            book = Book.objects.create(
+                title=title,
+                slug=unique_slug(title),
+                series=BookSeries.objects.filter(abbreviation="BCP").first(),
+                kind=Book.KIND_PROCEEDINGS,
+                abstract=proposal.message,
+                managing_editor=request.user,
+                source_proposal_id=proposal.id,
+                production_status="commissioned",
+                is_published=False,
+                conference_name=proposal.conference_name,
+                conference_start=proposal.conference_start,
+                conference_end=proposal.conference_end,
+                conference_venue=proposal.venue,
+                conference_organiser=proposal.organising_body,
+                conference_url=proposal.website or proposal.announcement_url,
+            )
+            # Whoever proposed the volume is its volume editor.
+            contributor_role = BookContributor.ROLE_EDITOR
+            affiliation = proposal.contact_designation
 
         if proposal.contact_name:
             BookContributor.objects.create(
                 book=book,
                 user=proposal.submitted_by,
                 name=proposal.contact_name,
-                affiliation=proposal.affiliation,
-                role=(
-                    BookContributor.ROLE_EDITOR
-                    if proposal.kind in (Book.KIND_EDITED, Book.KIND_PROCEEDINGS)
-                    else BookContributor.ROLE_AUTHOR
-                ),
+                affiliation=affiliation,
+                role=contributor_role,
                 order=0,
             )
 
         proposal.converted_book = book
         proposal.save(update_fields=["converted_book"])
 
-        return Response(
-            AdminBookSerializer(book, context={"request": request}).data,
-            status=status.HTTP_201_CREATED,
-        )
+        data = AdminBookSerializer(book, context={"request": request}).data
+        data["warnings"] = proceedings_warnings(book)
+        return Response(data, status=status.HTTP_201_CREATED)

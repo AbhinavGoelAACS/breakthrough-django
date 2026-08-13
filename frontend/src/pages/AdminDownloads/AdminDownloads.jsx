@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import acsApi from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
+import { describeApiError } from '../../utils/apiError';
 import '../AdminBooks/AdminBooks.css';
 
 // Must match DownloadAsset.AUDIENCE_CHOICES in backend/api/models.py
@@ -39,7 +40,7 @@ const AdminDownloads = () => {
       const data = await acsApi.catalogue.listDownloads();
       setAssets(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Could not load the downloads.');
+      setError(describeApiError(err, 'Could not load the downloads.'));
       setAssets([]);
     } finally {
       setLoading(false);
@@ -69,7 +70,7 @@ const AdminDownloads = () => {
       fetchAssets();
     } catch (err) {
       const data = err.response?.data;
-      showError(data?.file?.[0] || data?.detail || 'Could not upload that file.');
+      showError(data?.file?.[0] || describeApiError(err, 'Could not upload that file.'));
     } finally {
       setSaving(false);
     }
@@ -87,7 +88,7 @@ const AdminDownloads = () => {
       fetchAssets();
     } catch (err) {
       const data = err.response?.data;
-      showError(data?.file?.[0] || data?.detail || 'Could not replace that file.');
+      showError(data?.file?.[0] || describeApiError(err, 'Could not replace that file.'));
     } finally {
       setSaving(false);
     }
@@ -98,7 +99,7 @@ const AdminDownloads = () => {
       await acsApi.catalogue.updateDownload(asset.id, { is_active: !asset.is_active });
       fetchAssets();
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not change that file.');
+      showError(describeApiError(err, 'Could not change that file.'));
     }
   };
 
@@ -109,7 +110,7 @@ const AdminDownloads = () => {
       success('Download deleted.');
       fetchAssets();
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not delete that file.');
+      showError(describeApiError(err, 'Could not delete that file.'));
     }
   };
 
@@ -125,7 +126,12 @@ const AdminDownloads = () => {
         </div>
       </header>
 
-      {error && <p className="ab-error">{error}</p>}
+      {error && (
+        <p className="ab-error">
+          {error}{' '}
+          <button type="button" className="ab-inline-retry" onClick={fetchAssets}>Try again</button>
+        </p>
+      )}
 
       <section className="ab-block" style={{ marginBottom: '1.5rem' }}>
         <h3>Upload a file</h3>

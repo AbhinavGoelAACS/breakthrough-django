@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
+import { describeApiError } from '../../utils/apiError';
 import {
   AUTHOR_POINTS,
   EDITOR_POINTS,
@@ -13,24 +14,30 @@ import styles from './ProceedingsPage.module.css';
 export const ProceedingsPage = () => {
   const [downloads, setDownloads] = useState([]);
   const [downloadsLoading, setDownloadsLoading] = useState(true);
+  // A failed fetch must not read as "no templates published" — an author
+  // hunting for the Word template would give up for the wrong reason.
+  const [downloadsError, setDownloadsError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
 
   useEffect(() => {
     const fetchDownloads = async () => {
       try {
         setDownloadsLoading(true);
+        setDownloadsError(null);
         const data = await acsApi.proceedings.listDownloads();
         const list = Array.isArray(data) ? data : data?.downloads || [];
         setDownloads(list);
       } catch (err) {
         console.error('Error fetching proceedings downloads:', err);
+        setDownloadsError(describeApiError(err, 'We could not load the downloads.'));
         setDownloads([]);
       } finally {
         setDownloadsLoading(false);
       }
     };
     fetchDownloads();
-  }, []);
+  }, [reloadKey]);
 
   const formatRevised = (isoDate) => {
     if (!isoDate) return '';
@@ -197,6 +204,21 @@ export const ProceedingsPage = () => {
           <div className={styles.downloadGrid}>
             {downloadsLoading ? (
               <p className={styles.downloadEmpty}>Loading downloads...</p>
+            ) : downloadsError ? (
+              <div className={styles.loadError}>
+                <span className="material-symbols-rounded">cloud_off</span>
+                <div>
+                  <p className={styles.loadErrorTitle}>{downloadsError}</p>
+                  <p className={styles.loadErrorHint}>
+                    If this keeps happening, email breakthroughpublishersindia@gmail.com and we
+                    will send the templates directly.
+                  </p>
+                  <button type="button" className={styles.retryBtn}
+                    onClick={() => setReloadKey((k) => k + 1)}>
+                    Try again
+                  </button>
+                </div>
+              </div>
             ) : groupedDownloads.length === 0 ? (
               <p className={styles.downloadEmpty}>
                 No files are published yet. Contact editorial for the current templates.

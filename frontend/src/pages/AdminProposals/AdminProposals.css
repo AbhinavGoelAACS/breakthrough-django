@@ -484,3 +484,15 @@
     margin-bottom: 0.5rem;
   }
 }
+
+.ap-inline-retry {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-bottom: 1.5px solid currentColor;
+  padding: 0;
+  cursor: pointer;
+}

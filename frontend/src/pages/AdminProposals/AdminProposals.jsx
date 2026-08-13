@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import acsApi from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
+import { describeApiError } from '../../utils/apiError';
 import { formatDateTimeIST } from '../../utils/dateUtils';
 import './AdminProposals.css';
 
@@ -71,7 +72,7 @@ const AdminProposals = () => {
       setProposals(data.proposals || []);
       setCounts(data.counts || { total: 0, submitted: 0, book: 0, proceedings: 0 });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Could not load proposals.');
+      setError(describeApiError(err, 'Could not load proposals.'));
       setProposals([]);
     } finally {
       setLoading(false);
@@ -90,7 +91,7 @@ const AdminProposals = () => {
       setSelected({ ...row, ...detail });
       setNote(detail.decision_note || '');
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not open that proposal.');
+      showError(describeApiError(err, 'Could not open that proposal.'));
       setSelected(null);
     } finally {
       setDetailLoading(false);
@@ -109,7 +110,7 @@ const AdminProposals = () => {
       setSelected((prev) => ({ ...prev, ...updated }));
       fetchProposals();
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not update that proposal.');
+      showError(describeApiError(err, 'Could not update that proposal.'));
     } finally {
       setSaving(false);
     }
@@ -117,16 +118,16 @@ const AdminProposals = () => {
 
   // The step that connects the queue to the catalogue: an accepted book
   // proposal becomes a draft title an editor can then produce.
-  const convertToBook = async () => {
+  const convertToTitle = async () => {
     if (!selected) return;
     try {
       setSaving(true);
-      const book = await acsApi.proposals.convertToBook(selected.id);
+      const book = await acsApi.proposals.convert(selected.kind, selected.id);
       success(`“${book.title}” added to the catalogue as a draft.`);
       setSelected((prev) => ({ ...prev, converted_book_id: book.id }));
       fetchProposals();
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not create a title from this proposal.');
+      showError(describeApiError(err, 'Could not create a title from this proposal.'));
     } finally {
       setSaving(false);
     }
@@ -134,7 +135,8 @@ const AdminProposals = () => {
 
   const isBook = selected?.kind === 'book';
   const attachments = selected?.attachments || {};
-  const canConvert = isBook && selected?.status === 'accepted' && !selected?.converted_book_id;
+  // Both kinds convert now — a proceedings proposal becomes a volume.
+  const canConvert = selected?.status === 'accepted' && !selected?.converted_book_id;
 
   return (
     <div className="ap-page">
@@ -164,7 +166,14 @@ const AdminProposals = () => {
         </div>
       </div>
 
-      {error && <p className="ap-error">{error}</p>}
+      {error && (
+        <p className="ap-error">
+          {error}{' '}
+          <button type="button" className="ap-inline-retry" onClick={fetchProposals}>
+            Try again
+          </button>
+        </p>
+      )}
 
       <div className="ap-filters">
         <div className="ap-filter-group">
@@ -404,8 +413,7 @@ const AdminProposals = () => {
                     </p>
                   </section>
 
-                  {isBook && (
-                    <section className="ap-block">
+                  <section className="ap-block">
                       <h3>Catalogue</h3>
                       {selected.converted_book_id ? (
                         <p className="ap-note" style={{ marginTop: 0 }}>
@@ -416,7 +424,9 @@ const AdminProposals = () => {
                         <>
                           <p className="ap-note" style={{ marginTop: 0 }}>
                             {canConvert
-                              ? 'Creates a hidden draft title pre-filled from this proposal, at the “commissioned” stage.'
+                              ? (isBook
+                                ? 'Creates a hidden draft title pre-filled from this proposal, at the “commissioned” stage.'
+                                : 'Creates a hidden draft volume in the BCP series, carrying over the conference name, dates, venue and organiser.')
                               : 'Accept this proposal first, then you can turn it into a catalogue title.'}
                           </p>
                           <div className="ap-decide">
@@ -424,15 +434,14 @@ const AdminProposals = () => {
                               type="button"
                               className="ap-btn ap-btn-accept"
                               disabled={saving || !canConvert}
-                              onClick={convertToBook}
+                              onClick={convertToTitle}
                             >
-                              Create book from this proposal
+                              {isBook ? 'Create book from this proposal' : 'Create volume from this proposal'}
                             </button>
                           </div>
                         </>
                       )}
                     </section>
-                  )}
                 </>
               )}
             </div>

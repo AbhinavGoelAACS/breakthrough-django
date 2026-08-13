@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import acsApi from '../../api/apiService';
+import { describeApiError, isNotFound } from '../../utils/apiError';
 import styles from './BookDetailPage.module.css';
 
 const Fact = ({ label, value }) =>
@@ -15,21 +16,26 @@ export const BookDetailPage = () => {
   const { slug } = useParams();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
+  // A missing title and an unreachable server are different problems with
+  // different fixes, so they are never collapsed into one state.
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const fetchBook = async () => {
       try {
         setLoading(true);
         setNotFound(false);
+        setError(null);
         const data = await acsApi.books.getDetail(slug);
         setBook(data);
       } catch (err) {
-        if (err?.response?.status === 404) {
+        if (isNotFound(err)) {
           setNotFound(true);
         } else {
           console.error('Error fetching book:', err);
-          setNotFound(true);
+          setError(describeApiError(err, 'We could not load this title.'));
         }
         setBook(null);
       } finally {
@@ -37,13 +43,40 @@ export const BookDetailPage = () => {
       }
     };
     fetchBook();
-  }, [slug]);
+  }, [slug, reloadKey]);
 
   if (loading) {
     return (
       <div className={styles.pageWrapper}>
         <div className={styles.state}>
           <p className={styles.stateBody}>Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Server or network failure — the title may well exist, so offer a retry
+  // rather than telling the reader it is missing.
+  if (error) {
+    return (
+      <div className={styles.pageWrapper}>
+        <div className={styles.state}>
+          <h1 className={styles.stateTitle}>We couldn&apos;t load this title</h1>
+          <p className={styles.stateBody}>{error}</p>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              type="button"
+              className={styles.btnPrimary}
+              style={{ border: 0, cursor: 'pointer' }}
+              onClick={() => setReloadKey((k) => k + 1)}
+            >
+              <span className="material-symbols-rounded">refresh</span>
+              Try again
+            </button>
+            <Link to="/books" className={styles.btnPrimary} style={{ background: 'transparent', color: 'inherit', border: '1.5px solid currentColor' }}>
+              Back to the catalogue
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -456,6 +456,28 @@
   border-color: #b3261e;
 }
 
+/* ── Advisory warnings (proceedings bounds, open-choice ceiling) ── */
+.ab-warn {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.9rem 1.1rem;
+  border-radius: 0.75rem;
+  background: #fff8e6;
+  border: 1px solid #e8d19a;
+  color: #6b4a00;
+}
+
+.ab-warn p {
+  margin: 0 0 0.4rem;
+  font-size: 0.84375rem;
+  line-height: 1.55;
+}
+
+.ab-warn p:last-child {
+  margin-bottom: 0;
+}
+
 /* ── Buttons ── */
 .ab-btn {
   display: inline-flex;
@@ -553,4 +575,16 @@
   .ab-chapter-grid { grid-template-columns: 1fr 1fr; }
   .ab-row { grid-template-columns: 1fr auto; }
   .ab-search { margin-left: 0; width: 100%; }
+}
+
+.ab-inline-retry {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-bottom: 1.5px solid currentColor;
+  padding: 0;
+  cursor: pointer;
 }

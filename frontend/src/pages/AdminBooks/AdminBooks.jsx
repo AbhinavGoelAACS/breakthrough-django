@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import acsApi from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
+import { describeApiError } from '../../utils/apiError';
 import './AdminBooks.css';
 
 // Must match Book.PRODUCTION_CHOICES in backend/api/models.py
@@ -30,11 +31,18 @@ const VISIBILITY = [
 const EMPTY_BOOK = {
   title: '', subtitle: '', slug: '', series: '', volume_no: '', kind: 'monograph',
   abstract: '', isbn: '', eisbn: '', doi: '', pages: '', edition: '',
-  language: 'English', conference_name: '', published_on: '',
+  language: 'English', published_on: '',
+  // Conference metadata — Crossref registers proceedings as a distinct record
+  // type and needs these, so they are kept structured rather than free text.
+  conference_name: '', conference_acronym: '', conference_number: '',
+  conference_start: '', conference_end: '', conference_venue: '',
+  conference_organiser: '', conference_url: '',
   is_open_access: false, is_published: false, production_status: 'commissioned',
 };
 
-const EMPTY_CHAPTER = { title: '', authors: '', doi: '', start_page: '', end_page: '' };
+const EMPTY_CHAPTER = {
+  title: '', authors: '', doi: '', start_page: '', end_page: '', is_open_access: false,
+};
 
 const AdminBooks = () => {
   const { success, error: showError } = useToast();
@@ -54,6 +62,7 @@ const AdminBooks = () => {
   const [contributors, setContributors] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [newChapter, setNewChapter] = useState(EMPTY_CHAPTER);
+  const [warnings, setWarnings] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const fetchBooks = useCallback(async () => {
@@ -68,7 +77,7 @@ const AdminBooks = () => {
       setBooks(data.books || []);
       setCounts(data.counts || { total: 0, published: 0, in_production: 0 });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Could not load the catalogue.');
+      setError(describeApiError(err, 'Could not load the catalogue.'));
       setBooks([]);
     } finally {
       setLoading(false);
@@ -93,6 +102,7 @@ const AdminBooks = () => {
     setForm(EMPTY_BOOK);
     setContributors([]);
     setChapters([]);
+    setWarnings([]);
     setErrors({});
   };
 
@@ -111,9 +121,10 @@ const AdminBooks = () => {
       });
       setContributors(book.contributors || []);
       setChapters(book.chapters || []);
+      setWarnings(book.warnings || []);
       setOpen(book);
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not open that title.');
+      showError(describeApiError(err, 'Could not open that title.'));
       setOpen(null);
     }
   };
@@ -126,11 +137,13 @@ const AdminBooks = () => {
   const buildPayload = () => {
     const payload = { ...form };
     // Empty strings would fail integer/date validation server-side
-    ['volume_no', 'pages', 'series'].forEach((k) => {
+    ['volume_no', 'pages', 'series', 'conference_number'].forEach((k) => {
       payload[k] = payload[k] === '' ? null : Number(payload[k]);
       if (Number.isNaN(payload[k])) payload[k] = null;
     });
     if (!payload.published_on) payload.published_on = null;
+    if (!payload.conference_start) payload.conference_start = null;
+    if (!payload.conference_end) payload.conference_end = null;
     if (!payload.slug) delete payload.slug; // let the server derive it
     return payload;
   };
@@ -149,6 +162,7 @@ const AdminBooks = () => {
           ? await acsApi.catalogue.createBook(payload)
           : await acsApi.catalogue.updateBook(open.id, payload);
       success(open === 'new' ? 'Title created.' : 'Title saved.');
+      setWarnings(saved.warnings || []);
       setOpen(saved);
       setForm((prev) => ({ ...prev, slug: saved.slug, production_status: saved.production_status }));
       fetchBooks();
@@ -162,7 +176,7 @@ const AdminBooks = () => {
         );
         showError('Some fields need fixing.');
       } else {
-        showError(data?.detail || 'Could not save this title.');
+        showError(describeApiError(err, 'Could not save this title.'));
       }
     } finally {
       setSaving(false);
@@ -178,11 +192,12 @@ const AdminBooks = () => {
       setSaving(true);
       const saved = await acsApi.catalogue.updateBook(open.id, { production_status: stage });
       setForm((prev) => ({ ...prev, production_status: saved.production_status }));
+      setWarnings(saved.warnings || []);
       setOpen(saved);
       success(`Moved to ${saved.production_label}.`);
       fetchBooks();
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not change the stage.');
+      showError(describeApiError(err, 'Could not change the stage.'));
     } finally {
       setSaving(false);
     }
@@ -198,7 +213,7 @@ const AdminBooks = () => {
       setOpen(null);
       fetchBooks();
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not delete this title.');
+      showError(describeApiError(err, 'Could not delete this title.'));
     } finally {
       setSaving(false);
     }
@@ -213,7 +228,7 @@ const AdminBooks = () => {
       success('Contributors saved.');
       fetchBooks();
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not save contributors.');
+      showError(describeApiError(err, 'Could not save contributors.'));
     } finally {
       setSaving(false);
     }
@@ -231,10 +246,13 @@ const AdminBooks = () => {
       const created = await acsApi.catalogue.addChapter(open.id, payload);
       setChapters((prev) => [...prev, created]);
       setNewChapter(EMPTY_CHAPTER);
+      // The open-choice ratio just changed, so re-read the advisory checks.
+      const refreshed = await acsApi.catalogue.getBook(open.id);
+      setWarnings(refreshed.warnings || []);
       success('Chapter added.');
     } catch (err) {
       const data = err.response?.data;
-      showError(data?.end_page?.[0] || data?.detail || 'Could not add that chapter.');
+      showError(data?.end_page?.[0] || describeApiError(err, 'Could not add that chapter.'));
     } finally {
       setSaving(false);
     }
@@ -244,9 +262,11 @@ const AdminBooks = () => {
     try {
       await acsApi.catalogue.deleteChapter(open.id, chapterId);
       setChapters((prev) => prev.filter((c) => c.id !== chapterId));
+      const refreshed = await acsApi.catalogue.getBook(open.id);
+      setWarnings(refreshed.warnings || []);
       success('Chapter removed.');
     } catch (err) {
-      showError(err.response?.data?.detail || 'Could not remove that chapter.');
+      showError(describeApiError(err, 'Could not remove that chapter.'));
     }
   };
 
@@ -284,7 +304,12 @@ const AdminBooks = () => {
         </div>
       </div>
 
-      {error && <p className="ab-error">{error}</p>}
+      {error && (
+        <p className="ab-error">
+          {error}{' '}
+          <button type="button" className="ab-inline-retry" onClick={fetchBooks}>Try again</button>
+        </p>
+      )}
 
       <div className="ab-filters">
         <button
@@ -408,6 +433,17 @@ const AdminBooks = () => {
             </div>
 
             <div className="ab-drawer-body">
+              {warnings.length > 0 && (
+                <div className="ab-warn">
+                  <span className="material-symbols-rounded" style={{ fontSize: '1.2rem' }}>
+                    warning
+                  </span>
+                  <div>
+                    {warnings.map((w) => <p key={w}>{w}</p>)}
+                  </div>
+                </div>
+              )}
+
               {tab === 'details' && (
                 <>
                   {open !== 'new' && (
@@ -533,13 +569,6 @@ const AdminBooks = () => {
                         <span className="ab-help">Day-level precision, as ONIX expects.</span>
                       </div>
 
-                      <div className="ab-field">
-                        <label className="ab-label" htmlFor="conference_name">Conference</label>
-                        <input id="conference_name" className="ab-input" value={form.conference_name}
-                          onChange={(e) => setField('conference_name', e.target.value)}
-                          placeholder="Proceedings volumes only" />
-                      </div>
-
                       <div className="ab-field ab-field-wide">
                         <label className="ab-label" htmlFor="abstract">Abstract</label>
                         <textarea id="abstract" className="ab-textarea" value={form.abstract}
@@ -576,6 +605,59 @@ const AdminBooks = () => {
                       </button>
                     </div>
                   </section>
+
+                  {form.kind === 'proceedings' && (
+                    <section className="ab-block">
+                      <h3>Conference</h3>
+                      <p className="ab-help" style={{ marginBottom: '1rem' }}>
+                        Crossref registers proceedings as a distinct record type. The conference
+                        name is required for that deposit; the rest is strongly encouraged.
+                      </p>
+                      <div className="ab-grid">
+                        <div className="ab-field ab-field-wide">
+                          <label className="ab-label" htmlFor="conference_name">Conference name</label>
+                          <input id="conference_name" className="ab-input" value={form.conference_name}
+                            onChange={(e) => setField('conference_name', e.target.value)}
+                            placeholder="e.g. International Conference on Computational Intelligence 2027" />
+                        </div>
+                        <div className="ab-field">
+                          <label className="ab-label" htmlFor="conference_acronym">Acronym</label>
+                          <input id="conference_acronym" className="ab-input" value={form.conference_acronym}
+                            onChange={(e) => setField('conference_acronym', e.target.value)} placeholder="e.g. ICCIS" />
+                        </div>
+                        <div className="ab-field">
+                          <label className="ab-label" htmlFor="conference_number">Edition number</label>
+                          <input id="conference_number" className="ab-input" type="number" value={form.conference_number ?? ''}
+                            onChange={(e) => setField('conference_number', e.target.value)} placeholder="e.g. 12" />
+                        </div>
+                        <div className="ab-field">
+                          <label className="ab-label" htmlFor="conference_start">First day</label>
+                          <input id="conference_start" className="ab-input" type="date" value={form.conference_start || ''}
+                            onChange={(e) => setField('conference_start', e.target.value)} />
+                        </div>
+                        <div className="ab-field">
+                          <label className="ab-label" htmlFor="conference_end">Last day</label>
+                          <input id="conference_end" className="ab-input" type="date" value={form.conference_end || ''}
+                            onChange={(e) => setField('conference_end', e.target.value)} />
+                        </div>
+                        <div className="ab-field">
+                          <label className="ab-label" htmlFor="conference_venue">Venue</label>
+                          <input id="conference_venue" className="ab-input" value={form.conference_venue}
+                            onChange={(e) => setField('conference_venue', e.target.value)} placeholder="City, or Online" />
+                        </div>
+                        <div className="ab-field">
+                          <label className="ab-label" htmlFor="conference_organiser">Organiser</label>
+                          <input id="conference_organiser" className="ab-input" value={form.conference_organiser}
+                            onChange={(e) => setField('conference_organiser', e.target.value)} />
+                        </div>
+                        <div className="ab-field ab-field-wide">
+                          <label className="ab-label" htmlFor="conference_url">Conference website</label>
+                          <input id="conference_url" className="ab-input" type="url" value={form.conference_url}
+                            onChange={(e) => setField('conference_url', e.target.value)} placeholder="https://" />
+                        </div>
+                      </div>
+                    </section>
+                  )}
                 </>
               )}
 
@@ -639,6 +721,7 @@ const AdminBooks = () => {
                               {c.authors || 'No authors recorded'}
                               {c.doi ? ` · ${c.doi}` : ''}
                               {c.start_page && c.end_page ? ` · pp. ${c.start_page}–${c.end_page}` : ''}
+                              {c.is_open_access ? ' · Open access' : ''}
                             </div>
                             <div className="ab-actions">
                               <span className="ab-actions-spacer" />
@@ -668,11 +751,20 @@ const AdminBooks = () => {
                     <div className="ab-actions" style={{ marginTop: '0.6rem' }}>
                       <input className="ab-input" placeholder="Chapter DOI" value={newChapter.doi}
                         onChange={(e) => setNewChapter((p) => ({ ...p, doi: e.target.value }))} />
+                      <label className="ab-check" style={{ whiteSpace: 'nowrap' }}>
+                        <input type="checkbox" checked={newChapter.is_open_access}
+                          onChange={(e) => setNewChapter((p) => ({ ...p, is_open_access: e.target.checked }))} />
+                        Open access
+                      </label>
                       <button type="button" className="ab-btn ab-btn-primary" onClick={addChapter}
                         disabled={saving || !newChapter.title.trim()}>
                         Add
                       </button>
                     </div>
+                    <p className="ab-help" style={{ marginTop: '0.6rem' }}>
+                      Marking papers open access matters: above 40% of a volume, publish the whole
+                      volume open access instead of using open choice.
+                    </p>
                   </section>
                 </>
               )}

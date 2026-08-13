@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
+import { describeApiError, fieldErrors } from '../../utils/apiError';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Field,
@@ -170,18 +171,16 @@ export const BookProposalPage = () => {
       setResult(created);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      const data = err?.response?.data;
-      if (data && typeof data === 'object' && !data.detail) {
-        setErrors(
-          Object.fromEntries(
-            Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v[0] : String(v)]),
-          ),
-        );
+      const fields = fieldErrors(err);
+      if (fields) {
+        setErrors(fields);
         setFormError('The server rejected some fields. Your answers are still here — fix them and resubmit.');
       } else {
+        // Nothing is lost on failure: the form keeps every value, and the
+        // mailto is a genuine fallback for a 20-minute form.
         setFormError(
-          data?.detail ||
-            'We could not submit your proposal. Nothing was lost — try again, or email breakthroughpublishersindia@gmail.com.',
+          `${describeApiError(err, 'We could not submit your proposal.')} `
+          + 'Your answers are still here — try again, or email breakthroughpublishersindia@gmail.com.',
         );
       }
     } finally {

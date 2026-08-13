@@ -424,8 +424,9 @@ class AdminProposalDetailView(APIView):
         data["decided_by_email"] = proposal.decided_by.email if proposal.decided_by else None
         data["account_email"] = proposal.submitted_by.email if proposal.submitted_by else None
 
+        data["converted_book_id"] = proposal.converted_book_id
+
         if kind == "book":
-            data["converted_book_id"] = proposal.converted_book_id
             data["attachments"] = {
                 field: _build_media_url(getattr(proposal, field), request)
                 for field in ("cv_file", "sample_chapter_file", "outline_file")
