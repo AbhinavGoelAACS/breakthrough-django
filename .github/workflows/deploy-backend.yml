@@ -137,39 +137,11 @@ jobs:
             **/*.log
             **/.DS_Store
             **/.htaccess
-            
-      - name: Trigger cPanel Python App Restart (via SSH)
-        if: ${{ env.HAS_SSH_KEY == 'true' }}
-        env:
-          HAS_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            cd /home2/aacsjour/BreakThrough
-            
-            # Activate virtual environment if exists
-            if [ -d "venv" ]; then
-              source venv/bin/activate
-            fi
-            
-            # Install/update dependencies
-            pip install -r requirements.txt --quiet
-            
-            # Run migrations
-            python manage.py migrate --no-input
-            
-            # Collect static files
-            python manage.py collectstatic --no-input
-            
-            # Restart the application
-            touch tmp/restart.txt
-            
-            echo "Backend deployment complete!"
-            
+      # There is no SSH access on this cPanel account, so migrations cannot be
+      # run from here. They are applied by api/apps.py::ApiConfig.ready() when
+      # Passenger boots the app — the FTP upload of tmp/restart.txt above is
+      # what triggers that reload. See DEPLOYMENT.md.
+
       - name: Deployment Summary
         run: |
           echo "✅ Backend deployment completed successfully!"
