@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
-import { describeApiError } from '../../utils/apiError';
+import { describeApiError, isNotFound } from '../../utils/apiError';
 import { BOOK_KINDS, PROPOSAL_STEPS } from './booksData';
 import styles from './BooksPage.module.css';
 
@@ -29,8 +29,12 @@ export const BooksPage = () => {
         const list = Array.isArray(data) ? data : data?.books || [];
         setBooks(list);
       } catch (err) {
-        console.error('Error fetching books:', err);
-        setError(describeApiError(err, 'We could not load the catalogue.'));
+        // A 404 means there is nothing here, not that something broke — the
+        // empty state is the honest thing to show, with no retry to offer.
+        if (!isNotFound(err)) {
+          console.error('Error fetching books:', err);
+          setError(describeApiError(err, 'We could not load the catalogue.'));
+        }
         setBooks([]);
       } finally {
         setLoading(false);
@@ -46,8 +50,10 @@ export const BooksPage = () => {
         const list = Array.isArray(data) ? data : data?.series || [];
         setSeries(list);
       } catch (err) {
-        console.error('Error fetching book series:', err);
-        setSeriesError(describeApiError(err, 'We could not load the series list.'));
+        if (!isNotFound(err)) {
+          console.error('Error fetching book series:', err);
+          setSeriesError(describeApiError(err, 'We could not load the series list.'));
+        }
         setSeries([]);
       }
     };

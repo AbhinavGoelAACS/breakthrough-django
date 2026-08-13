@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
-import { describeApiError } from '../../utils/apiError';
+import { describeApiError, isNotFound } from '../../utils/apiError';
 import {
   AUTHOR_POINTS,
   EDITOR_POINTS,
@@ -29,8 +29,11 @@ export const ProceedingsPage = () => {
         const list = Array.isArray(data) ? data : data?.downloads || [];
         setDownloads(list);
       } catch (err) {
-        console.error('Error fetching proceedings downloads:', err);
-        setDownloadsError(describeApiError(err, 'We could not load the downloads.'));
+        // 404 = nothing published yet, which is the empty state, not an error.
+        if (!isNotFound(err)) {
+          console.error('Error fetching proceedings downloads:', err);
+          setDownloadsError(describeApiError(err, 'We could not load the downloads.'));
+        }
         setDownloads([]);
       } finally {
         setDownloadsLoading(false);

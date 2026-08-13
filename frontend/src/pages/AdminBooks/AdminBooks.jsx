@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import acsApi from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
-import { describeApiError, fieldErrors } from '../../utils/apiError';
+import { describeApiError, fieldErrors, isNotFound } from '../../utils/apiError';
 import './AdminBooks.css';
 
 // Must match Book.PRODUCTION_CHOICES in backend/api/models.py
@@ -88,7 +88,7 @@ const AdminBooks = () => {
       setBooks(data.books || []);
       setCounts(data.counts || { total: 0, published: 0, in_production: 0 });
     } catch (err) {
-      setError(describeApiError(err, 'Could not load the catalogue.'));
+      if (!isNotFound(err)) setError(describeApiError(err, 'Could not load the catalogue.'));
       setBooks([]);
     } finally {
       setLoading(false);

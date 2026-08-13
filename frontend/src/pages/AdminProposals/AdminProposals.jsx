@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import acsApi from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
-import { describeApiError } from '../../utils/apiError';
+import { describeApiError, isNotFound } from '../../utils/apiError';
 import { formatDateTimeIST } from '../../utils/dateUtils';
 import './AdminProposals.css';
 
@@ -72,7 +72,7 @@ const AdminProposals = () => {
       setProposals(data.proposals || []);
       setCounts(data.counts || { total: 0, submitted: 0, book: 0, proceedings: 0 });
     } catch (err) {
-      setError(describeApiError(err, 'Could not load proposals.'));
+      if (!isNotFound(err)) setError(describeApiError(err, 'Could not load proposals.'));
       setProposals([]);
     } finally {
       setLoading(false);

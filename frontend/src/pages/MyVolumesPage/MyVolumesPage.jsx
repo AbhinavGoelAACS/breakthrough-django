@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
 import { useAuth } from '../../hooks/useAuth';
-import { describeApiError } from '../../utils/apiError';
+import { describeApiError, isNotFound } from '../../utils/apiError';
 import { proposalStyles as styles } from '../../components/proposal/proposalStyles';
 import '../AdminBooks/AdminBooks.css';
 
@@ -29,7 +29,7 @@ export const MyVolumesPage = () => {
         const data = await acsApi.guestEditor.myVolumes();
         setVolumes(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError(describeApiError(err, 'We could not load your volumes.'));
+        if (!isNotFound(err)) setError(describeApiError(err, 'We could not load your volumes.'));
         setVolumes([]);
       } finally {
         setLoading(false);
