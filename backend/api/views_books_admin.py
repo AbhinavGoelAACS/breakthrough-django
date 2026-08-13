@@ -9,6 +9,7 @@ proposal into a catalogue title.
 import os
 import re
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.db.models import Count, Q
@@ -23,18 +24,26 @@ from .models import (
     Book,
     BookChapter,
     BookContributor,
+    BookGuestEditor,
     BookProposal,
     BookSeries,
     DownloadAsset,
     ProceedingsProposal,
+    User,
 )
 from .serializers import (
     AdminBookChapterSerializer,
+    BookGuestEditorSerializer,
     AdminBookSerializer,
     AdminBookSeriesSerializer,
     AdminDownloadAssetSerializer,
 )
 from .views_admin import check_admin_or_editor_role
+from .services.email_service import (
+    notify_guest_editor_response,
+    queue_email_task,
+    send_guest_editor_invitation,
+)
 
 ALLOWED_DOWNLOAD_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".odt", ".rtf", ".zip", ".tex", ".xlsx", ".xls", ".csv",
@@ -43,11 +52,33 @@ ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB — LaTeX bundles get large
 
 
-def _forbidden():
-    return Response(
-        {"detail": "Admin or editor access required"},
-        status=status.HTTP_403_FORBIDDEN,
-    )
+def _forbidden(message="Admin or editor access required"):
+    return Response({"detail": message}, status=status.HTTP_403_FORBIDDEN)
+
+
+def is_guest_editor_of(user, book_id):
+    """True when this user is an accepted guest editor of that specific volume."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    return BookGuestEditor.objects.filter(
+        book_id=book_id, user=user, status=BookGuestEditor.STATUS_ACTIVE
+    ).exists()
+
+
+def can_manage_book(user, book_id):
+    """Staff can manage any title; a guest editor only their own volume."""
+    return check_admin_or_editor_role(user) or is_guest_editor_of(user, book_id)
+
+
+# Publishing, deleting and reassigning a title are the publisher's calls, not
+# the guest editor's. Guest editors compile content; staff decide what ships.
+STAFF_ONLY_BOOK_FIELDS = {
+    "is_published",
+    "production_status",
+    "managing_editor",
+    "series",
+    "slug",
+}
 
 
 def _save_upload(file, subdir, allowed_extensions, field_name="file"):
@@ -176,14 +207,21 @@ class AdminBookListView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
-        if not check_admin_or_editor_role(request.user):
-            return _forbidden()
-
+        is_staff = check_admin_or_editor_role(request.user)
         queryset = (
             Book.objects.select_related("series", "managing_editor")
             .prefetch_related("contributors", "chapters")
             .all()
         )
+
+        if not is_staff:
+            # A guest editor sees only the volumes they were invited to.
+            guest_ids = BookGuestEditor.objects.filter(
+                user=request.user, status=BookGuestEditor.STATUS_ACTIVE
+            ).values_list("book_id", flat=True)
+            if not guest_ids:
+                return _forbidden()
+            queryset = queryset.filter(id__in=list(guest_ids))
 
         production = request.query_params.get("production_status")
         if production and production != "all":
@@ -207,10 +245,11 @@ class AdminBookListView(APIView):
                 | Q(conference_name__icontains=search)
             )
 
+        scope = Book.objects.all() if is_staff else Book.objects.filter(id__in=list(guest_ids))
         counts = {
-            "total": Book.objects.count(),
-            "published": Book.objects.filter(is_published=True).count(),
-            "in_production": Book.objects.exclude(production_status="published").count(),
+            "total": scope.count(),
+            "published": scope.filter(is_published=True).count(),
+            "in_production": scope.exclude(production_status="published").count(),
         }
 
         try:
@@ -268,7 +307,7 @@ class AdminBookDetailView(APIView):
             return None
 
     def get(self, request, book_id):
-        if not check_admin_or_editor_role(request.user):
+        if not can_manage_book(request.user, book_id):
             return _forbidden()
         book = self._get(book_id)
         if not book:
@@ -278,11 +317,21 @@ class AdminBookDetailView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def patch(self, request, book_id):
-        if not check_admin_or_editor_role(request.user):
+        if not can_manage_book(request.user, book_id):
             return _forbidden()
         book = self._get(book_id)
         if not book:
             return Response({"detail": "Book not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Guest editors compile content; they do not decide what ships.
+        if not check_admin_or_editor_role(request.user):
+            attempted = STAFF_ONLY_BOOK_FIELDS.intersection(request.data.keys())
+            if attempted:
+                return _forbidden(
+                    "Only the publishing team can change: "
+                    + ", ".join(sorted(attempted)).replace("_", " ")
+                    + "."
+                )
 
         serializer = AdminBookSerializer(
             book, data=request.data, partial=True, context={"request": request}
@@ -343,7 +392,7 @@ class AdminBookContributorsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, book_id):
-        if not check_admin_or_editor_role(request.user):
+        if not can_manage_book(request.user, book_id):
             return _forbidden()
         try:
             book = Book.objects.get(id=book_id)
@@ -393,7 +442,7 @@ class AdminBookChapterListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, book_id):
-        if not check_admin_or_editor_role(request.user):
+        if not can_manage_book(request.user, book_id):
             return _forbidden()
         try:
             book = Book.objects.get(id=book_id)
@@ -421,7 +470,7 @@ class AdminBookChapterDetailView(APIView):
             return None
 
     def patch(self, request, book_id, chapter_id):
-        if not check_admin_or_editor_role(request.user):
+        if not can_manage_book(request.user, book_id):
             return _forbidden()
         chapter = self._get(book_id, chapter_id)
         if not chapter:
@@ -434,7 +483,7 @@ class AdminBookChapterDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, book_id, chapter_id):
-        if not check_admin_or_editor_role(request.user):
+        if not can_manage_book(request.user, book_id):
             return _forbidden()
         chapter = self._get(book_id, chapter_id)
         if not chapter:
@@ -706,3 +755,277 @@ class AdminProposalConvertView(APIView):
         data = AdminBookSerializer(book, context={"request": request}).data
         data["warnings"] = proceedings_warnings(book)
         return Response(data, status=status.HTTP_201_CREATED)
+
+
+# ---------------------------------------------------------------------------
+# Guest editors
+# ---------------------------------------------------------------------------
+
+GUEST_INVITE_VALID_DAYS = 30
+
+
+class AdminBookGuestEditorListView(APIView):
+    """GET  /api/v1/admin/books/<id>/guest-editors  — who is on this volume.
+    POST /api/v1/admin/books/<id>/guest-editors  — invite someone.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, book_id):
+        if not can_manage_book(request.user, book_id):
+            return _forbidden()
+        editors = BookGuestEditor.objects.select_related("user", "invited_by").filter(
+            book_id=book_id
+        ).exclude(status=BookGuestEditor.STATUS_REMOVED)
+        return Response(
+            BookGuestEditorSerializer(editors, many=True, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request, book_id):
+        # Guest editors may invite co-editors onto their own volume — an edited
+        # collection is normally assembled by several people.
+        if not can_manage_book(request.user, book_id):
+            return _forbidden()
+        try:
+            book = Book.objects.get(id=book_id)
+        except Book.DoesNotExist:
+            return Response({"detail": "Book not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BookGuestEditorSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data["email"].strip().lower()
+        existing = BookGuestEditor.objects.filter(book_id=book_id, email=email).first()
+        if existing and existing.status != BookGuestEditor.STATUS_REMOVED:
+            return Response(
+                {"email": [f"{email} has already been invited to this volume."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Link an existing account straight away so they see the volume on sign-in.
+        account = User.objects.filter(email__iexact=email).first()
+
+        defaults = {
+            "user": account,
+            "name": serializer.validated_data["name"],
+            "affiliation": serializer.validated_data.get("affiliation"),
+            "invitation_message": serializer.validated_data.get("invitation_message"),
+            "invitation_token": uuid.uuid4().hex,
+            "token_expiry": timezone.now() + timedelta(days=GUEST_INVITE_VALID_DAYS),
+            "status": BookGuestEditor.STATUS_INVITED,
+            "invited_by": request.user,
+            "decline_reason": None,
+            "responded_on": None,
+            "order": BookGuestEditor.objects.filter(book_id=book_id).count(),
+        }
+
+        if existing:      # previously removed — reissue rather than duplicate
+            for field, value in defaults.items():
+                setattr(existing, field, value)
+            existing.save()
+            guest = existing
+        else:
+            guest = BookGuestEditor.objects.create(book=book, email=email, **defaults)
+
+        queue_email_task(send_guest_editor_invitation, guest, book)
+        return Response(
+            BookGuestEditorSerializer(guest, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AdminBookGuestEditorDetailView(APIView):
+    """DELETE removes someone's access. POST re-sends the invitation."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get(self, book_id, guest_id):
+        try:
+            return BookGuestEditor.objects.select_related("book").get(id=guest_id, book_id=book_id)
+        except BookGuestEditor.DoesNotExist:
+            return None
+
+    def post(self, request, book_id, guest_id):
+        if not can_manage_book(request.user, book_id):
+            return _forbidden()
+        guest = self._get(book_id, guest_id)
+        if not guest:
+            return Response({"detail": "Guest editor not found."}, status=status.HTTP_404_NOT_FOUND)
+        if guest.status == BookGuestEditor.STATUS_ACTIVE:
+            return Response(
+                {"detail": "They have already accepted."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        guest.invitation_token = uuid.uuid4().hex
+        guest.token_expiry = timezone.now() + timedelta(days=GUEST_INVITE_VALID_DAYS)
+        guest.status = BookGuestEditor.STATUS_INVITED
+        guest.save(update_fields=["invitation_token", "token_expiry", "status"])
+
+        queue_email_task(send_guest_editor_invitation, guest, guest.book)
+        return Response(
+            BookGuestEditorSerializer(guest, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, book_id, guest_id):
+        if not can_manage_book(request.user, book_id):
+            return _forbidden()
+        guest = self._get(book_id, guest_id)
+        if not guest:
+            return Response({"detail": "Guest editor not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # A guest editor cannot remove themselves and lock the volume by accident.
+        if guest.user_id and guest.user_id == request.user.id:
+            return Response(
+                {"detail": "You cannot remove your own access."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        guest.status = BookGuestEditor.STATUS_REMOVED
+        guest.responded_on = timezone.now()
+        guest.save(update_fields=["status", "responded_on"])
+        return Response({"detail": "Access removed."}, status=status.HTTP_200_OK)
+
+
+class GuestEditorInvitationView(APIView):
+    """GET  /api/v1/guest-editor/<token>          — what the invitation is for.
+    POST /api/v1/guest-editor/<token>/respond     — accept or decline.
+
+    Reading the invitation is public so the recipient can see what they were
+    asked before signing in; responding requires an account.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, token):
+        try:
+            guest = BookGuestEditor.objects.select_related("book", "invited_by").get(
+                invitation_token=token
+            )
+        except BookGuestEditor.DoesNotExist:
+            return Response(
+                {"detail": "This invitation link is not valid."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            {
+                "name": guest.name,
+                "email": guest.email,
+                "status": guest.status,
+                "status_label": guest.get_status_display(),
+                "message": guest.invitation_message,
+                "expired": guest.token_expiry < timezone.now(),
+                "expires_on": guest.token_expiry,
+                "book": {
+                    "title": guest.book.title,
+                    "kind": guest.book.kind,
+                    "kind_label": guest.book.get_kind_display(),
+                    "conference_name": guest.book.conference_name,
+                },
+                "invited_by_email": guest.invited_by.email if guest.invited_by else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class GuestEditorRespondView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, token):
+        try:
+            guest = BookGuestEditor.objects.select_related("book").get(invitation_token=token)
+        except BookGuestEditor.DoesNotExist:
+            return Response(
+                {"detail": "This invitation link is not valid."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if guest.status in (BookGuestEditor.STATUS_ACTIVE, BookGuestEditor.STATUS_DECLINED):
+            return Response(
+                {"detail": f"This invitation was already {guest.get_status_display().lower()}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if guest.status == BookGuestEditor.STATUS_REMOVED:
+            return Response(
+                {"detail": "This invitation is no longer available."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if guest.token_expiry < timezone.now():
+            return Response(
+                {"detail": "This invitation has expired. Ask the editor to send a new one."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # The invitation belongs to an email address, not to whoever holds the link.
+        if (request.user.email or "").strip().lower() != guest.email.strip().lower():
+            return Response(
+                {
+                    "detail": f"This invitation was sent to {guest.email}. "
+                              "Sign in with that address to respond."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        action = (request.data.get("action") or "").lower()
+        if action not in ("accept", "decline"):
+            return Response(
+                {"action": ["Send either 'accept' or 'decline'."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        guest.user = request.user
+        guest.responded_on = timezone.now()
+
+        if action == "accept":
+            guest.status = BookGuestEditor.STATUS_ACTIVE
+            guest.save(update_fields=["user", "status", "responded_on"])
+            # Keep the public byline in step without anyone retyping the name.
+            BookContributor.objects.get_or_create(
+                book=guest.book,
+                name=guest.name,
+                role=BookContributor.ROLE_EDITOR,
+                defaults={
+                    "user": request.user,
+                    "affiliation": guest.affiliation,
+                    "order": guest.book.contributors.count(),
+                },
+            )
+        else:
+            guest.status = BookGuestEditor.STATUS_DECLINED
+            guest.decline_reason = request.data.get("reason") or None
+            guest.save(update_fields=["user", "status", "responded_on", "decline_reason"])
+
+        queue_email_task(notify_guest_editor_response, guest, guest.book, action == "accept")
+        return Response(
+            BookGuestEditorSerializer(guest, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class MyVolumesView(APIView):
+    """GET /api/v1/my-volumes — volumes the signed-in user guest-edits."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        rows = BookGuestEditor.objects.select_related("book", "book__series").filter(
+            user=request.user
+        ).exclude(status=BookGuestEditor.STATUS_REMOVED)
+
+        volumes = []
+        for row in rows:
+            volumes.append(
+                {
+                    "guest_editor_id": row.id,
+                    "status": row.status,
+                    "status_label": row.get_status_display(),
+                    "invitation_token": (
+                        row.invitation_token if row.status == BookGuestEditor.STATUS_INVITED else None
+                    ),
+                    "book": AdminBookSerializer(row.book, context={"request": request}).data,
+                }
+            )
+        return Response(volumes, status=status.HTTP_200_OK)

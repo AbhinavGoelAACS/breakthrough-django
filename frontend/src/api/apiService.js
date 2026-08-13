@@ -144,6 +144,15 @@ export const acsApi = {
     convert: (kind, id) => apiService.post(`/api/v1/admin/proposals/${kind}/${id}/convert`, {}),
   },
 
+  // Guest-editor invitations and the volumes a user guest-edits
+  guestEditor: {
+    // Public: lets the recipient see what they were invited to before signing in
+    getInvitation: (token) => apiService.get(`/api/v1/guest-editor/${token}`, { skipAuth: true }),
+    respond: (token, action, reason) =>
+      apiService.post(`/api/v1/guest-editor/${token}/respond`, { action, reason }),
+    myVolumes: () => apiService.get('/api/v1/my-volumes'),
+  },
+
   // Catalogue management (admin/editor only)
   catalogue: {
     listBooks: ({ productionStatus, kind, visibility, q, skip = 0, limit = 50 } = {}) => {
@@ -173,6 +182,15 @@ export const acsApi = {
     createSeries: (data) => apiService.post('/api/v1/admin/book-series/', data),
     updateSeries: (id, data) => apiService.patch(`/api/v1/admin/book-series/${id}`, data),
     deleteSeries: (id) => apiService.delete(`/api/v1/admin/book-series/${id}`),
+
+    // Guest editors — multiple people can edit one volume
+    listGuestEditors: (bookId) => apiService.get(`/api/v1/admin/books/${bookId}/guest-editors`),
+    inviteGuestEditor: (bookId, data) =>
+      apiService.post(`/api/v1/admin/books/${bookId}/guest-editors`, data),
+    resendGuestEditor: (bookId, guestId) =>
+      apiService.post(`/api/v1/admin/books/${bookId}/guest-editors/${guestId}`, {}),
+    removeGuestEditor: (bookId, guestId) =>
+      apiService.delete(`/api/v1/admin/books/${bookId}/guest-editors/${guestId}`),
 
     listDownloads: () => apiService.get('/api/v1/admin/downloads/'),
     createDownload: (formData) => apiService.post('/api/v1/admin/downloads/', formData),

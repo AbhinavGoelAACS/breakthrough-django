@@ -588,3 +588,9 @@
   padding: 0;
   cursor: pointer;
 }
+
+/* ── Guest editor status ── */
+.ab-guest-invited  { background: #fff2d6; color: #7a4f00; }
+.ab-guest-active   { background: var(--j-primary-fixed, #c1ecd4); color: #10391f; }
+.ab-guest-declined { background: #fceceb; color: #8c1d18; }
+.ab-guest-removed  { background: var(--j-surface-container, #edeee8); color: #44483e; }

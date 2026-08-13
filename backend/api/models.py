@@ -825,3 +825,71 @@ class BookProposal(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class BookGuestEditor(models.Model):
+    """A guest editor invited to work on one specific volume.
+
+    Distinct from BookContributor on purpose:
+      - BookContributor is *bibliographic* — the public byline, and may name
+        people who have no account here at all.
+      - BookGuestEditor is *authorisation* — who may sign in and actually edit
+        this volume's metadata, contributors and chapters.
+
+    A volume can have any number of them, which is the normal case for an
+    edited collection or a conference proceedings volume. Accepting an
+    invitation also creates the matching BookContributor row, so the byline
+    stays correct without anyone having to type the name twice.
+    """
+
+    STATUS_INVITED = "invited"
+    STATUS_ACTIVE = "active"
+    STATUS_DECLINED = "declined"
+    STATUS_REMOVED = "removed"
+    STATUS_CHOICES = [
+        (STATUS_INVITED, "Invited"),
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_DECLINED, "Declined"),
+        (STATUS_REMOVED, "Removed"),
+    ]
+
+    class Meta:
+        db_table = "book_guest_editor"
+        managed = True
+        ordering = ["book_id", "order", "id"]
+        # The same person cannot be invited to the same volume twice.
+        unique_together = [("book", "email")]
+
+    id = models.AutoField(primary_key=True)
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, db_column="book_id", related_name="guest_editors",
+    )
+    # Null until they sign in and accept — we invite by email address.
+    user = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="user_id", related_name="guest_editorships",
+    )
+    email = models.EmailField(max_length=255)
+    name = models.CharField(max_length=255)
+    affiliation = models.CharField(max_length=500, null=True, blank=True)
+
+    invitation_token = models.CharField(max_length=255, unique=True)
+    token_expiry = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_INVITED)
+    invitation_message = models.TextField(null=True, blank=True)
+    decline_reason = models.TextField(null=True, blank=True)
+
+    invited_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, blank=True,
+        db_column="invited_by_id", related_name="+",
+    )
+    invited_on = models.DateTimeField(auto_now_add=True)
+    responded_on = models.DateTimeField(null=True, blank=True)
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.name} — {self.book_id} ({self.status})"
+
+    @property
+    def is_active(self):
+        return self.status == self.STATUS_ACTIVE

@@ -19,6 +19,8 @@ import ProceedingsPage from './pages/ProceedingsPage/ProceedingsPage';
 import BookProposalPage from './pages/BookProposalPage/BookProposalPage';
 import ProceedingsProposalPage from './pages/ProceedingsProposalPage/ProceedingsProposalPage';
 import BookDetailPage from './pages/BookDetailPage/BookDetailPage';
+import GuestEditorInvitePage from './pages/GuestEditorInvitePage/GuestEditorInvitePage';
+import MyVolumesPage from './pages/MyVolumesPage/MyVolumesPage';
 import JournalDetailPage from './pages/JournalDetailPage/JournalDetailPage';
 import { LoginPage } from './pages/LoginPage/LoginPage';
 import { SignupPage } from './pages/SignupPage/SignupPage';
@@ -236,6 +238,9 @@ function AppContent() {
           <Route path="/proceedings/propose" element={<ProceedingsProposalPage />} />
           {/* After /books/propose, so "propose" is never matched as a slug */}
           <Route path="/books/:slug" element={<BookDetailPage />} />
+          {/* Reading the invitation is public so the recipient can see what
+              they were asked before signing in; responding needs an account. */}
+          <Route path="/guest-editor/:token" element={<GuestEditorInvitePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -249,6 +254,11 @@ function AppContent() {
           <Route path="/journal/:id/volume/:volumeNo/issue/:issueNo" element={<ProtectedRoute><IssuePapersPage /></ProtectedRoute>} />
           <Route path="/paper/:id" element={<ProtectedRoute><PaperDetailsPage /></ProtectedRoute>} />
           <Route path="/submit" element={<ProtectedRoute><SubmitPage /></ProtectedRoute>} />
+          {/* Guest editors are usually authors or outside academics, not staff
+              editors, so these sit outside the editor portal guard. The API
+              scopes every response to the volumes they were invited to. */}
+          <Route path="/my-volumes" element={<ProtectedRoute><MyVolumesPage /></ProtectedRoute>} />
+          <Route path="/my-volumes/manage" element={<ProtectedRoute><AdminBooks /></ProtectedRoute>} />
           <Route path="/invitations/:token" element={<InvitationPage />} />
           <Route path="/complete-profile/:token" element={<CompleteProfilePage />} />
 

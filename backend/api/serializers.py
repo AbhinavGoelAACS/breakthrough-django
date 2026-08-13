@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import (
     User, Journal, JournalDetails, PaperPublished, News,
     Book, BookSeries, BookContributor, BookChapter,
-    DownloadAsset, ProceedingsProposal, BookProposal,
+    DownloadAsset, ProceedingsProposal, BookProposal, BookGuestEditor,
 )
 
 
@@ -627,3 +627,23 @@ class AdminDownloadAssetSerializer(serializers.ModelSerializer):
 
     def get_file_url(self, obj):
         return _build_media_url(obj.file, self.context.get("request"))
+
+
+class BookGuestEditorSerializer(serializers.ModelSerializer):
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    account_email = serializers.CharField(source="user.email", default=None, read_only=True)
+    invited_by_email = serializers.CharField(source="invited_by.email", default=None, read_only=True)
+    is_expired = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BookGuestEditor
+        fields = [
+            "id", "name", "email", "affiliation", "status", "status_label",
+            "account_email", "invited_by_email", "invitation_message",
+            "decline_reason", "invited_on", "responded_on", "is_expired", "order",
+        ]
+        read_only_fields = ["id", "status", "invited_on", "responded_on"]
+
+    def get_is_expired(self, obj):
+        from django.utils import timezone
+        return obj.status == BookGuestEditor.STATUS_INVITED and obj.token_expiry < timezone.now()

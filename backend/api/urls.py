@@ -145,6 +145,11 @@ from .views_copyright import (
 
 from .views_books_admin import (
     AdminBookChapterDetailView,
+    AdminBookGuestEditorDetailView,
+    AdminBookGuestEditorListView,
+    GuestEditorInvitationView,
+    GuestEditorRespondView,
+    MyVolumesView,
     AdminBookChapterListView,
     AdminBookContributorsView,
     AdminBookDetailView,
@@ -616,6 +621,22 @@ urlpatterns = [
         AdminBookChapterDetailView.as_view(),
         name="admin-book-chapter-detail",
     ),
+    path(
+        "api/v1/admin/books/<int:book_id>/guest-editors",
+        AdminBookGuestEditorListView.as_view(),
+        name="admin-book-guest-editors",
+    ),
+    path(
+        "api/v1/admin/books/<int:book_id>/guest-editors/<int:guest_id>",
+        AdminBookGuestEditorDetailView.as_view(),
+        name="admin-book-guest-editor-detail",
+    ),
+
+    # Guest editor invitation flow (reading is public, responding is not)
+    path("api/v1/guest-editor/<str:token>", GuestEditorInvitationView.as_view(), name="guest-editor-invite"),
+    path("api/v1/guest-editor/<str:token>/respond", GuestEditorRespondView.as_view(), name="guest-editor-respond"),
+    path("api/v1/my-volumes", MyVolumesView.as_view(), name="my-volumes"),
+
     path("api/v1/admin/book-series/", AdminBookSeriesListView.as_view(), name="admin-series-list"),
     path(
         "api/v1/admin/book-series/<int:series_id>",

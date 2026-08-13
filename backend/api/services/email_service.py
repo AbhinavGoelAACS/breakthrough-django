@@ -822,3 +822,61 @@ def notify_editorial_new_proposal(proposal, kind):
         )
 
     return send_email(recipient, subject, plain_body)
+
+
+def send_guest_editor_invitation(guest_editor, book):
+    """Invite someone to guest-edit a specific volume."""
+    frontend = _get_frontend_url()
+    link = f"{frontend}/guest-editor/{guest_editor.invitation_token}"
+    inviter = guest_editor.invited_by
+    inviter_name = (
+        f"{inviter.fname or ''} {inviter.lname or ''}".strip() or inviter.email
+        if inviter else "The editorial team"
+    )
+
+    kind = "conference proceedings volume" if book.kind == "proceedings" else "volume"
+    subject = f"Invitation to guest-edit “{book.title}”"
+    plain_body = (
+        f"Dear {guest_editor.name},\n\n"
+        f"{inviter_name} has invited you to act as a guest editor for the {kind} "
+        f"“{book.title}”.\n\n"
+    )
+    if guest_editor.invitation_message:
+        plain_body += f"Their message:\n{guest_editor.invitation_message}\n\n"
+
+    plain_body += (
+        f"As a guest editor you will be able to sign in and manage the volume's "
+        f"details, its contributors and its chapters. Publishing decisions stay "
+        f"with the editorial team.\n\n"
+        f"Accept or decline here:\n{link}\n\n"
+        f"This invitation expires on {guest_editor.token_expiry:%d %b %Y}.\n\n"
+        f"If you do not have an account yet, you can create one with this email "
+        f"address and the invitation will be waiting for you.\n\n"
+        f"Best regards,\n"
+        f"The Editorial Team\n"
+        f"Breakthrough Publishers India"
+    )
+    return send_email(guest_editor.email, subject, plain_body)
+
+
+def notify_guest_editor_response(guest_editor, book, accepted):
+    """Tell whoever sent the invitation how it was answered."""
+    inviter = guest_editor.invited_by
+    if not inviter or not inviter.email:
+        return False, "No inviter to notify"
+
+    verdict = "accepted" if accepted else "declined"
+    subject = f"{guest_editor.name} {verdict} the guest-editor invitation for “{book.title}”"
+    plain_body = (
+        f"{guest_editor.name} ({guest_editor.email}) has {verdict} the invitation "
+        f"to guest-edit “{book.title}”.\n\n"
+    )
+    if not accepted and guest_editor.decline_reason:
+        plain_body += f"Reason given:\n{guest_editor.decline_reason}\n\n"
+    if accepted:
+        plain_body += (
+            f"They can now manage the volume at {_get_frontend_url()}/my-volumes.\n\n"
+        )
+    plain_body += "Breakthrough Publishers India"
+
+    return send_email(inviter.email, subject, plain_body)

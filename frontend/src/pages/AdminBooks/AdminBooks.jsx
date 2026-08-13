@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import acsApi from '../../api/apiService';
 import { useToast } from '../../hooks/useToast';
-import { describeApiError } from '../../utils/apiError';
+import { useAuth } from '../../hooks/useAuth';
+import { describeApiError, fieldErrors } from '../../utils/apiError';
 import './AdminBooks.css';
 
 // Must match Book.PRODUCTION_CHOICES in backend/api/models.py
@@ -40,12 +41,19 @@ const EMPTY_BOOK = {
   is_open_access: false, is_published: false, production_status: 'commissioned',
 };
 
+const EMPTY_GUEST = { name: '', email: '', affiliation: '', invitation_message: '' };
+
 const EMPTY_CHAPTER = {
   title: '', authors: '', doi: '', start_page: '', end_page: '', is_open_access: false,
 };
 
 const AdminBooks = () => {
   const { success, error: showError } = useToast();
+  const { user } = useAuth();
+  // Guest editors reach this same screen for their own volumes. The API
+  // enforces the boundary; hiding the controls stops them clicking things
+  // that would only ever return 403.
+  const isStaff = ['admin', 'editor'].includes((user?.role || '').toLowerCase());
   const [books, setBooks] = useState([]);
   const [counts, setCounts] = useState({ total: 0, published: 0, in_production: 0 });
   const [series, setSeries] = useState([]);
@@ -63,6 +71,9 @@ const AdminBooks = () => {
   const [chapters, setChapters] = useState([]);
   const [newChapter, setNewChapter] = useState(EMPTY_CHAPTER);
   const [warnings, setWarnings] = useState([]);
+  const [guestEditors, setGuestEditors] = useState([]);
+  const [newGuest, setNewGuest] = useState(EMPTY_GUEST);
+  const [guestErrors, setGuestErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   const fetchBooks = useCallback(async () => {
@@ -103,6 +114,8 @@ const AdminBooks = () => {
     setContributors([]);
     setChapters([]);
     setWarnings([]);
+    setGuestEditors([]);
+    setNewGuest(EMPTY_GUEST);
     setErrors({});
   };
 
@@ -123,6 +136,11 @@ const AdminBooks = () => {
       setChapters(book.chapters || []);
       setWarnings(book.warnings || []);
       setOpen(book);
+      try {
+        setGuestEditors(await acsApi.catalogue.listGuestEditors(row.id));
+      } catch {
+        setGuestEditors([]);   // not fatal — the rest of the drawer still works
+      }
     } catch (err) {
       showError(describeApiError(err, 'Could not open that title.'));
       setOpen(null);
@@ -145,6 +163,10 @@ const AdminBooks = () => {
     if (!payload.conference_start) payload.conference_start = null;
     if (!payload.conference_end) payload.conference_end = null;
     if (!payload.slug) delete payload.slug; // let the server derive it
+    if (!isStaff) {
+      // The API rejects these from a guest editor; do not even send them.
+      ['is_published', 'production_status', 'series', 'slug'].forEach((k) => delete payload[k]);
+    }
     return payload;
   };
 
@@ -234,6 +256,46 @@ const AdminBooks = () => {
     }
   };
 
+  /* ── Guest editors ── */
+  const inviteGuest = async () => {
+    if (!newGuest.name.trim() || !newGuest.email.trim()) return;
+    try {
+      setSaving(true);
+      setGuestErrors({});
+      const created = await acsApi.catalogue.inviteGuestEditor(open.id, newGuest);
+      setGuestEditors((prev) => [...prev, created]);
+      setNewGuest(EMPTY_GUEST);
+      success(`Invitation sent to ${created.email}.`);
+    } catch (err) {
+      const fields = fieldErrors(err);
+      if (fields) setGuestErrors(fields);
+      else showError(describeApiError(err, 'Could not send that invitation.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resendGuest = async (guest) => {
+    try {
+      const updated = await acsApi.catalogue.resendGuestEditor(open.id, guest.id);
+      setGuestEditors((prev) => prev.map((g) => (g.id === guest.id ? updated : g)));
+      success(`Invitation re-sent to ${guest.email}.`);
+    } catch (err) {
+      showError(describeApiError(err, 'Could not re-send that invitation.'));
+    }
+  };
+
+  const removeGuest = async (guest) => {
+    if (!window.confirm(`Remove ${guest.name}'s access to this volume?`)) return;
+    try {
+      await acsApi.catalogue.removeGuestEditor(open.id, guest.id);
+      setGuestEditors((prev) => prev.filter((g) => g.id !== guest.id));
+      success(`${guest.name} no longer has access.`);
+    } catch (err) {
+      showError(describeApiError(err, 'Could not remove that guest editor.'));
+    }
+  };
+
   /* ── Chapters ── */
   const addChapter = async () => {
     if (!newChapter.title.trim()) return;
@@ -276,17 +338,21 @@ const AdminBooks = () => {
     <div className="ab-page">
       <header className="ab-header">
         <div>
-          <h1 className="ab-title">Catalogue</h1>
+          <h1 className="ab-title">{isStaff ? 'Catalogue' : 'My volumes'}</h1>
           <p className="ab-subtitle">
-            Every book and proceedings volume, including titles still in production.
+            {isStaff
+              ? 'Every book and proceedings volume, including titles still in production.'
+              : 'The volumes you guest-edit. Publishing and series decisions stay with the editorial team.'}
           </p>
         </div>
-        <div className="ab-header-actions">
-          <button type="button" className="ab-btn ab-btn-primary" onClick={openNew}>
-            <span className="material-symbols-rounded" style={{ fontSize: '1.1rem' }}>add</span>
-            New title
-          </button>
-        </div>
+        {isStaff && (
+          <div className="ab-header-actions">
+            <button type="button" className="ab-btn ab-btn-primary" onClick={openNew}>
+              <span className="material-symbols-rounded" style={{ fontSize: '1.1rem' }}>add</span>
+              New title
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="ab-stats">
@@ -419,7 +485,7 @@ const AdminBooks = () => {
             </div>
 
             <div className="ab-tabs">
-              {['details', 'contributors', 'chapters'].map((t) => (
+              {['details', 'guest editors', 'contributors', 'chapters'].map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -428,6 +494,7 @@ const AdminBooks = () => {
                   disabled={open === 'new' && t !== 'details'}
                 >
                   {t[0].toUpperCase() + t.slice(1)}
+                  {t === 'guest editors' && guestEditors.length > 0 ? ` (${guestEditors.length})` : ''}
                 </button>
               ))}
             </div>
@@ -446,7 +513,7 @@ const AdminBooks = () => {
 
               {tab === 'details' && (
                 <>
-                  {open !== 'new' && (
+                  {open !== 'new' && isStaff && (
                     <section className="ab-block">
                       <h3>Production stage</h3>
                       <div className="ab-pipeline">
@@ -499,7 +566,7 @@ const AdminBooks = () => {
                         </select>
                       </div>
 
-                      <div className="ab-field">
+                      <div className="ab-field" hidden={!isStaff}>
                         <label className="ab-label" htmlFor="series">Series</label>
                         <select id="series" className="ab-select" value={form.series ?? ''}
                           onChange={(e) => setField('series', e.target.value)}>
@@ -522,7 +589,7 @@ const AdminBooks = () => {
                           onChange={(e) => setField('edition', e.target.value)} placeholder="e.g. 2nd edition" />
                       </div>
 
-                      <div className={`ab-field ${errors.slug ? 'ab-field-error' : ''}`}>
+                      <div className={`ab-field ${errors.slug ? 'ab-field-error' : ''}`} hidden={!isStaff}>
                         <label className="ab-label" htmlFor="slug">URL slug</label>
                         <input id="slug" className="ab-input" value={form.slug}
                           onChange={(e) => setField('slug', e.target.value)}
@@ -583,7 +650,7 @@ const AdminBooks = () => {
                         </label>
                       </div>
 
-                      <div className="ab-field">
+                      <div className="ab-field" hidden={!isStaff}>
                         <label className="ab-check">
                           <input type="checkbox" checked={form.is_published}
                             onChange={(e) => setField('is_published', e.target.checked)} />
@@ -593,7 +660,7 @@ const AdminBooks = () => {
                     </div>
 
                     <div className="ab-actions" style={{ marginTop: '1.25rem' }}>
-                      {open !== 'new' && (
+                      {open !== 'new' && isStaff && (
                         <button type="button" className="ab-btn ab-btn-danger" onClick={removeBook} disabled={saving}>
                           Delete
                         </button>
@@ -658,6 +725,93 @@ const AdminBooks = () => {
                       </div>
                     </section>
                   )}
+                </>
+              )}
+
+              {tab === 'guest editors' && open !== 'new' && (
+                <>
+                  <section className="ab-block">
+                    <h3>Guest editors ({guestEditors.length})</h3>
+                    <p className="ab-help" style={{ marginBottom: '1rem' }}>
+                      Guest editors can sign in and manage this volume&apos;s details,
+                      contributors and chapters. They cannot publish it, delete it, or change
+                      its series — those stay with the publishing team. A volume can have as
+                      many guest editors as it needs.
+                    </p>
+                    {guestEditors.length === 0 ? (
+                      <p className="ab-help">Nobody has been invited yet.</p>
+                    ) : (
+                      <div className="ab-rows">
+                        {guestEditors.map((g) => (
+                          <div className="ab-chapter-row" key={g.id}>
+                            <div className="ab-row-title">
+                              {g.name}{' '}
+                              <span className={`ab-badge ab-guest-${g.status}`}>
+                                {g.is_expired ? 'Expired' : g.status_label}
+                              </span>
+                            </div>
+                            <div className="ab-row-sub">
+                              {g.email}
+                              {g.affiliation ? ` · ${g.affiliation}` : ''}
+                              {g.account_email ? '' : ' · no account yet'}
+                            </div>
+                            {g.decline_reason && (
+                              <div className="ab-row-sub">Declined: {g.decline_reason}</div>
+                            )}
+                            <div className="ab-actions">
+                              <span className="ab-actions-spacer" />
+                              {g.status !== 'active' && (
+                                <button type="button" className="ab-btn" onClick={() => resendGuest(g)}>
+                                  Re-send invitation
+                                </button>
+                              )}
+                              <button type="button" className="ab-btn ab-btn-danger"
+                                onClick={() => removeGuest(g)}>
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="ab-block">
+                    <h3>Invite a guest editor</h3>
+                    <div className="ab-grid">
+                      <div className={`ab-field ${guestErrors.name ? 'ab-field-error' : ''}`}>
+                        <label className="ab-label" htmlFor="ge-name">Name</label>
+                        <input id="ge-name" className="ab-input" value={newGuest.name}
+                          onChange={(e) => setNewGuest((p) => ({ ...p, name: e.target.value }))} />
+                        {guestErrors.name && <span className="ab-err">{guestErrors.name}</span>}
+                      </div>
+                      <div className={`ab-field ${guestErrors.email ? 'ab-field-error' : ''}`}>
+                        <label className="ab-label" htmlFor="ge-email">Email</label>
+                        <input id="ge-email" className="ab-input" type="email" value={newGuest.email}
+                          onChange={(e) => setNewGuest((p) => ({ ...p, email: e.target.value }))} />
+                        {guestErrors.email ? <span className="ab-err">{guestErrors.email}</span>
+                          : <span className="ab-help">The invitation is tied to this address.</span>}
+                      </div>
+                      <div className="ab-field ab-field-wide">
+                        <label className="ab-label" htmlFor="ge-affil">Affiliation</label>
+                        <input id="ge-affil" className="ab-input" value={newGuest.affiliation}
+                          onChange={(e) => setNewGuest((p) => ({ ...p, affiliation: e.target.value }))} />
+                      </div>
+                      <div className="ab-field ab-field-wide">
+                        <label className="ab-label" htmlFor="ge-msg">Message</label>
+                        <textarea id="ge-msg" className="ab-textarea" value={newGuest.invitation_message}
+                          onChange={(e) => setNewGuest((p) => ({ ...p, invitation_message: e.target.value }))}
+                          placeholder="Included in the invitation email." />
+                      </div>
+                    </div>
+                    <div className="ab-actions" style={{ marginTop: '1rem' }}>
+                      <span className="ab-actions-spacer" />
+                      <button type="button" className="ab-btn ab-btn-primary" onClick={inviteGuest}
+                        disabled={saving || !newGuest.name.trim() || !newGuest.email.trim()}>
+                        {saving ? 'Sending…' : 'Send invitation'}
+                      </button>
+                    </div>
+                  </section>
                 </>
               )}
 
