@@ -151,9 +151,27 @@ jobs:
 
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
+          # Every lftp call in this workflow has been a no-op since July. In
+          # `lftp -u u,p "$HOST" -e "cmds"` the site argument is parsed as a
+          # command, so lftp answered "Unknown command `***'" and never opened a
+          # session. e5b9160 saw that exact error, concluded the step "was a
+          # no-op anyway" and deleted it rather than fixing it — so every FTP
+          # probe since has been reporting on a connection that never happened.
+          # Driving lftp from a script file removes the ambiguity: one command
+          # per line, site named by an explicit `open`.
+          FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
+
           run_ftp() {
-            lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" \
-              -e "set ftp:ssl-allow false; set net:timeout 20; set net:max-retries 2; $1; bye"
+            {
+              echo "set ftp:ssl-allow false"
+              echo "set net:timeout 20"
+              echo "set net:max-retries 2"
+              echo "set cmd:fail-exit false"
+              echo "open -u \"$FTP_USER\",\"$FTP_PASS\" \"$FTP_HOST\""
+              printf '%s\n' "$1"
+              echo "bye"
+            } > lftp.script
+            lftp -f lftp.script
           }
 
           # Downloading job logs needs admin rights on this repo, but check-run
@@ -169,7 +187,18 @@ jobs:
           # document root, every relative server-dir is measured from the wrong
           # origin — which is the bug this whole step exists to catch.
           run_ftp "pwd" > pwd.txt 2>&1
-          echo "FTP home: $(cat pwd.txt)"
+          home="$(cat pwd.txt)"
+          echo "FTP home: $home"
+
+          # A session that never opens makes every probe below report "not
+          # writable", which reads like a permissions problem and is not one.
+          # Fail loudly here instead.
+          case "$home" in
+            *"Unknown command"*|*"Login failed"*|*"Fatal error"*|*"Name or service not known"*|"")
+              printf '%s\n' "$home" | annotate "FTP connection failed"
+              echo "::error::No FTP session could be opened, so nothing below was ever tested. lftp said: $home . Check BACKEND_FTP_HOST / BACKEND_FTP_USERNAME / BACKEND_FTP_PASSWORD for a scheme prefix, a trailing newline or stray whitespace."
+              exit 1;;
+          esac
 
           run_ftp "find --maxdepth 4 ." > find.txt 2>&1
           if [ ! -s find.txt ]; then
@@ -269,12 +298,28 @@ jobs:
           # reports success while transferring nothing. Deleting it means
           # "everything is new", so every file uploads; it deletes no content.
           #
-          # This must run in the SAME directory the deploy writes to. While
-          # server-dir was "./" this cleared the state in the FTP home, which is
-          # not where the deploy state for the real directory lives.
-          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" \
-            -e "set ftp:ssl-allow false; rm -f ${SERVER_DIR}.ftp-deploy-sync-state.json; rm -f ${SERVER_DIR}.ftp-deploy-sync-state-v2.json; bye" \
-            || echo "No existing sync-state to remove (ok) — continuing."
+          # This must run in the SAME directory the deploy writes to, and it must
+          # actually run: the old form `lftp -u u,p "$HOST" -e "..."` parsed the
+          # site as a command and never opened a session, while `|| echo ... (ok)`
+          # swallowed the failure. So this step has reported success without
+          # clearing anything since it was reinstated. Script file, as above.
+          FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
+          {
+            echo "set ftp:ssl-allow false"
+            echo "set net:timeout 20"
+            echo "set cmd:fail-exit false"
+            echo "open -u \"$FTP_USER\",\"$FTP_PASS\" \"$FTP_HOST\""
+            echo "rm -f ${SERVER_DIR}.ftp-deploy-sync-state.json"
+            echo "rm -f ${SERVER_DIR}.ftp-deploy-sync-state-v2.json"
+            echo "bye"
+          } > clear.script
+          out="$(lftp -f clear.script 2>&1)"
+          echo "$out"
+          case "$out" in
+            *"Unknown command"*|*"Login failed"*)
+              echo "::error::Sync-state clear could not open an FTP session: $out"
+              exit 1;;
+          esac
 
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
