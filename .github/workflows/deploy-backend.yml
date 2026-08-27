@@ -143,10 +143,9 @@ jobs:
           FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
           OVERRIDE: ${{ vars.BACKEND_FTP_SERVER_DIR }}
         run: |
-          # GitHub runs this block as `bash -e`, so any command returning
-          # non-zero aborts the step instantly — including a grep that simply
-          # matches nothing. That killed the first attempt before it printed a
-          # single diagnostic line. Statuses are checked explicitly below.
+          # GitHub runs this block as `bash -e`, so any non-zero status aborts
+          # the step instantly — including a grep that matches nothing. Statuses
+          # are checked explicitly below instead.
           set +e
           set -uo pipefail
 
@@ -157,10 +156,21 @@ jobs:
               -e "set ftp:ssl-allow false; set net:timeout 20; set net:max-retries 2; $1; bye"
           }
 
-          # Always print the listing. The whole reason this pipeline stayed
-          # broken for 40 days is that its diagnostics went somewhere nobody
-          # read, so the account layout goes in the log verbatim.
-          echo "::group::FTP account listing"
+          # Downloading job logs needs admin rights on this repo, but check-run
+          # ANNOTATIONS are readable by anyone. So the facts needed to diagnose a
+          # failure are emitted as annotations, not just printed. Workflow
+          # command messages are single-line: newlines encode as %0A.
+          annotate() {
+            python3 -c 'import sys; print("::notice title=" + sys.argv[1] + "::" + sys.stdin.read().replace("%","%25").replace("\r","%0D").replace("\n","%0A"))' "$1"
+          }
+
+          echo "::group::FTP account layout"
+          # Where the account actually lands on login. If this is not the
+          # document root, every relative server-dir is measured from the wrong
+          # origin — which is the bug this whole step exists to catch.
+          run_ftp "pwd" > pwd.txt 2>&1
+          echo "FTP home: $(cat pwd.txt)"
+
           run_ftp "find --maxdepth 4 ." > find.txt 2>&1
           if [ ! -s find.txt ]; then
             echo "(find returned nothing; falling back to ls -R)"
@@ -169,10 +179,9 @@ jobs:
           head -500 find.txt
           echo "::endgroup::"
 
-          # Candidates come from two sources, because either can come up empty:
-          # directories that actually hold the Django entrypoint, plus the
-          # handful of layouts cPanel normally uses for a subdomain. The probe
-          # below is what decides between them, so a wrong guess here is free.
+          { echo "FTP home: $(cat pwd.txt)"; echo "--- listing (first 100) ---"; head -100 find.txt; } \
+            | annotate "FTP account layout"
+
           discovered="$(
             grep -E 'passenger_wsgi\.py$' find.txt 2>/dev/null \
               | sed -e 's#passenger_wsgi\.py$##' -e 's#^\./##' \
@@ -183,15 +192,25 @@ jobs:
             candidates="${OVERRIDE%/}/"
             echo "using BACKEND_FTP_SERVER_DIR override: $candidates"
           else
+            # Discovered roots first, then absolute paths this project has
+            # actually used, then the relative layouts cPanel gives a subdomain.
+            # /home2/aacsjour/BreakThrough is where the pre-July deploys wrote
+            # (117d0b6, bde2dfc, and the removed SSH steps all name it), so it is
+            # the best single guess if the FTP account is not chrooted.
             candidates="$(printf '%s\n' \
               $discovered \
+              "/home2/aacsjour/BreakThrough/" \
+              "/home2/aacsjour/" \
+              "/home2/aacsjour/public_html/" \
+              "/home2/aacsjour/devapi.breakthroughpublishers.com/" \
+              "/home2/aacsjour/public_html/devapi/" \
               "./" \
+              "BreakThrough/" \
               "public_html/" \
               "public_html/backend/" \
               "public_html/devapi/" \
               "devapi.breakthroughpublishers.com/" \
               "public_html/devapi.breakthroughpublishers.com/" \
-              "BreakThrough/" \
               "backend/" \
               | awk 'NF && !seen[$0]++')"
           fi
@@ -199,19 +218,21 @@ jobs:
           echo "candidates to probe:"
           printf '%s\n' "$candidates" | sed 's/^/  /'
 
-          # A candidate only counts if a file written into it comes back from
-          # the public URL. That, and not the directory's name, is what "the
-          # server serves this" means.
+          # A candidate only counts if a file written into it comes back from the
+          # public URL. That, not the directory's name, is what "the server
+          # serves this" means.
           token="probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "$token" > probe.txt
 
           found=""
+          results=""
           while IFS= read -r dir; do
             [ -n "$dir" ] || continue
             printf -- '--- %s : ' "$dir"
             run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
             if [ $? -ne 0 ]; then
               echo "not writable over FTP"
+              results="${results}${dir} : not writable"$'\n'
               continue
             fi
             sleep 3
@@ -219,14 +240,18 @@ jobs:
             run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1
             if [ "$body" = "$token" ]; then
               echo "SERVED at $SITE_URL — this is the deploy directory"
+              results="${results}${dir} : SERVED"$'\n'
               found="$dir"
               break
             fi
             echo "written, but not served"
+            results="${results}${dir} : written, not served"$'\n'
           done <<< "$candidates"
 
+          printf '%s' "$results" | annotate "probe results"
+
           if [ -z "$found" ]; then
-            echo "::error::None of the probed directories is served at $SITE_URL. The FTP account and the domain's document root are different places, so deploying would again write files nothing reads. Use the listing printed above to find the real document root and set the BACKEND_FTP_SERVER_DIR repo variable to it, or point BACKEND_FTP_* at the account that owns it."
+            echo "::error::None of the probed directories is served at $SITE_URL. See the 'FTP account layout' and 'probe results' annotations on this run for the account's real structure, then set the BACKEND_FTP_SERVER_DIR repo variable to the document root."
             exit 1
           fi
 
