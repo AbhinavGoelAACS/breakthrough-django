@@ -143,7 +143,13 @@ jobs:
           FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
           OVERRIDE: ${{ vars.BACKEND_FTP_SERVER_DIR }}
         run: |
+          # GitHub runs this block as `bash -e`, so any command returning
+          # non-zero aborts the step instantly — including a grep that simply
+          # matches nothing. That killed the first attempt before it printed a
+          # single diagnostic line. Statuses are checked explicitly below.
+          set +e
           set -uo pipefail
+
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
           run_ftp() {
@@ -151,54 +157,80 @@ jobs:
               -e "set ftp:ssl-allow false; set net:timeout 20; set net:max-retries 2; $1; bye"
           }
 
-          # An explicit override wins outright: once the directory is known, set
-          # the BACKEND_FTP_SERVER_DIR repo variable and this step stops
-          # searching. Otherwise, passenger_wsgi.py is the Django entrypoint, so
-          # every directory holding one is a candidate application root.
+          # Always print the listing. The whole reason this pipeline stayed
+          # broken for 40 days is that its diagnostics went somewhere nobody
+          # read, so the account layout goes in the log verbatim.
+          echo "::group::FTP account listing"
+          run_ftp "find --maxdepth 4 ." > find.txt 2>&1
+          if [ ! -s find.txt ]; then
+            echo "(find returned nothing; falling back to ls -R)"
+            run_ftp "ls -R" > find.txt 2>&1
+          fi
+          head -500 find.txt
+          echo "::endgroup::"
+
+          # Candidates come from two sources, because either can come up empty:
+          # directories that actually hold the Django entrypoint, plus the
+          # handful of layouts cPanel normally uses for a subdomain. The probe
+          # below is what decides between them, so a wrong guess here is free.
+          discovered="$(
+            grep -E 'passenger_wsgi\.py$' find.txt 2>/dev/null \
+              | sed -e 's#passenger_wsgi\.py$##' -e 's#^\./##' \
+              | sed -e 's#^$#./#'
+          )"
+
           if [ -n "${OVERRIDE:-}" ]; then
             candidates="${OVERRIDE%/}/"
-            echo "using BACKEND_FTP_SERVER_DIR override"
+            echo "using BACKEND_FTP_SERVER_DIR override: $candidates"
           else
-            run_ftp "find -d 4 ." > find.txt 2>&1 || true
-            candidates="$(
-              grep -E 'passenger_wsgi\.py$' find.txt \
-                | sed -e 's#passenger_wsgi\.py$##' -e 's#^\./##' \
-                | sed -e 's#^$#./#' \
-                | sort -u
-            )"
+            candidates="$(printf '%s\n' \
+              $discovered \
+              "./" \
+              "public_html/" \
+              "public_html/backend/" \
+              "public_html/devapi/" \
+              "devapi.breakthroughpublishers.com/" \
+              "public_html/devapi.breakthroughpublishers.com/" \
+              "BreakThrough/" \
+              "backend/" \
+              | awk 'NF && !seen[$0]++')"
           fi
 
-          echo "candidate directories:"
-          echo "${candidates:-  <none>}"
+          echo "candidates to probe:"
+          printf '%s\n' "$candidates" | sed 's/^/  /'
 
-          if [ -z "$candidates" ]; then
-            echo "::error::No passenger_wsgi.py anywhere in the FTP account (searched 4 levels deep). There is nothing here to deploy onto — check that BACKEND_FTP_USERNAME is the account that owns the Django app."
-            exit 1
-          fi
-
+          # A candidate only counts if a file written into it comes back from
+          # the public URL. That, and not the directory's name, is what "the
+          # server serves this" means.
           token="probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "$token" > probe.txt
 
+          found=""
           while IFS= read -r dir; do
             [ -n "$dir" ] || continue
-            echo "--- testing ${dir}"
-            if ! run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt"; then
-              echo "    not writable over FTP"
+            printf -- '--- %s : ' "$dir"
+            run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+              echo "not writable over FTP"
               continue
             fi
             sleep 3
-            if curl -sf --max-time 20 "$SITE_URL/deploy-probe.txt" | grep -qF "$token"; then
-              echo "    served at $SITE_URL — this is the deploy directory"
-              run_ftp "rm -f \"${dir}deploy-probe.txt\"" || true
-              echo "server_dir=$dir" >> "$GITHUB_OUTPUT"
-              exit 0
+            body="$(curl -sf --max-time 20 "$SITE_URL/deploy-probe.txt" 2>/dev/null)"
+            run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1
+            if [ "$body" = "$token" ]; then
+              echo "SERVED at $SITE_URL — this is the deploy directory"
+              found="$dir"
+              break
             fi
-            echo "    written, but not served at $SITE_URL"
-            run_ftp "rm -f \"${dir}deploy-probe.txt\"" || true
+            echo "written, but not served"
           done <<< "$candidates"
 
-          echo "::error::Found an application root but nothing written to it is served at $SITE_URL. The FTP account and the domain's document root are different places, so deploying would again put files where nothing reads them. Set the BACKEND_FTP_SERVER_DIR repo variable to the correct path, or point BACKEND_FTP_* at the account that owns the document root."
-          exit 1
+          if [ -z "$found" ]; then
+            echo "::error::None of the probed directories is served at $SITE_URL. The FTP account and the domain's document root are different places, so deploying would again write files nothing reads. Use the listing printed above to find the real document root and set the BACKEND_FTP_SERVER_DIR repo variable to it, or point BACKEND_FTP_* at the account that owns it."
+            exit 1
+          fi
+
+          echo "server_dir=$found" >> "$GITHUB_OUTPUT"
 
       - name: Clear FTP sync-state in the target directory
         env:
