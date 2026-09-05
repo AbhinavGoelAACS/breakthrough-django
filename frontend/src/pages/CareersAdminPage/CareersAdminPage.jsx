@@ -240,16 +240,8 @@ const CareersAdminPage = () => {
     try {
       setSavingJob(true);
       if (editingJobId) {
-        const saved = await acsApi.careers.admin.updateJob(editingJobId, payload);
-        // Editing the description, skills, requirements or responsibilities
-        // rescores everyone who applied, so say so rather than letting the
-        // numbers change under the admin without explanation.
-        const rescored = saved?.rescored_applications || 0;
-        success(
-          rescored
-            ? `“${jobForm.title}” updated — ${rescored} ${rescored === 1 ? 'applicant' : 'applicants'} rescored.`
-            : `“${jobForm.title}” updated.`
-        );
+        await acsApi.careers.admin.updateJob(editingJobId, payload);
+        success(`“${jobForm.title}” updated.`);
       } else {
         delete payload.slug; // let the backend derive it from the title
         await acsApi.careers.admin.createJob(payload);
@@ -421,7 +413,7 @@ const CareersAdminPage = () => {
                 onChange={onJobField}
                 placeholder="Copy-editing, LaTeX, DOI registration"
               />
-              <span className={styles.hint}>Comma separated — these drive the fit score.</span>
+              <span className={styles.hint}>Comma separated — shown on the public listing.</span>
             </label>
 
             {/* Only when editing: on create the backend derives the slug from
@@ -563,11 +555,6 @@ const CareersAdminPage = () => {
 
       <section className={styles.block}>
         <h2 className={styles.blockTitle}>Applicants</h2>
-        <p className={styles.blockNote}>
-          Ranked by fit — the closest match to the role’s skills, requirements,
-          responsibilities and description appears first.
-        </p>
-
         <div className={styles.filters} role="group" aria-label="Filter applicants by status">
           {STATUS_FILTERS.map((filter) => (
             <button
@@ -597,7 +584,6 @@ const CareersAdminPage = () => {
                 <tr>
                   <th>Candidate</th>
                   <th>Role</th>
-                  <th>Fit</th>
                   <th>Applied</th>
                   <th>Status</th>
                 </tr>
@@ -617,7 +603,6 @@ const CareersAdminPage = () => {
                       <div className={styles.rowSub}>{row.email}</div>
                     </td>
                     <td>{row.job_title}</td>
-                    <td className={styles.score}>{row.ai_score ?? 0}%</td>
                     <td className={styles.date}>{formatDate(row.created_at)}</td>
                     <td>
                       <span
@@ -660,32 +645,12 @@ const CareersAdminPage = () => {
               ) : (
                 <>
                   <section className={styles.card}>
-                    <h3>Screening</h3>
-                    <div className={styles.scoreRow}>
-                      <span className={styles.scoreBadge}>{selected.ai_score ?? 0}% fit</span>
-                      <span
-                        className={`${styles.badge} ${styles[`status_${selected.screening_status || 'new'}`]}`}
-                      >
-                        {STATUS_LABELS[selected.screening_status] || 'New'}
-                      </span>
-                    </div>
-                    <p className={styles.prose}>
-                      {selected.ai_summary || 'No automated summary was produced for this profile.'}
-                    </p>
-                    <dl className={styles.dl}>
-                      <Row
-                        label="Matched skills"
-                        value={(selected.matched_skills || []).join(', ') || '—'}
-                      />
-                      <Row
-                        label="Missing skills"
-                        value={(selected.missing_skills || []).join(', ') || '—'}
-                      />
-                    </dl>
-                    <p className={styles.note}>
-                      The fit score is a keyword match against the role’s required skills, not a
-                      judgement of the candidate. Read the resume before deciding.
-                    </p>
+                    <h3>Status</h3>
+                    <span
+                      className={`${styles.badge} ${styles[`status_${selected.screening_status || 'new'}`]}`}
+                    >
+                      {STATUS_LABELS[selected.screening_status] || 'New'}
+                    </span>
                   </section>
 
                   <section className={styles.card}>

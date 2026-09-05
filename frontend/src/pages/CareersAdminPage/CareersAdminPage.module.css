@@ -137,12 +137,6 @@
   color: var(--j-primary, #012d1d);
 }
 
-.blockNote {
-  margin: -0.5rem 0 1rem;
-  font-size: 0.8125rem;
-  color: var(--j-on-surface-variant, #414844);
-}
-
 /* ── Filters ── */
 .filters {
   display: flex;
@@ -234,13 +228,6 @@
   font-size: 0.78125rem;
   color: var(--j-on-surface-variant, #414844);
   margin-top: 0.15rem;
-}
-
-.score {
-  font-weight: 700;
-  color: var(--j-primary, #012d1d);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .date {
@@ -531,27 +518,6 @@
   text-transform: uppercase;
   color: var(--j-primary, #012d1d);
   margin: 0 0 0.85rem;
-}
-
-.scoreRow {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.85rem;
-  flex-wrap: wrap;
-}
-
-.scoreBadge {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--font-headline, 'Newsreader', serif);
-  font-size: 1.125rem;
-  font-weight: 700;
-  padding: 0.3rem 0.9rem;
-  border-radius: 999px;
-  background: var(--j-primary-fixed, #c1ecd4);
-  color: #10391f;
-  font-variant-numeric: tabular-nums;
 }
 
 .dl {

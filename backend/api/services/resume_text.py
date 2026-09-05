@@ -1,15 +1,12 @@
 """Pull plain text out of an uploaded resume.
 
-Kept apart from the view so the application endpoint and the re-extraction
-management command cannot drift apart.
+The extracted text is shown in the admin queue so a reviewer can read a resume
+without downloading it.
 
-Failure is reported, never disguised. The previous version returned the string
+Failure is reported, never disguised. An earlier version returned the string
 "Resume uploaded. Manual review required." whenever extraction failed, which
-the screening code then scored as if it were the candidate's resume — a real
-applicant whose CV listed all ten required skills came out at 1% with
-"skills 0/10", because those four words are all the scorer ever saw. Returning
-an empty string instead makes the screening code say the resume could not be
-read, which is the truth and is visible in the admin queue.
+then looked exactly like a real (very short) resume to everything downstream.
+Returning an empty string instead makes the failure visible.
 """
 
 import logging
@@ -29,8 +26,8 @@ _W_NAMESPACE = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 def extract_resume_text(path):
     """Return the text of the resume at `path`, or "" when it cannot be read.
 
-    An empty return is meaningful: callers must treat it as "not screened"
-    rather than as an empty resume.
+    An empty return means the file could not be read — it is not the same as
+    a resume that happens to be blank.
     """
     if not path or not os.path.exists(path):
         logger.warning("Resume file missing, cannot extract text: %s", path)
@@ -51,13 +48,12 @@ def _extract_pdf(path):
     try:
         import pypdf
     except ImportError:
-        # This is the failure that made every PDF resume score ~1%. It needs to
-        # be loud: on cPanel the deploy only uploads files, so a new dependency
-        # is not installed until someone runs Pip Install in Setup Python App.
+        # Loud on purpose: on cPanel the deploy only uploads files, so a new
+        # dependency is not installed until someone runs Pip Install in Setup
+        # Python App, and a silent failure here empties every PDF resume.
         logger.error(
             "pypdf is not installed, so no PDF resume can be read. Install the "
-            "requirements on this server (cPanel > Setup Python App > Run Pip "
-            "Install), then re-run: manage.py rescore_applications --reextract"
+            "requirements on this server: cPanel > Setup Python App > Run Pip Install."
         )
         return ""
 
@@ -96,8 +92,7 @@ def _extract_docx_stdlib(path):
     """Read a .docx with only the standard library.
 
     A .docx is a zip of XML, so this needs no third-party package at all —
-    worth having because dependencies are not installed by the deploy, and a
-    resume that cannot be read scores zero.
+    worth having because dependencies are not installed by the deploy.
     """
     try:
         with zipfile.ZipFile(path) as archive:

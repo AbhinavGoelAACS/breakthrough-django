@@ -848,8 +848,6 @@ def notify_editorial_new_application(application):
 
     job = application.job
     frontend = _get_frontend_url()
-    matched = ", ".join(application.matched_skills or []) or "None matched"
-    missing = ", ".join(application.missing_skills or []) or "None"
 
     subject = f"New application: {job.title} — {application.candidate_name}"
     plain_body = (
@@ -866,13 +864,6 @@ def notify_editorial_new_application(application):
         f"GitHub: {application.github_link or 'Not provided'}\n"
         f"LinkedIn: {application.linkedin_link or 'Not provided'}\n"
         f"Resume attached: {'yes' if application.resume_file else 'no (text only)'}\n\n"
-        f"--- Automated screening ---\n"
-        f"This is a keyword match against the role's required skills, not an "
-        f"assessment of the candidate.\n"
-        f"Fit score: {application.ai_score or 0}%\n"
-        f"Matched skills: {matched}\n"
-        f"Missing skills: {missing}\n"
-        f"Summary: {application.ai_summary or 'No summary produced.'}\n\n"
         f"--- Cover letter ---\n"
         f"{application.cover_letter or '(none)'}\n\n"
         f"Review this application, and send an interview invite, at "
