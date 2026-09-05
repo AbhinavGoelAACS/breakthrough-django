@@ -208,6 +208,19 @@ export const acsApi = {
     submitProposal: (data) => apiService.post('/api/v1/proceedings/proposals/', data),
   },
 
+  // Careers & hiring
+  careers: {
+    listJobs: () => apiService.get('/api/v1/careers/jobs', { skipAuth: true }),
+    getJob: (slug) => apiService.get(`/api/v1/careers/jobs/${slug}`, { skipAuth: true }),
+    submitApplication: (formData) => apiService.post('/api/v1/careers/applications', formData),
+    admin: {
+      listJobs: () => apiService.get('/api/v1/admin/careers/jobs'),
+      listApplications: () => apiService.get('/api/v1/admin/careers/applications'),
+      getApplication: (applicationId) => apiService.get(`/api/v1/admin/careers/applications/${applicationId}`),
+      sendInvite: (applicationId, payload) => apiService.post(`/api/v1/admin/careers/applications/${applicationId}/invite`, payload),
+    },
+  },
+
   // Legacy methods for backwards compatibility (public)
   getJournals: (skip = 0, limit = 20, search = '') => 
     apiService.get(`/api/v1/journals/?skip=${skip}&limit=${limit}${search ? `&search=${search}` : ''}`, { skipAuth: true }),

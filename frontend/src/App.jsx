@@ -89,6 +89,9 @@ import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy.jsx';
 // Forgot/Reset Password Pages
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage.jsx';
+import CareersPage from './pages/CareersPage/CareersPage.jsx';
+import CareerDetailsPage from './pages/CareersPage/CareerDetailsPage.jsx';
+import CareersAdminPage from './pages/CareersAdminPage/CareersAdminPage.jsx';
 
 function App() {
   return (
@@ -245,6 +248,8 @@ function AppContent() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/careers/:slug" element={<CareerDetailsPage />} />
           <Route path="/article/:id" element={<PublicPaperView />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

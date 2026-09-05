@@ -19,6 +19,7 @@ const AdminLayout = () => {
         { icon: 'assignment', label: 'All Submissions', path: '/admin/submissions' },
         { icon: 'drafts', label: 'Proposals', path: '/admin/proposals' },
         { icon: 'menu_book', label: 'Catalogue', path: '/admin/books' },
+        { icon: 'work', label: 'Careers', path: '/admin/careers' },
         { icon: 'folder_zip', label: 'Downloads', path: '/admin/downloads' },
         { icon: 'how_to_reg', label: 'Role Requests', path: '/admin/role-requests' }
       ]

@@ -14,6 +14,14 @@ const Footer = () => {
             </p>
           </div>
           <div className={styles.footerLinks}>
+            <h5 className={styles.footerLinksTitle}>Explore</h5>
+            <ul className={styles.footerLinksList}>
+              <li><Link to="/careers">Careers</Link></li>
+              <li><Link to="/journals">Journals</Link></li>
+              <li><Link to="/books">Books</Link></li>
+            </ul>
+          </div>
+          <div className={styles.footerLinks}>
             <h5 className={styles.footerLinksTitle}>Legal</h5>
             <ul className={styles.footerLinksList}>
               <li><Link to="/privacy-policy">Privacy Policy</Link></li>

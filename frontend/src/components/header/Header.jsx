@@ -56,6 +56,7 @@ const Header = () => {
           <li><Link className={styles.navLink} to="/journals">Journals</Link></li>
           <li><Link className={styles.navLink} to="/books">Books</Link></li>
           <li><Link className={styles.navLink} to="/proceedings">Proceedings</Link></li>
+          <li><Link className={styles.navLink} to="/careers">Careers</Link></li>
           <li><Link className={styles.navLink} to="/submit">Submit Paper</Link></li>
           
           {/* Show dashboard link based on active role */}

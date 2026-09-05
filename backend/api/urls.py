@@ -658,5 +658,14 @@ urlpatterns = [
         AdminDownloadDetailView.as_view(),
         name="admin-download-detail",
     ),
+
+    # Careers & hiring routes
+    path("api/v1/careers/jobs", CareerJobsListView.as_view(), name="careers-jobs-list"),
+    path("api/v1/careers/jobs/<slug:slug>", CareerJobDetailView.as_view(), name="careers-job-detail"),
+    path("api/v1/careers/applications", JobApplicationCreateView.as_view(), name="careers-application-create"),
+    path("api/v1/admin/careers/jobs", AdminCareerJobsView.as_view(), name="admin-careers-jobs"),
+    path("api/v1/admin/careers/applications", AdminCareerApplicationsView.as_view(), name="admin-careers-applications"),
+    path("api/v1/admin/careers/applications/<int:application_id>", AdminCareerApplicationDetailView.as_view(), name="admin-careers-application-detail"),
+    path("api/v1/admin/careers/applications/<int:application_id>/invite", AdminCareerSendInviteView.as_view(), name="admin-careers-send-invite"),
 ]
 
