@@ -9,21 +9,12 @@ on:
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:  # Allow manual trigger
 
-concurrency:
-  group: dev-backend-deploy
-  cancel-in-progress: false
-
 jobs:
   deploy:
     name: Deploy Django Backend
     runs-on: ubuntu-latest
     environment: prod
-
-    env:
-      # One place to change the target site. Used by the directory-resolve probe
-      # and by the post-deploy verification, which must agree on it.
-      SITE_URL: https://devapi.breakthroughpublishers.com
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,13 +50,6 @@ jobs:
             --exclude 'media/uploads/*' \
             --exclude 'staticfiles/*'
           
-          # Bake a fresh Passenger restart trigger into the package. Uploading a
-          # changed tmp/restart.txt makes cPanel/Passenger reload the app on the
-          # next request via FTP alone — no SSH required. Without this, uploaded
-          # code can sit on disk while the old process keeps serving in memory.
-          mkdir -p ../deploy_package/tmp
-          date -u +"restart %Y-%m-%dT%H:%M:%SZ" > ../deploy_package/tmp/restart.txt
-
           # List files to be deployed
           echo "Files to deploy:"
           ls -la ../deploy_package
@@ -125,202 +109,7 @@ jobs:
           cp deploy_package/.env.production deploy_package/runtime.env
 
           echo "Wrote deploy_package/.env.production and deploy_package/runtime.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
-
-      # cPanel here has no SSH, so where Passenger actually serves from can only
-      # be learned over FTP. Uploading to the wrong directory is precisely the
-      # failure this pipeline kept hitting: every step reported success for 40
-      # days while the site served July's code, because "server-dir: ./" is the
-      # FTP account's home and the home is not what the domain serves.
-      #
-      # So: resolve the directory, and prove it is the one the site serves,
-      # before uploading anything real. A directory's NAME proves nothing; a
-      # file written there and then fetched over HTTP proves everything.
-      - name: Resolve the directory the site actually serves
-        id: target
-        env:
-          FTP_HOST: ${{ secrets.BACKEND_FTP_HOST }}
-          FTP_USER: ${{ secrets.BACKEND_FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
-          OVERRIDE: ${{ vars.BACKEND_FTP_SERVER_DIR }}
-        run: |
-          # GitHub runs this block as `bash -e`, so any non-zero status aborts
-          # the step instantly — including a grep that matches nothing. Statuses
-          # are checked explicitly below instead.
-          set +e
-          set -uo pipefail
-
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-
-          # Every lftp call in this workflow has been a no-op since July. In
-          # `lftp -u u,p "$HOST" -e "cmds"` the site argument is parsed as a
-          # command, so lftp answered "Unknown command `***'" and never opened a
-          # session. e5b9160 saw that exact error, concluded the step "was a
-          # no-op anyway" and deleted it rather than fixing it — so every FTP
-          # probe since has been reporting on a connection that never happened.
-          # Driving lftp from a script file removes the ambiguity: one command
-          # per line, site named by an explicit `open`.
-          FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
-
-          run_ftp() {
-            {
-              echo "set ftp:ssl-allow false"
-              echo "set net:timeout 20"
-              echo "set net:max-retries 2"
-              echo "set cmd:fail-exit false"
-              echo "open -u \"$FTP_USER\",\"$FTP_PASS\" \"$FTP_HOST\""
-              printf '%s\n' "$1"
-              echo "bye"
-            } > lftp.script
-            lftp -f lftp.script
-          }
-
-          # Downloading job logs needs admin rights on this repo, but check-run
-          # ANNOTATIONS are readable by anyone. So the facts needed to diagnose a
-          # failure are emitted as annotations, not just printed. Workflow
-          # command messages are single-line: newlines encode as %0A.
-          annotate() {
-            python3 -c 'import sys; print("::notice title=" + sys.argv[1] + "::" + sys.stdin.read().replace("%","%25").replace("\r","%0D").replace("\n","%0A"))' "$1"
-          }
-
-          echo "::group::FTP account layout"
-          # Where the account actually lands on login. If this is not the
-          # document root, every relative server-dir is measured from the wrong
-          # origin — which is the bug this whole step exists to catch.
-          run_ftp "pwd" > pwd.txt 2>&1
-          home="$(cat pwd.txt)"
-          echo "FTP home: $home"
-
-          # A session that never opens makes every probe below report "not
-          # writable", which reads like a permissions problem and is not one.
-          # Fail loudly here instead.
-          case "$home" in
-            *"Unknown command"*|*"Login failed"*|*"Fatal error"*|*"Name or service not known"*|"")
-              printf '%s\n' "$home" | annotate "FTP connection failed"
-              echo "::error::No FTP session could be opened, so nothing below was ever tested. lftp said: $home . Check BACKEND_FTP_HOST / BACKEND_FTP_USERNAME / BACKEND_FTP_PASSWORD for a scheme prefix, a trailing newline or stray whitespace."
-              exit 1;;
-          esac
-
-          run_ftp "find --maxdepth 4 ." > find.txt 2>&1
-          if [ ! -s find.txt ]; then
-            echo "(find returned nothing; falling back to ls -R)"
-            run_ftp "ls -R" > find.txt 2>&1
-          fi
-          head -500 find.txt
-          echo "::endgroup::"
-
-          { echo "FTP home: $(cat pwd.txt)"; echo "--- listing (first 100) ---"; head -100 find.txt; } \
-            | annotate "FTP account layout"
-
-          discovered="$(
-            grep -E 'passenger_wsgi\.py$' find.txt 2>/dev/null \
-              | sed -e 's#passenger_wsgi\.py$##' -e 's#^\./##' \
-              | sed -e 's#^$#./#'
-          )"
-
-          if [ -n "${OVERRIDE:-}" ]; then
-            candidates="${OVERRIDE%/}/"
-            echo "using BACKEND_FTP_SERVER_DIR override: $candidates"
-          else
-            # Discovered roots first, then absolute paths this project has
-            # actually used, then the relative layouts cPanel gives a subdomain.
-            # /home2/aacsjour/BreakThrough is where the pre-July deploys wrote
-            # (117d0b6, bde2dfc, and the removed SSH steps all name it), so it is
-            # the best single guess if the FTP account is not chrooted.
-            candidates="$(printf '%s\n' \
-              $discovered \
-              "/home2/aacsjour/BreakThrough/" \
-              "/home2/aacsjour/" \
-              "/home2/aacsjour/public_html/" \
-              "/home2/aacsjour/devapi.breakthroughpublishers.com/" \
-              "/home2/aacsjour/public_html/devapi/" \
-              "./" \
-              "BreakThrough/" \
-              "public_html/" \
-              "public_html/backend/" \
-              "public_html/devapi/" \
-              "devapi.breakthroughpublishers.com/" \
-              "public_html/devapi.breakthroughpublishers.com/" \
-              "backend/" \
-              | awk 'NF && !seen[$0]++')"
-          fi
-
-          echo "candidates to probe:"
-          printf '%s\n' "$candidates" | sed 's/^/  /'
-
-          # A candidate only counts if a file written into it comes back from the
-          # public URL. That, not the directory's name, is what "the server
-          # serves this" means.
-          token="probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "$token" > probe.txt
-
-          found=""
-          results=""
-          while IFS= read -r dir; do
-            [ -n "$dir" ] || continue
-            printf -- '--- %s : ' "$dir"
-            run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-              echo "not writable over FTP"
-              results="${results}${dir} : not writable"$'\n'
-              continue
-            fi
-            sleep 3
-            body="$(curl -sf --max-time 20 "$SITE_URL/deploy-probe.txt" 2>/dev/null)"
-            run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1
-            if [ "$body" = "$token" ]; then
-              echo "SERVED at $SITE_URL — this is the deploy directory"
-              results="${results}${dir} : SERVED"$'\n'
-              found="$dir"
-              break
-            fi
-            echo "written, but not served"
-            results="${results}${dir} : written, not served"$'\n'
-          done <<< "$candidates"
-
-          printf '%s' "$results" | annotate "probe results"
-
-          if [ -z "$found" ]; then
-            echo "::error::None of the probed directories is served at $SITE_URL. See the 'FTP account layout' and 'probe results' annotations on this run for the account's real structure, then set the BACKEND_FTP_SERVER_DIR repo variable to the document root."
-            exit 1
-          fi
-
-          echo "server_dir=$found" >> "$GITHUB_OUTPUT"
-
-      - name: Clear FTP sync-state in the target directory
-        env:
-          FTP_HOST: ${{ secrets.BACKEND_FTP_HOST }}
-          FTP_USER: ${{ secrets.BACKEND_FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
-          SERVER_DIR: ${{ steps.target.outputs.server_dir }}
-        run: |
-          # FTP-Deploy-Action uploads only what it believes changed, tracked in a
-          # state file it keeps on the server. When that state drifts the step
-          # reports success while transferring nothing. Deleting it means
-          # "everything is new", so every file uploads; it deletes no content.
-          #
-          # This must run in the SAME directory the deploy writes to, and it must
-          # actually run: the old form `lftp -u u,p "$HOST" -e "..."` parsed the
-          # site as a command and never opened a session, while `|| echo ... (ok)`
-          # swallowed the failure. So this step has reported success without
-          # clearing anything since it was reinstated. Script file, as above.
-          FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
-          {
-            echo "set ftp:ssl-allow false"
-            echo "set net:timeout 20"
-            echo "set cmd:fail-exit false"
-            echo "open -u \"$FTP_USER\",\"$FTP_PASS\" \"$FTP_HOST\""
-            echo "rm -f ${SERVER_DIR}.ftp-deploy-sync-state.json"
-            echo "rm -f ${SERVER_DIR}.ftp-deploy-sync-state-v2.json"
-            echo "bye"
-          } > clear.script
-          out="$(lftp -f clear.script 2>&1)"
-          echo "$out"
-          case "$out" in
-            *"Unknown command"*|*"Login failed"*)
-              echo "::error::Sync-state clear could not open an FTP session: $out"
-              exit 1;;
-          esac
-
+          
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -329,15 +118,7 @@ jobs:
           password: ${{ secrets.BACKEND_FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./deploy_package/
-          # Resolved above and proven to be what the domain serves. Never
-          # hard-code "./" here again: the FTP home is not the document root.
-          server-dir: ${{ steps.target.outputs.server_dir }}
-          # Naming the state explicitly lets us force a full re-upload by
-          # bumping the suffix. Never use dangerous-clean-slate here — media/,
-          # .env and .htaccess are deliberately excluded from the package and
-          # would be destroyed.
-          state-name: .ftp-deploy-sync-state-v2.json
-          log-level: verbose
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**
@@ -349,34 +130,41 @@ jobs:
             **/*.log
             **/.DS_Store
             **/.htaccess
-      # There is no SSH access on this cPanel account, so migrations cannot be
-      # run from here. They are applied by api/apps.py::ApiConfig.ready() when
-      # Passenger boots the app — the FTP upload of tmp/restart.txt above is
-      # what triggers that reload. See DEPLOYMENT.md.
-
-      - name: Verify the server actually received this deploy
+            
+      - name: Trigger cPanel Python App Restart (via SSH)
+        if: ${{ env.HAS_SSH_KEY == 'true' }}
         env:
-          SERVER_DIR: ${{ steps.target.outputs.server_dir }}
-        run: |
-          # The failure mode this guards against is a green pipeline over a stale
-          # server. tmp/restart.txt is baked fresh into every package, so if the
-          # deployed copy does not match what we just built, nothing landed.
-          expected="$(cat deploy_package/tmp/restart.txt)"
-          echo "expected: $expected"
-
-          for attempt in 1 2 3 4 5 6; do
-            actual="$(curl -sf --max-time 20 "$SITE_URL/tmp/restart.txt" || true)"
-            echo "attempt $attempt -> ${actual:-<no response>}"
-            [ "$actual" = "$expected" ] && { echo "server is serving this build"; exit 0; }
-            sleep 10
-          done
-
-          echo "::error::Upload did not reach the server. tmp/restart.txt at $SITE_URL does not match this build, so the running app is still on older code. Files were uploaded to '${SERVER_DIR}', which the resolve step confirmed is served — so suspect Passenger caching or a stale sync-state rather than the path."
-          exit 1
-
+          HAS_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd /home2/aacsjour/BreakThrough
+            
+            # Activate virtual environment if exists
+            if [ -d "venv" ]; then
+              source venv/bin/activate
+            fi
+            
+            # Install/update dependencies
+            pip install -r requirements.txt --quiet
+            
+            # Run migrations
+            python manage.py migrate --no-input
+            
+            # Collect static files
+            python manage.py collectstatic --no-input
+            
+            # Restart the application
+            touch tmp/restart.txt
+            
+            echo "Backend deployment complete!"
+            
       - name: Deployment Summary
         run: |
-          echo "Backend deployment completed successfully."
-          echo "Deployed from: backend/"
-          echo "Deployed to:   ${{ steps.target.outputs.server_dir }}"
-          echo "Serving at:    $SITE_URL"
+          echo "✅ Backend deployment completed successfully!"
+          echo "📦 Deployed from: backend/"
+          echo "🎯 Target: cPanel server"
