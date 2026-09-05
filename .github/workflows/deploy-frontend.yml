@@ -9,10 +9,6 @@ on:
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:  # Allow manual trigger
 
-concurrency:
-  group: dev-frontend-deploy
-  cancel-in-progress: false
-
 jobs:
   build-and-deploy:
     name: Build and Deploy React Frontend
@@ -109,79 +105,6 @@ jobs:
             ExpiresDefault "access plus 2 days"
           </IfModule>
           EOF
-      - name: Resolve the directory the site actually serves
-        id: target
-        env:
-          FTP_HOST: ${{ secrets.FRONTEND_FTP_HOST }}
-          FTP_USER: ${{ secrets.FRONTEND_FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.FRONTEND_FTP_PASSWORD }}
-          SITE_URL: ${{ secrets.FRONTEND_URL }}
-        run: |
-          set -uo pipefail
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-
-          FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
-
-          run_ftp() {
-            {
-              echo "set ftp:ssl-allow false"
-              echo "set net:timeout 20"
-              echo "set net:max-retries 2"
-              echo "set cmd:fail-exit false"
-              echo "open -u \"$FTP_USER\",\"$FTP_PASS\" \"$FTP_HOST\""
-              printf '%s\n' "$1"
-              echo "bye"
-            } > lftp.script
-            lftp -f lftp.script
-          }
-
-          echo "FTP home and layout"
-          run_ftp "pwd" > pwd.txt 2>&1
-          run_ftp "ls -R" > find.txt 2>&1 || true
-          head -200 find.txt || true
-
-          candidates="$(printf '%s\n' \
-            './' \
-            'public_html/' \
-            'public_html/frontend/' \
-            'public_html/dev/' \
-            'frontend/' \
-          )"
-
-          token="probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "$token" > probe.txt
-
-          found=""
-          results=""
-          while IFS= read -r dir; do
-            [ -n "$dir" ] || continue
-            run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-              results="${results}${dir} : not writable\n"
-              continue
-            fi
-            sleep 2
-            body="$(curl -sf --max-time 10 "$SITE_URL/deploy-probe.txt" 2>/dev/null || true)"
-            run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1 || true
-            if [ "$body" = "$token" ]; then
-              found="$dir"
-              results="${results}${dir} : SERVED\n"
-              break
-            fi
-            results="${results}${dir} : written, not served\n"
-          done <<< "$(printf '%s' "$candidates")"
-
-          printf '%b' "$results"
-
-          if [ -z "$found" ]; then
-            # Fail-open for frontend only: many cPanel setups serve from FTP
-            # home. If probing fails (bad SITE_URL secret, temporary curl
-            # issue), deploy to ./ rather than hard failing.
-            echo "::warning::Could not confirm served directory via probe; defaulting to ./. Check FRONTEND_URL if this keeps happening."
-            found="./"
-          fi
-
-          echo "server_dir=$found" >> "$GITHUB_OUTPUT"
           
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -191,7 +114,7 @@ jobs:
           password: ${{ secrets.FRONTEND_FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./frontend/dist/
-          server-dir: ${{ steps.target.outputs.server_dir }}
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**
