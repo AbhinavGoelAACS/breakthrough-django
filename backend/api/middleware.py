@@ -88,3 +88,26 @@ class ApiJsonErrorMiddleware:
 
         detail = self._MESSAGES.get(response.status_code, "Request failed.")
         return JsonResponse({"detail": detail}, status=response.status_code)
+
+
+class ReminderTickMiddleware:
+    """Give the reviewer-reminder cycle a chance to run, once per response.
+
+    This is what replaces cron. Nearly every call returns immediately on a
+    per-process timer without touching the database — see
+    api/services/reminder_scheduler.py for the cost breakdown and for why a
+    background thread is not used here.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        try:
+            from api.services.reminder_scheduler import maybe_run_reminder_cycle
+            maybe_run_reminder_cycle()
+        except Exception:
+            # Never let a reminder problem affect the response being returned.
+            logger.exception("Reminder tick failed")
+        return response

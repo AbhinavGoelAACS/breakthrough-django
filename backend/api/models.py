@@ -481,6 +481,26 @@ class InterviewInvitation(models.Model):
         return f"Invitation for {self.application.candidate_name}"
 
 
+class ReminderCycleRun(models.Model):
+    """Single row recording when the reminder cycle last started.
+
+    Reminders are triggered from web requests rather than cron (see
+    api/services/reminder_scheduler.py). Several Passenger workers can decide
+    at once that a cycle is due, so this row is claimed with one conditional
+    UPDATE — whichever worker changes a row runs the cycle and the rest skip.
+    """
+
+    class Meta:
+        db_table = "reminder_cycle_run"
+        managed = True
+
+    id = models.AutoField(primary_key=True)
+    last_started_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"Reminder cycle last started {self.last_started_at}"
+
+
 class EmailTemplate(models.Model):
     class Meta:
         db_table = "email_template"

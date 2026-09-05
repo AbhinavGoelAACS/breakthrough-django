@@ -113,6 +113,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Last, so the reminder check runs after the response is built and can
+    # never delay it. This is how reviewer reminders are scheduled — there is
+    # no cron on this account.
+    'api.middleware.ReminderTickMiddleware',
 ]
 
 ROOT_URLCONF = 'bp_backend.urls'

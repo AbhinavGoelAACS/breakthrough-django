@@ -278,22 +278,53 @@ touch ~/public_html/backend/tmp/restart.txt
 
 ---
 
-## Automated reviewer reminders (cron)
+## Automated reviewer reminders
 
-Reviewer reminder emails are sent by the `send_review_reminders` management
-command. **Do not** run them from an in-process server thread — on cPanel/
-CloudLinux shared hosting a permanent background thread per Passenger worker
-exceeds the LVE process/thread limit and gets the workers SIGTERM-killed in a
-boot/kill loop.
+Reminder emails are sent by `api/services/reminders.py`. **No cron job or
+server configuration is needed** — `ReminderTickMiddleware` gives the cycle a
+chance to run after each response, and the site runs one cycle per hour.
 
-Set up a cPanel **Cron Job** (cPanel → Advanced → Cron Jobs), hourly:
+How it stays cheap:
+
+- a per-process timer means only one request every 5 minutes per worker touches
+  the database at all;
+- that request claims the cycle with a single conditional UPDATE on
+  `reminder_cycle_run`, so exactly one worker runs it however many are up;
+- the claim holder hands the work to the background email queue that already
+  exists in every worker, so nothing is added to the request and no new thread
+  is created.
+
+Tune the cadence with `CYCLE_INTERVAL_MINUTES` and `LOCAL_CHECK_SECONDS` in
+`api/services/reminder_scheduler.py`.
+
+> **Do not** start a scheduler thread per worker. That is how this ran between
+> 3 and 7 July 2026 (`43b3a37`), and on cPanel/CloudLinux the extra thread plus
+> a held MySQL connection per worker exceeded the account's LVE process limit —
+> workers were SIGTERM-killed and respawned in a loop. Removed in `c9bece1`.
+
+### Running it by hand
+
+The management command still exists for manual runs and previews:
 
 ```
-0 * * * * /home2/aacsjour/virtualenv/prodBTPBknd/3.10/bin/python /home2/aacsjour/prodBTPBknd/manage.py send_review_reminders >> /home2/aacsjour/prodBTPBknd/reminders.log 2>&1
+python manage.py send_review_reminders --dry-run   # show what would be sent
+python manage.py send_review_reminders             # send now, synchronously
 ```
 
-Sends are throttled per-record (see `MIN_HOURS_BETWEEN_REMINDERS`), so running
-hourly never produces duplicate emails. Preview with `--dry-run`.
+Sends are throttled per record (`MIN_HOURS_BETWEEN_REMINDERS`), so running it
+by hand alongside the automatic cycle cannot produce duplicate emails.
+
+### If you ever do want cron instead
+
+A cPanel cron job works too, but note the mistake that made it silently useless
+for about two months: **the schedule and the command go in different fields.**
+Pasting a whole crontab line (`0 * * * * /path/to/python ...`) into the Command
+box makes cron run a program called `0`, filling the log with
+`jailshell: line 1: 0: command not found` and sending nothing. Put `0 * * * *`
+in the schedule fields (or pick *Once Per Hour*), and only the command itself
+in the Command box. Log outside the application root — the app root is the
+document root here, so `<host>/reminders.log` would be downloadable by anyone,
+and that log names reviewers and their email addresses.
 
 ---
 
