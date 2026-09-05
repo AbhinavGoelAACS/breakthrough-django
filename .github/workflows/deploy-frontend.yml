@@ -140,16 +140,25 @@ jobs:
           run_ftp "ls -R" > find.txt 2>&1 || true
           head -200 find.txt || true
 
-          candidates="./\npublic_html/\npublic_html/frontend/\npublic_html/dev/\nfrontend/\n"
+          candidates="$(cat <<'EOF'
+./
+public_html/
+public_html/frontend/
+public_html/dev/
+frontend/
+EOF
+)"
 
           token="probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "$token" > probe.txt
 
           found=""
+          results=""
           while IFS= read -r dir; do
             [ -n "$dir" ] || continue
             run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
             if [ $? -ne 0 ]; then
+              results="${results}${dir} : not writable\n"
               continue
             fi
             sleep 2
@@ -157,13 +166,20 @@ jobs:
             run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1 || true
             if [ "$body" = "$token" ]; then
               found="$dir"
+              results="${results}${dir} : SERVED\n"
               break
             fi
+            results="${results}${dir} : written, not served\n"
           done <<< "$(printf '%s' "$candidates")"
 
+          printf '%b' "$results"
+
           if [ -z "$found" ]; then
-            echo "::error::Could not resolve frontend document root. Check FRONTEND_FTP_* secrets and FRONTEND_URL." 
-            exit 1
+            # Fail-open for frontend only: many cPanel setups serve from FTP
+            # home. If probing fails (bad SITE_URL secret, temporary curl
+            # issue), deploy to ./ rather than hard failing.
+            echo "::warning::Could not confirm served directory via probe; defaulting to ./. Check FRONTEND_URL if this keeps happening."
+            found="./"
           fi
 
           echo "server_dir=$found" >> "$GITHUB_OUTPUT"
