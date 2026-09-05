@@ -179,7 +179,7 @@ jobs:
 
           marker=""
           for i in 1 2 3 4 5 6; do
-            marker="$(curl -fsS "$BASE_URL/tmp/restart.txt" || true)"
+            marker="$(curl -fsS --max-time 10 "$BASE_URL/tmp/restart.txt" || true)"
             echo "Attempt $i marker: $marker"
             if printf '%s' "$marker" | grep -q "$EXPECTED_SHA"; then
               break
@@ -198,7 +198,7 @@ jobs:
             "/api/v1/proceedings/downloads/" \
             "/api/v1/careers/jobs/"
           do
-            code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL$path")"
+            code="$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' "$BASE_URL$path")"
             echo "$path -> HTTP $code"
             if [ "$code" = "404" ]; then
               echo "::error::Live endpoint still returns 404 after deploy: $BASE_URL$path"
