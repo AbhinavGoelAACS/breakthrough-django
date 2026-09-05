@@ -265,6 +265,123 @@ class AdminCareerJobsView(APIView):
         return Response({"id": job.id, "slug": job.slug, "message": "Job posting created successfully"}, status=status.HTTP_201_CREATED)
 
 
+class AdminCareerJobDetailView(APIView):
+    """GET/PATCH one job posting so an admin can edit a role after it is live."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    # Only these may be changed. Anything else in the payload is ignored rather
+    # than silently written, so a stray field cannot rewrite the record.
+    TEXT_FIELDS = (
+        "title", "location", "department", "description",
+        "responsibilities", "requirements", "experience_level",
+    )
+
+    def _job_payload(self, job):
+        return {
+            "id": job.id,
+            "title": job.title,
+            "slug": job.slug,
+            "location": job.location,
+            "employment_type": job.employment_type,
+            "department": job.department,
+            "description": job.description,
+            "responsibilities": job.responsibilities,
+            "requirements": job.requirements,
+            "required_skills": job.required_skills,
+            "experience_level": job.experience_level,
+            "is_active": job.is_active,
+            "application_count": job.applications.count(),
+            "created_at": job.created_at.isoformat(),
+            "updated_at": job.updated_at.isoformat(),
+        }
+
+    def get(self, request, job_id):
+        if not request.user or (getattr(request.user, 'role', '') or '').lower() != 'admin':
+            return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        job = JobPosting.objects.filter(id=job_id).first()
+        if not job:
+            return Response({"detail": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(self._job_payload(job), status=status.HTTP_200_OK)
+
+    def patch(self, request, job_id):
+        if not request.user or (getattr(request.user, 'role', '') or '').lower() != 'admin':
+            return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+
+        job = JobPosting.objects.filter(id=job_id).first()
+        if not job:
+            return Response({"detail": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        updated = []
+
+        for field in self.TEXT_FIELDS:
+            if field not in request.data:
+                continue
+            value = (request.data.get(field) or "").strip()
+            # Title and description are what the public listing is built from,
+            # so neither may be emptied on a role that is already advertised.
+            if field in ("title", "description") and not value:
+                return Response(
+                    {"detail": f"{field.replace('_', ' ').capitalize()} cannot be empty"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            setattr(job, field, value)
+            updated.append(field)
+
+        if "slug" in request.data:
+            slug = (request.data.get("slug") or "").strip()
+            if not slug:
+                return Response({"detail": "Slug cannot be empty"}, status=status.HTTP_400_BAD_REQUEST)
+            slug = re.sub(r"[^a-z0-9]+", "-", slug.lower()).strip("-")
+            # The slug is this role's public URL, so a clash would silently
+            # point /careers/<slug> at the wrong posting.
+            if JobPosting.objects.filter(slug=slug).exclude(id=job.id).exists():
+                return Response(
+                    {"detail": f"Another role already uses the URL '{slug}'"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            job.slug = slug
+            updated.append("slug")
+
+        if "employment_type" in request.data:
+            employment_type = (request.data.get("employment_type") or "").strip()
+            valid = {choice for choice, _ in JobPosting.EMPLOYMENT_CHOICES}
+            if employment_type not in valid:
+                return Response(
+                    {"detail": f"Unknown employment type '{employment_type}'. Allowed: {', '.join(sorted(valid))}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            job.employment_type = employment_type
+            updated.append("employment_type")
+
+        if "required_skills" in request.data:
+            skills = request.data.get("required_skills")
+            if isinstance(skills, str):
+                skills = [part.strip() for part in skills.split(",")]
+            if not isinstance(skills, list):
+                return Response({"detail": "required_skills must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+            job.required_skills = [str(skill).strip() for skill in skills if str(skill).strip()]
+            updated.append("required_skills")
+
+        if "is_active" in request.data:
+            value = request.data.get("is_active")
+            if isinstance(value, str):
+                value = value.strip().lower() in ("true", "1", "yes")
+            job.is_active = bool(value)
+            updated.append("is_active")
+
+        if not updated:
+            return Response({"detail": "No editable fields were supplied"}, status=status.HTTP_400_BAD_REQUEST)
+
+        job.save()
+        payload = self._job_payload(job)
+        payload["message"] = "Job posting updated successfully"
+        payload["updated_fields"] = updated
+        return Response(payload, status=status.HTTP_200_OK)
+
+
 class AdminCareerApplicationsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

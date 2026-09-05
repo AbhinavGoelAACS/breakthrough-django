@@ -123,6 +123,13 @@
   color: var(--j-on-surface-variant, #414844);
 }
 
+.roleActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+
 .roleCount {
   margin: 0.75rem 0 0;
   font-size: 0.8125rem;

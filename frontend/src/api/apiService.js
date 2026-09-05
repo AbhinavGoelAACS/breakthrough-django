@@ -216,6 +216,8 @@ export const acsApi = {
     admin: {
       listJobs: () => apiService.get('/api/v1/admin/careers/jobs'),
       createJob: (payload) => apiService.post('/api/v1/admin/careers/jobs', payload),
+      getJob: (jobId) => apiService.get(`/api/v1/admin/careers/jobs/${jobId}`),
+      updateJob: (jobId, payload) => apiService.patch(`/api/v1/admin/careers/jobs/${jobId}`, payload),
       listApplications: () => apiService.get('/api/v1/admin/careers/applications'),
       getApplication: (applicationId) => apiService.get(`/api/v1/admin/careers/applications/${applicationId}`),
       updateApplication: (applicationId, payload) =>

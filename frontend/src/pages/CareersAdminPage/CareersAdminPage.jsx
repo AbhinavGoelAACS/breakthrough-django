@@ -31,6 +31,7 @@ const EMPLOYMENT_TYPES = [
 
 const emptyJob = {
   title: '',
+  slug: '',
   department: '',
   location: '',
   employment_type: 'full_time',
@@ -39,7 +40,23 @@ const emptyJob = {
   responsibilities: '',
   requirements: '',
   required_skills: '',
+  is_active: true,
 };
+
+// The list endpoint carries only a summary, so editing loads the full record.
+const toForm = (job) => ({
+  title: job.title || '',
+  slug: job.slug || '',
+  department: job.department || '',
+  location: job.location || '',
+  employment_type: job.employment_type || 'full_time',
+  experience_level: job.experience_level || '',
+  description: job.description || '',
+  responsibilities: job.responsibilities || '',
+  requirements: job.requirements || '',
+  required_skills: (job.required_skills || []).join(', '),
+  is_active: job.is_active !== false,
+});
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -86,7 +103,9 @@ const CareersAdminPage = () => {
 
   const [showJobForm, setShowJobForm] = useState(false);
   const [jobForm, setJobForm] = useState(emptyJob);
-  const [creatingJob, setCreatingJob] = useState(false);
+  const [savingJob, setSavingJob] = useState(false);
+  // null while posting a new role; the job's id while editing an existing one.
+  const [editingJobId, setEditingJobId] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -180,25 +199,79 @@ const CareersAdminPage = () => {
     }
   };
 
-  const createJob = async (event) => {
-    event.preventDefault();
+  const closeJobForm = () => {
+    setShowJobForm(false);
+    setEditingJobId(null);
+    setJobForm(emptyJob);
+  };
+
+  const startNewJob = () => {
+    setEditingJobId(null);
+    setJobForm(emptyJob);
+    setShowJobForm(true);
+  };
+
+  const startEditJob = async (job) => {
     try {
-      setCreatingJob(true);
-      await acsApi.careers.admin.createJob({
-        ...jobForm,
-        required_skills: jobForm.required_skills
-          .split(',')
-          .map((skill) => skill.trim())
-          .filter(Boolean),
-      });
-      success(`“${jobForm.title}” is now live on the careers page.`);
-      setJobForm(emptyJob);
-      setShowJobForm(false);
+      setSavingJob(true);
+      // Fetch the full record: the list omits description, responsibilities
+      // and requirements, and submitting the form without them would blank
+      // those fields on a live posting.
+      const detail = await acsApi.careers.admin.getJob(job.id);
+      setJobForm(toForm(detail));
+      setEditingJobId(job.id);
+      setShowJobForm(true);
+    } catch (err) {
+      showError(describeApiError(err, 'Could not open that role for editing.'));
+    } finally {
+      setSavingJob(false);
+    }
+  };
+
+  const saveJob = async (event) => {
+    event.preventDefault();
+    const payload = {
+      ...jobForm,
+      required_skills: jobForm.required_skills
+        .split(',')
+        .map((skill) => skill.trim())
+        .filter(Boolean),
+    };
+    try {
+      setSavingJob(true);
+      if (editingJobId) {
+        await acsApi.careers.admin.updateJob(editingJobId, payload);
+        success(`“${jobForm.title}” updated.`);
+      } else {
+        delete payload.slug; // let the backend derive it from the title
+        await acsApi.careers.admin.createJob(payload);
+        success(`“${jobForm.title}” is now live on the careers page.`);
+      }
+      closeJobForm();
       fetchData();
     } catch (err) {
-      showError(describeApiError(err, 'Could not create that role.'));
+      showError(
+        describeApiError(err, editingJobId ? 'Could not save that role.' : 'Could not create that role.')
+      );
     } finally {
-      setCreatingJob(false);
+      setSavingJob(false);
+    }
+  };
+
+  // Open/close is the edit admins reach for most, so it gets a one-click path
+  // that does not open the form.
+  const toggleJobActive = async (job) => {
+    try {
+      setSavingJob(true);
+      await acsApi.careers.admin.updateJob(job.id, { is_active: !job.is_active });
+      success(`“${job.title}” ${job.is_active ? 'closed to new applications' : 'reopened'}.`);
+      setJobs((prev) =>
+        prev.map((row) => (row.id === job.id ? { ...row, is_active: !job.is_active } : row))
+      );
+    } catch (err) {
+      showError(describeApiError(err, 'Could not change that role.'));
+    } finally {
+      setSavingJob(false);
     }
   };
 
@@ -233,7 +306,7 @@ const CareersAdminPage = () => {
         <button
           type="button"
           className={`${styles.btn} ${styles.btnPrimary}`}
-          onClick={() => setShowJobForm((open) => !open)}
+          onClick={() => (showJobForm ? closeJobForm() : startNewJob())}
         >
           <span className="material-symbols-rounded" style={{ fontSize: '1.1rem' }}>
             {showJobForm ? 'close' : 'add'}
@@ -271,8 +344,10 @@ const CareersAdminPage = () => {
       )}
 
       {showJobForm && (
-        <form className={styles.jobForm} onSubmit={createJob}>
-          <h2 className={styles.blockTitle}>New role</h2>
+        <form className={styles.jobForm} onSubmit={saveJob}>
+          <h2 className={styles.blockTitle}>
+            {editingJobId ? `Edit role — ${jobForm.title}` : 'New role'}
+          </h2>
           <div className={styles.formGrid}>
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Title</span>
@@ -340,6 +415,40 @@ const CareersAdminPage = () => {
               />
               <span className={styles.hint}>Comma separated — these drive the fit score.</span>
             </label>
+
+            {/* Only when editing: on create the backend derives the slug from
+                the title, and a brand-new role is always open. */}
+            {editingJobId && (
+              <>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Public URL</span>
+                  <input
+                    className={styles.input}
+                    name="slug"
+                    value={jobForm.slug}
+                    onChange={onJobField}
+                  />
+                  <span className={styles.hint}>
+                    /careers/{jobForm.slug || '…'} — changing this breaks any link already shared.
+                  </span>
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Status</span>
+                  <select
+                    className={styles.input}
+                    name="is_active"
+                    value={jobForm.is_active ? 'open' : 'closed'}
+                    onChange={(e) =>
+                      setJobForm((prev) => ({ ...prev, is_active: e.target.value === 'open' }))
+                    }
+                  >
+                    <option value="open">Open — listed on /careers</option>
+                    <option value="closed">Closed — hidden, existing applications kept</option>
+                  </select>
+                </label>
+              </>
+            )}
           </div>
 
           <label className={styles.field}>
@@ -375,16 +484,23 @@ const CareersAdminPage = () => {
             <button
               type="submit"
               className={`${styles.btn} ${styles.btnPrimary}`}
-              disabled={creatingJob}
+              disabled={savingJob}
             >
-              {creatingJob ? 'Publishing…' : 'Publish role'}
+              {savingJob
+                ? 'Saving…'
+                : editingJobId
+                  ? 'Save changes'
+                  : 'Publish role'}
+            </button>
+            <button type="button" className={styles.btn} onClick={closeJobForm} disabled={savingJob}>
+              Cancel
             </button>
           </div>
         </form>
       )}
 
       <section className={styles.block}>
-        <h2 className={styles.blockTitle}>Live roles</h2>
+        <h2 className={styles.blockTitle}>Roles</h2>
         {loading ? (
           <p className={styles.empty}>Loading roles…</p>
         ) : jobs.length === 0 ? (
@@ -410,6 +526,27 @@ const CareersAdminPage = () => {
                 <p className={styles.roleCount}>
                   {job.application_count} {job.application_count === 1 ? 'applicant' : 'applicants'}
                 </p>
+                <div className={styles.roleActions}>
+                  <button
+                    type="button"
+                    className={styles.btn}
+                    disabled={savingJob}
+                    onClick={() => startEditJob(job)}
+                  >
+                    <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>
+                      edit
+                    </span>
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btn}
+                    disabled={savingJob}
+                    onClick={() => toggleJobActive(job)}
+                  >
+                    {job.is_active ? 'Close' : 'Reopen'}
+                  </button>
+                </div>
               </article>
             ))}
           </div>
