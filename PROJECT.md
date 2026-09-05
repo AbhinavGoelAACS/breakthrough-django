@@ -4,6 +4,10 @@ An audit of how this codebase actually works, written so that new code can be
 added in the same idiom as what is already here. Everything below was read off
 the source, not assumed.
 
+## Operational guardrail (do not override)
+
+- **Deployment pipelines are frozen.** Do not modify files under `.github/workflows/` that control deploys (`deploy-backend.yml`, `deploy-frontend.yml`, `deploy-prod-backend.yml`, `deploy-prod-frontend.yml`) unless the repository owner explicitly asks for that exact change in the current request.
+
 ---
 
 ## 1. Shape of the repo
