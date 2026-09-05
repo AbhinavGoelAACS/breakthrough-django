@@ -106,7 +106,13 @@ jobs:
             echo "DB_HOST=$DB_HOST"
             echo "DB_PORT=$DB_PORT"
             echo "DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY"
-            echo "DJANGO_DEBUG=${DJANGO_DEBUG:-false}"
+            # Forced off, not taken from the secret. The package above always
+            # declares DJANGO_ENV=production, and settings.py refuses to start
+            # with DEBUG on in that mode (ImproperlyConfigured). The dev
+            # DJANGO_DEBUG secret is "true", which is right for a laptop but
+            # would both crash this deploy and expose tracebacks on a host that
+            # already serves its own source files over HTTP.
+            echo "DJANGO_DEBUG=false"
             echo "EMAIL_BACKEND=$EMAIL_BACKEND"
             echo "EMAIL_HOST=$EMAIL_HOST"
             echo "EMAIL_PORT=$EMAIL_PORT"
