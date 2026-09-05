@@ -1,0 +1,37 @@
+name: Diagnose Public API
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Base API URL (e.g. https://api.breakthroughpublishers.com)'
+        required: true
+        default: 'https://api.breakthroughpublishers.com'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check proceedings downloads endpoint
+        run: |
+          set -euo pipefail
+          API_URL="${{ github.event.inputs.api_url }}"
+          echo "Checking $API_URL/api/v1/proceedings/downloads/"
+          http_status=$(curl -s -o /dev/stderr -w "%{http_code}" --max-time 15 "$API_URL/api/v1/proceedings/downloads/" || true)
+          echo "HTTP status: $http_status"
+          if [ "$http_status" -eq 503 ]; then
+            echo "::error::Endpoint returned 503 — likely a DB or server error."
+          fi
+
+      - name: Check tmp/restart.txt
+        run: |
+          API_URL="${{ github.event.inputs.api_url }}"
+          echo "Checking $API_URL/tmp/restart.txt"
+          set +e
+          body=$(curl -sf --max-time 10 "$API_URL/tmp/restart.txt" 2>/dev/null || true)
+          set -e
+          if [ -n "$body" ]; then
+            echo "Restart token: $body"
+          else
+            echo "No restart token found or request failed."
+          fi

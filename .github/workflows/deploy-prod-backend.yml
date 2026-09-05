@@ -133,6 +133,92 @@ jobs:
 
           echo "Wrote deploy_package/.env.production and deploy_package/runtime.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
 
+      - name: Resolve the directory the site actually serves
+        id: target
+        env:
+          FTP_HOST: ${{ secrets.BACKEND_FTP_HOST }}
+          FTP_USER: ${{ secrets.BACKEND_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
+          SITE_URL: ${{ secrets.FRONTEND_URL }}
+        run: |
+          set +e
+          set -uo pipefail
+
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+          FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
+
+          run_ftp() {
+            {
+              echo "set ftp:ssl-allow false"
+              echo "set net:timeout 20"
+              echo "set net:max-retries 2"
+              echo "set cmd:fail-exit false"
+              echo "open -u \"$FTP_USER\",\"$FTP_PASS\" \"$FTP_HOST\""
+              printf '%s\n' "$1"
+              echo "bye"
+            } > lftp.script
+            lftp -f lftp.script
+          }
+
+          annotate() {
+            python3 -c 'import sys; print("::notice title=" + sys.argv[1] + "::" + sys.stdin.read().replace("%","%25").replace("\r","%0D").replace("\n","%0A"))' "$1"
+          }
+
+          run_ftp "pwd" > pwd.txt 2>&1
+          home="$(cat pwd.txt)"
+          case "$home" in
+            *"Unknown command"*|*"Login failed"*|*"Fatal error"*|*"Name or service not known"*|"")
+              printf '%s\n' "$home" | annotate "FTP connection failed"
+              echo "::error::No FTP session could be opened; check BACKEND_FTP_HOST / BACKEND_FTP_USERNAME / BACKEND_FTP_PASSWORD"
+              exit 1;;
+          esac
+
+          run_ftp "find --maxdepth 4 ." > find.txt 2>&1
+          if [ ! -s find.txt ]; then
+            run_ftp "ls -R" > find.txt 2>&1 || true
+          fi
+
+          discovered="$(grep -E 'passenger_wsgi\.py$' find.txt 2>/dev/null | sed -e 's#passenger_wsgi\.py$##' -e 's#^\./##' | sed -e 's#^$#./#')"
+
+          if [ -n "${{ vars.BACKEND_FTP_SERVER_DIR:-}}" ]; then
+            candidates="${{ vars.BACKEND_FTP_SERVER_DIR%/ }}/"
+          else
+            candidates="$(printf '%s\n' $discovered "/home2/aacsjour/BreakThrough/" "/home2/aacsjour/" "/home2/aacsjour/public_html/" "/home2/aacsjour/devapi.breakthroughpublishers.com/" "./" "BreakThrough/" "public_html/" | awk 'NF && !seen[$0]++')"
+          fi
+
+          token="probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "$token" > probe.txt
+
+          found=""
+          results=""
+          while IFS= read -r dir; do
+            [ -n "$dir" ] || continue
+            run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+              results="${results}${dir} : not writable\n"
+              continue
+            fi
+            sleep 3
+            body="$(curl -sf --max-time 20 "$SITE_URL/deploy-probe.txt" 2>/dev/null || true)"
+            run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1 || true
+            if [ "$body" = "$token" ]; then
+              results="${results}${dir} : SERVED\n"
+              found="$dir"
+              break
+            fi
+            results="${results}${dir} : written, not served\n"
+          done <<< "$candidates"
+
+          printf '%s' "$results" | annotate "probe results"
+
+          if [ -z "$found" ]; then
+            echo "::error::None of the probed directories is served at $SITE_URL. Set BACKEND_FTP_SERVER_DIR repo variable to the document root."
+            exit 1
+          fi
+
+          echo "server_dir=$found" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
