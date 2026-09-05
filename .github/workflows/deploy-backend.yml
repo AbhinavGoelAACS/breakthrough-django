@@ -49,6 +49,10 @@ jobs:
             --exclude '.DS_Store' \
             --exclude 'media/uploads/*' \
             --exclude 'staticfiles/*'
+
+          # Force Passenger to reload the Python app on next request.
+          mkdir -p ../deploy_package/tmp
+          date -u +"restart %Y-%m-%dT%H:%M:%SZ" > ../deploy_package/tmp/restart.txt
           
           # List files to be deployed
           echo "Files to deploy:"
@@ -118,7 +122,7 @@ jobs:
           password: ${{ secrets.BACKEND_FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./deploy_package/
-          server-dir: ./
+          server-dir: /home2/aacsjour/BreakThrough/
           exclude: |
             **/.git*
             **/.git*/**
