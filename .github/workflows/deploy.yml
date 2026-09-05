@@ -117,7 +117,9 @@ jobs:
             echo "FRONTEND_URL=$FRONTEND_URL"
           } > deploy_backend/.env.production
 
-          cp deploy_backend/.env.production deploy_backend/runtime.env
+          # Not copied to runtime.env — see deploy-backend.yml: the copy was
+          # served over HTTP because the server only hides dot-prefixed env
+          # files, and settings.py never reads it anyway.
             
       - name: Deploy Backend via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

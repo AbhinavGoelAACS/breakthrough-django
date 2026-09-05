@@ -122,9 +122,11 @@ jobs:
             echo "FRONTEND_URL=$FRONTEND_URL"
           } > deploy_package/.env.production
 
-          cp deploy_package/.env.production deploy_package/runtime.env
+          # Not copied to runtime.env — see deploy-backend.yml: the copy was
+          # served over HTTP because the server only hides dot-prefixed env
+          # files, and settings.py never reads it anyway.
 
-          echo "Wrote deploy_package/.env.production and deploy_package/runtime.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
+          echo "Wrote deploy_package/.env.production (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
 
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

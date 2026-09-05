@@ -3,38 +3,79 @@
 from django.db import migrations, models
 
 
+def create_table_if_missing(apps, schema_editor):
+    """Create copyright_form only where it is not already there.
+
+    On production the table predates this migration — it came from init_db.sql,
+    not from Django — so a plain CreateModel raises (1050, "Table
+    'copyright_form' already exists"). Because a failed operation aborts the
+    whole `migrate` run, that one error also stopped 0009-0014 from applying,
+    which is why the books, proceedings and careers endpoints answered 503 with
+    the masked database error while the rest of the API kept working.
+
+    The CreateModel below is applied to migration state only; this function is
+    the database half. They are two sequential operations rather than one
+    SeparateDatabaseAndState because a RunPython inside that wrapper is handed
+    the state from *before* its own state_operations, where the model does not
+    exist yet.
+    """
+    model = apps.get_model("api", "CopyrightForm")
+    table = model._meta.db_table
+    if table in schema_editor.connection.introspection.table_names():
+        return
+    schema_editor.create_model(model)
+
+
+def drop_table_if_present(apps, schema_editor):
+    model = apps.get_model("api", "CopyrightForm")
+    if model._meta.db_table in schema_editor.connection.introspection.table_names():
+        schema_editor.delete_model(model)
+
+
 class Migration(migrations.Migration):
+
+    # MySQL cannot roll back DDL, so Django refuses to emit CREATE TABLE from
+    # inside an atomic migration's RunPython. The operations here are each
+    # individually safe to re-run, so dropping atomicity costs nothing.
+    atomic = False
 
     dependencies = [
         ('api', '0001_initial'),
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='CopyrightForm',
-            fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('paper_id', models.IntegerField()),
-                ('author_id', models.IntegerField()),
-                ('status', models.CharField(default='pending', max_length=20)),
-                ('deadline', models.DateTimeField(blank=True, null=True)),
-                ('reminder_count', models.IntegerField(default=0)),
-                ('last_reminder_at', models.DateTimeField(blank=True, null=True)),
-                ('author_name', models.CharField(blank=True, max_length=255, null=True)),
-                ('author_affiliation', models.CharField(blank=True, max_length=500, null=True)),
-                ('co_authors_consent', models.BooleanField(default=False, null=True)),
-                ('copyright_agreed', models.BooleanField(default=False, null=True)),
-                ('signature', models.CharField(blank=True, max_length=255, null=True)),
-                ('signed_date', models.DateTimeField(blank=True, null=True)),
-                ('original_work', models.BooleanField(default=False, null=True)),
-                ('no_conflict', models.BooleanField(default=False, null=True)),
-                ('rights_transfer', models.BooleanField(default=False, null=True)),
-                ('created_at', models.DateTimeField(blank=True, null=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
+        # State only — no DDL is emitted here.
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name='CopyrightForm',
+                    fields=[
+                        ('id', models.AutoField(primary_key=True, serialize=False)),
+                        ('paper_id', models.IntegerField()),
+                        ('author_id', models.IntegerField()),
+                        ('status', models.CharField(default='pending', max_length=20)),
+                        ('deadline', models.DateTimeField(blank=True, null=True)),
+                        ('reminder_count', models.IntegerField(default=0)),
+                        ('last_reminder_at', models.DateTimeField(blank=True, null=True)),
+                        ('author_name', models.CharField(blank=True, max_length=255, null=True)),
+                        ('author_affiliation', models.CharField(blank=True, max_length=500, null=True)),
+                        ('co_authors_consent', models.BooleanField(default=False, null=True)),
+                        ('copyright_agreed', models.BooleanField(default=False, null=True)),
+                        ('signature', models.CharField(blank=True, max_length=255, null=True)),
+                        ('signed_date', models.DateTimeField(blank=True, null=True)),
+                        ('original_work', models.BooleanField(default=False, null=True)),
+                        ('no_conflict', models.BooleanField(default=False, null=True)),
+                        ('rights_transfer', models.BooleanField(default=False, null=True)),
+                        ('created_at', models.DateTimeField(blank=True, null=True)),
+                        ('completed_at', models.DateTimeField(blank=True, null=True)),
+                    ],
+                    options={
+                        'db_table': 'copyright_form',
+                        'managed': True,
+                    },
+                ),
             ],
-            options={
-                'db_table': 'copyright_form',
-                'managed': True,
-            },
         ),
+        # ...and the DDL, which now sees CopyrightForm in the migration state.
+        migrations.RunPython(create_table_if_missing, drop_table_if_present),
     ]

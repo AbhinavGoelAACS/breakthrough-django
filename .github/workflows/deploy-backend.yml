@@ -110,9 +110,13 @@ jobs:
             echo "FRONTEND_URL=$FRONTEND_URL"
           } > deploy_package/.env.production
 
-          cp deploy_package/.env.production deploy_package/runtime.env
-
-          echo "Wrote deploy_package/.env.production and deploy_package/runtime.env (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
+          # runtime.env is deliberately NOT written. It was only ever a copy of
+          # .env.production, which settings.py reads first, so nothing ever read
+          # it — but the server's rule for hiding env files matches the leading
+          # dot, so the copy was downloadable over HTTP with the database
+          # password and secret key in it. Leaving it out of the package also
+          # makes the next FTP sync delete the exposed copy from the server.
+          echo "Wrote deploy_package/.env.production (DJANGO_SECRET_KEY length: ${#DJANGO_SECRET_KEY})"
           
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -122,7 +126,11 @@ jobs:
           password: ${{ secrets.BACKEND_FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./deploy_package/
-          server-dir: ./BreakThrough/
+          # This FTP account's home is already the Django app root — the
+          # listing from the run 154 probe shows passenger_wsgi/api/ at its top
+          # level. Nesting a subdirectory here uploads into a folder nothing
+          # serves, which is what run 163 did.
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**
@@ -135,12 +143,21 @@ jobs:
             **/.DS_Store
             **/.htaccess
             
-      - name: Verify live dev API reflects deployed build
+      # Verifies the host these FTP credentials actually serve. This job runs
+      # under the `prod` environment, and the marker written below is the one
+      # api.breakthroughpublishers.com returns — so probing devapi here could
+      # never pass, whatever the upload did. Override BACKEND_API_BASE_URL if
+      # the credentials are ever repointed at another environment.
+      - name: Verify the live API reflects this build
+        env:
+          BASE_URL: ${{ vars.BACKEND_API_BASE_URL || 'https://api.breakthroughpublishers.com' }}
         run: |
           set -euo pipefail
-          BASE_URL="https://devapi.breakthroughpublishers.com"
           EXPECTED_SHA="$GITHUB_SHA"
+          echo "Verifying $BASE_URL"
 
+          # Passenger reloads lazily, on the first request after tmp/restart.txt
+          # changes, so the marker can lag the upload by a few seconds.
           marker=""
           for i in 1 2 3 4 5 6; do
             marker="$(curl -fsS --max-time 10 "$BASE_URL/tmp/restart.txt" || true)"
@@ -152,26 +169,46 @@ jobs:
           done
 
           if ! printf '%s' "$marker" | grep -q "$EXPECTED_SHA"; then
-            echo "::error::Deployed marker on dev API did not update to this commit ($EXPECTED_SHA)."
+            echo "::error::$BASE_URL/tmp/restart.txt did not update to this commit ($EXPECTED_SHA). The upload did not reach the directory this host serves — check server-dir against the FTP account's home."
             exit 1
           fi
 
+          # A 404 means the running code predates these routes; a 5xx after the
+          # marker moved almost always means the schema is behind the code.
+          failed=0
           for path in \
             "/api/v1/books/?skip=0&limit=1" \
             "/api/v1/book-series/" \
             "/api/v1/proceedings/downloads/" \
-            "/api/v1/careers/jobs/"
+            "/api/v1/careers/jobs"
           do
-            code="$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' "$BASE_URL$path")"
+            code=000
+            for attempt in 1 2 3; do
+              # `|| true` so a connection failure reports 000 rather than
+              # killing the step under `set -e` with no message.
+              code="$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' "$BASE_URL$path" || true)"
+              code="${code:-000}"
+              case "$code" in 2*|3*|4*) [ "$code" = "404" ] || break ;; esac
+              sleep 10
+            done
             echo "$path -> HTTP $code"
-            if [ "$code" = "404" ]; then
-              echo "::error::Live endpoint still returns 404 after deploy: $BASE_URL$path"
-              exit 1
-            fi
+            case "$code" in
+              404)
+                echo "::error::Route still missing after deploy: $BASE_URL$path"
+                failed=1
+                ;;
+              5*|000)
+                echo "::error::$BASE_URL$path returned $code. The code shipped but the request failed — check that migrations ran (see passenger_wsgi.py) and read stderr.log on the server."
+                failed=1
+                ;;
+            esac
           done
-            
+          [ "$failed" -eq 0 ] || exit 1
+
       - name: Deployment Summary
+        env:
+          BASE_URL: ${{ vars.BACKEND_API_BASE_URL || 'https://api.breakthroughpublishers.com' }}
         run: |
-          echo "✅ Backend deployment completed successfully!"
+          echo "✅ Backend deployment completed and verified live."
           echo "📦 Deployed from: backend/"
-          echo "🎯 Target: cPanel server"
+          echo "🎯 Target: $BASE_URL (GitHub environment: prod)"
