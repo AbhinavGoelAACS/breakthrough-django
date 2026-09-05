@@ -122,7 +122,7 @@ jobs:
           password: ${{ secrets.BACKEND_FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./deploy_package/
-          server-dir: /home2/aacsjour/BreakThrough/backend/
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**
@@ -146,7 +146,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            cd /home2/aacsjour/BreakThrough/backend
+            cd /home2/aacsjour/BreakThrough
             
             # Activate virtual environment if exists
             if [ -d "venv" ]; then
@@ -162,8 +162,10 @@ jobs:
             # Collect static files
             python manage.py collectstatic --no-input
             
-            # Restart the application
+            # Force Passenger to reload app code and write a visible marker.
             touch tmp/restart.txt
+            touch passenger_wsgi.py
+            date -u +"restart %Y-%m-%dT%H:%M:%SZ" > tmp/restart.txt
             
             echo "Backend deployment complete!"
             
