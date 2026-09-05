@@ -140,14 +140,13 @@ jobs:
           run_ftp "ls -R" > find.txt 2>&1 || true
           head -200 find.txt || true
 
-          candidates="$(cat <<'EOF'
-./
-public_html/
-public_html/frontend/
-public_html/dev/
-frontend/
-EOF
-)"
+          candidates="$(printf '%s\n' \
+            './' \
+            'public_html/' \
+            'public_html/frontend/' \
+            'public_html/dev/' \
+            'frontend/' \
+          )"
 
           token="probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "$token" > probe.txt

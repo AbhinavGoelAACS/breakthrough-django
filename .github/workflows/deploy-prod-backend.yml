@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
 
+    env:
+      SITE_URL: https://api.breakthroughpublishers.com
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -139,7 +142,8 @@ jobs:
           FTP_HOST: ${{ secrets.BACKEND_FTP_HOST }}
           FTP_USER: ${{ secrets.BACKEND_FTP_USERNAME }}
           FTP_PASS: ${{ secrets.BACKEND_FTP_PASSWORD }}
-          SITE_URL: ${{ secrets.FRONTEND_URL }}
+          SITE_URL: ${{ env.SITE_URL }}
+          OVERRIDE: ${{ vars.BACKEND_FTP_SERVER_DIR }}
         run: |
           set +e
           set -uo pipefail
@@ -181,8 +185,8 @@ jobs:
 
           discovered="$(grep -E 'passenger_wsgi\.py$' find.txt 2>/dev/null | sed -e 's#passenger_wsgi\.py$##' -e 's#^\./##' | sed -e 's#^$#./#')"
 
-          if [ -n "${{ vars.BACKEND_FTP_SERVER_DIR:-}}" ]; then
-            candidates="${{ vars.BACKEND_FTP_SERVER_DIR%/ }}/"
+          if [ -n "${OVERRIDE:-}" ]; then
+            candidates="${OVERRIDE%/}/"
           else
             candidates="$(printf '%s\n' $discovered "/home2/aacsjour/BreakThrough/" "/home2/aacsjour/" "/home2/aacsjour/public_html/" "/home2/aacsjour/devapi.breakthroughpublishers.com/" "./" "BreakThrough/" "public_html/" | awk 'NF && !seen[$0]++')"
           fi
@@ -227,7 +231,7 @@ jobs:
           password: ${{ secrets.BACKEND_FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./deploy_package/
-          server-dir: ./
+          server-dir: ${{ steps.target.outputs.server_dir }}
           exclude: |
             **/.git*
             **/.git*/**
