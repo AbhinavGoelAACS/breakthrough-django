@@ -46,6 +46,15 @@ jobs:
             --exclude 'media/uploads/*' \
             --exclude 'staticfiles/*'
 
+          # Force Passenger to reload the Python app on next request. The SSH
+          # step below is the only other thing that restarts the app, and it is
+          # skipped whenever SSH_PRIVATE_KEY is unset — which it currently is —
+          # so without this a manual deploy uploads new code that the running
+          # process never picks up. Changing this file is also what makes the
+          # migration hook in api/apps.py run.
+          mkdir -p ../deploy_package/tmp
+          echo "restart ${GITHUB_SHA} $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > ../deploy_package/tmp/restart.txt
+
           echo "Files to deploy:"
           ls -la ../deploy_package
 

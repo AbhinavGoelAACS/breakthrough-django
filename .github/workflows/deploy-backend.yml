@@ -1,4 +1,7 @@
-name: Deploy Backend to cPanel
+name: Deploy Backend to Dev
+
+# Automatic dev deploys. Production is deliberately not reachable from here —
+# it is deployed by hand through deploy-prod-backend.yml (workflow_dispatch).
 
 on:
   push:
@@ -11,9 +14,14 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Django Backend
+    name: Deploy Django Backend (dev)
     runs-on: ubuntu-latest
-    environment: prod
+    # No `environment:` on purpose. This workflow runs on every push to main and
+    # must only ever reach dev, so it is kept out of the prod environment that
+    # deploy-prod-backend.yml uses. It reads DEV_-prefixed secrets for anything
+    # that decides *which server* or *which database* is written to; those names
+    # exist nowhere else, so a missing one fails the run instead of silently
+    # falling back to the repo-level production values.
     
     steps:
       - name: Checkout code
@@ -24,6 +32,40 @@ jobs:
         with:
           python-version: '3.10'
           
+      - name: Require dev deployment secrets
+        env:
+          DEV_BACKEND_FTP_HOST: ${{ secrets.DEV_BACKEND_FTP_HOST }}
+          DEV_BACKEND_FTP_USERNAME: ${{ secrets.DEV_BACKEND_FTP_USERNAME }}
+          DEV_BACKEND_FTP_PASSWORD: ${{ secrets.DEV_BACKEND_FTP_PASSWORD }}
+          DEV_DB_NAME: ${{ secrets.DEV_DB_NAME }}
+          DEV_DB_USER: ${{ secrets.DEV_DB_USER }}
+          DEV_DB_PASSWORD: ${{ secrets.DEV_DB_PASSWORD }}
+          DEV_DB_HOST: ${{ secrets.DEV_DB_HOST }}
+          DEV_DB_PORT: ${{ secrets.DEV_DB_PORT }}
+          DEV_DJANGO_SECRET_KEY: ${{ secrets.DEV_DJANGO_SECRET_KEY }}
+        run: |
+          missing=""
+          for name in DEV_BACKEND_FTP_HOST DEV_BACKEND_FTP_USERNAME DEV_BACKEND_FTP_PASSWORD \
+                      DEV_DB_NAME DEV_DB_USER DEV_DB_PASSWORD DEV_DB_HOST DEV_DB_PORT \
+                      DEV_DJANGO_SECRET_KEY
+          do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+
+          if [ -n "$missing" ]; then
+            echo "::error::Missing dev deployment secrets:$missing"
+            echo "This workflow deploys to the dev server on every push to main."
+            echo "It refuses to run without its own credentials, because the"
+            echo "repo-level BACKEND_FTP_* / DB_* secrets are production's — using"
+            echo "them here would auto-deploy every push straight to the live API,"
+            echo "which is what it was mistakenly doing before."
+            echo "Add the secrets above (dev cPanel FTP account + dev database),"
+            echo "then re-run. Production deploys stay manual via deploy-prod-backend.yml."
+            exit 1
+          fi
+
+          echo "All dev deployment secrets are present."
+
       - name: Verify requirements.txt
         run: |
           echo "Checking requirements.txt..."
@@ -60,13 +102,17 @@ jobs:
 
       - name: Generate backend runtime env from GitHub config
         env:
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          DJANGO_DEBUG: ${{ secrets.DJANGO_DEBUG }}
+          # Database and secret key are dev-only, with no fallback: a fallback
+          # here would point the dev server at the production database.
+          DB_NAME: ${{ secrets.DEV_DB_NAME }}
+          DB_USER: ${{ secrets.DEV_DB_USER }}
+          DB_PASSWORD: ${{ secrets.DEV_DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DEV_DB_HOST }}
+          DB_PORT: ${{ secrets.DEV_DB_PORT }}
+          DJANGO_SECRET_KEY: ${{ secrets.DEV_DJANGO_SECRET_KEY }}
+          # Mail and URLs are not environment-critical, so the shared values
+          # stand in when no dev-specific one is set.
+          DJANGO_DEBUG: ${{ secrets.DEV_DJANGO_DEBUG || secrets.DJANGO_DEBUG }}
           EMAIL_BACKEND: ${{ secrets.EMAIL_BACKEND }}
           EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
           EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
@@ -74,7 +120,7 @@ jobs:
           EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
           EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
           DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
-          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          FRONTEND_URL: ${{ secrets.DEV_FRONTEND_URL || secrets.FRONTEND_URL }}
         run: |
           # Fail fast if mandatory secrets are empty.
           test -n "$DB_NAME" || { echo "DB_NAME is empty"; exit 1; }
@@ -92,7 +138,7 @@ jobs:
 
           # Safe write via shell variables (avoids mangling secrets containing '$').
           {
-            echo "DJANGO_ENV=production"
+            echo "DJANGO_ENV=production"   # runtime mode, not the target host
             echo "DB_NAME=$DB_NAME"
             echo "DB_USER=$DB_USER"
             echo "DB_PASSWORD=$DB_PASSWORD"
@@ -121,16 +167,18 @@ jobs:
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.BACKEND_FTP_HOST }}
-          username: ${{ secrets.BACKEND_FTP_USERNAME }}
-          password: ${{ secrets.BACKEND_FTP_PASSWORD }}
+          server: ${{ secrets.DEV_BACKEND_FTP_HOST }}
+          username: ${{ secrets.DEV_BACKEND_FTP_USERNAME }}
+          password: ${{ secrets.DEV_BACKEND_FTP_PASSWORD }}
           protocol: ftp
           local-dir: ./deploy_package/
-          # This FTP account's home is already the Django app root — the
-          # listing from the run 154 probe shows passenger_wsgi/api/ at its top
-          # level. Nesting a subdirectory here uploads into a folder nothing
-          # serves, which is what run 163 did.
-          server-dir: ./
+          # Where the dev account's FTP home sits relative to the app root
+          # that Passenger serves. On the production account the home *is* the
+          # app root, so './' was right there; if the dev account differs, set
+          # the DEV_BACKEND_FTP_SERVER_DIR variable rather than guessing — an
+          # upload into a directory nothing serves looks exactly like a
+          # successful deploy.
+          server-dir: ${{ vars.DEV_BACKEND_FTP_SERVER_DIR || './' }}
           exclude: |
             **/.git*
             **/.git*/**
@@ -143,72 +191,12 @@ jobs:
             **/.DS_Store
             **/.htaccess
             
-      # Verifies the host these FTP credentials actually serve. This job runs
-      # under the `prod` environment, and the marker written below is the one
-      # api.breakthroughpublishers.com returns — so probing devapi here could
-      # never pass, whatever the upload did. Override BACKEND_API_BASE_URL if
-      # the credentials are ever repointed at another environment.
-      - name: Verify the live API reflects this build
-        env:
-          BASE_URL: ${{ vars.BACKEND_API_BASE_URL || 'https://api.breakthroughpublishers.com' }}
-        run: |
-          set -euo pipefail
-          EXPECTED_SHA="$GITHUB_SHA"
-          echo "Verifying $BASE_URL"
-
-          # Passenger reloads lazily, on the first request after tmp/restart.txt
-          # changes, so the marker can lag the upload by a few seconds.
-          marker=""
-          for i in 1 2 3 4 5 6; do
-            marker="$(curl -fsS --max-time 10 "$BASE_URL/tmp/restart.txt" || true)"
-            echo "Attempt $i marker: $marker"
-            if printf '%s' "$marker" | grep -q "$EXPECTED_SHA"; then
-              break
-            fi
-            sleep 10
-          done
-
-          if ! printf '%s' "$marker" | grep -q "$EXPECTED_SHA"; then
-            echo "::error::$BASE_URL/tmp/restart.txt did not update to this commit ($EXPECTED_SHA). The upload did not reach the directory this host serves — check server-dir against the FTP account's home."
-            exit 1
-          fi
-
-          # A 404 means the running code predates these routes; a 5xx after the
-          # marker moved almost always means the schema is behind the code.
-          failed=0
-          for path in \
-            "/api/v1/books/?skip=0&limit=1" \
-            "/api/v1/book-series/" \
-            "/api/v1/proceedings/downloads/" \
-            "/api/v1/careers/jobs"
-          do
-            code=000
-            for attempt in 1 2 3; do
-              # `|| true` so a connection failure reports 000 rather than
-              # killing the step under `set -e` with no message.
-              code="$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' "$BASE_URL$path" || true)"
-              code="${code:-000}"
-              case "$code" in 2*|3*|4*) [ "$code" = "404" ] || break ;; esac
-              sleep 10
-            done
-            echo "$path -> HTTP $code"
-            case "$code" in
-              404)
-                echo "::error::Route still missing after deploy: $BASE_URL$path"
-                failed=1
-                ;;
-              5*|000)
-                echo "::error::$BASE_URL$path returned $code. The code shipped but the request failed — check that migrations ran (see passenger_wsgi.py) and read stderr.log on the server."
-                failed=1
-                ;;
-            esac
-          done
-          [ "$failed" -eq 0 ] || exit 1
-
       - name: Deployment Summary
-        env:
-          BASE_URL: ${{ vars.BACKEND_API_BASE_URL || 'https://api.breakthroughpublishers.com' }}
         run: |
-          echo "✅ Backend deployment completed and verified live."
+          # Reports the upload only. Nothing here checks the running site, so a
+          # green run means the files were transferred, not that the API picked
+          # them up.
+          echo "✅ Backend files uploaded to dev."
           echo "📦 Deployed from: backend/"
-          echo "🎯 Target: $BASE_URL (GitHub environment: prod)"
+          echo "🎯 Target: dev cPanel FTP account (DEV_BACKEND_FTP_*)"
+          echo "ℹ️  Production is deployed manually via deploy-prod-backend.yml."
