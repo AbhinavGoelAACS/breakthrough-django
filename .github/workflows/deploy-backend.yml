@@ -159,7 +159,14 @@ jobs:
           # probe since has been reporting on a connection that never happened.
           # Driving lftp from a script file removes the ambiguity: one command
           # per line, site named by an explicit `open`.
+          # Normalize copied secrets that often contain hidden CR/LF characters.
+          FTP_USER="$(printf '%s' "$FTP_USER" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          FTP_PASS="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
+
+          test -n "$FTP_HOST" || { echo "::error::BACKEND_FTP_HOST is empty after sanitizing whitespace/newlines"; exit 1; }
+          test -n "$FTP_USER" || { echo "::error::BACKEND_FTP_USERNAME is empty after sanitizing whitespace/newlines"; exit 1; }
+          test -n "$FTP_PASS" || { echo "::error::BACKEND_FTP_PASSWORD is empty after sanitizing whitespace/newlines"; exit 1; }
 
           run_ftp() {
             {
@@ -303,6 +310,8 @@ jobs:
           # site as a command and never opened a session, while `|| echo ... (ok)`
           # swallowed the failure. So this step has reported success without
           # clearing anything since it was reinstated. Script file, as above.
+          FTP_USER="$(printf '%s' "$FTP_USER" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          FTP_PASS="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           FTP_HOST="$(printf '%s' "$FTP_HOST" | tr -d '[:space:]' | sed -e 's#^ftps\{0,1\}://##' -e 's#/*$##')"
           {
             echo "set ftp:ssl-allow false"
