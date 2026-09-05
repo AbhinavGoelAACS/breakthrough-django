@@ -170,6 +170,15 @@ from .views_books import (
     DownloadAssetListView,
     ProceedingsProposalCreateView,
 )
+from .views_careers import (
+    CareerJobsListView,
+    CareerJobDetailView,
+    JobApplicationCreateView,
+    AdminCareerJobsView,
+    AdminCareerApplicationsView,
+    AdminCareerApplicationDetailView,
+    AdminCareerSendInviteView,
+)
 
 urlpatterns = [
     # Auth endpoints

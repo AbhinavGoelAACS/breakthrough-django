@@ -384,6 +384,103 @@ class PaperCoAuthor(models.Model):
     created_at = models.DateTimeField(null=True, blank=True)
 
 
+class JobPosting(models.Model):
+    EMPLOYMENT_CHOICES = [
+        ("full_time", "Full-time"),
+        ("part_time", "Part-time"),
+        ("internship", "Internship"),
+        ("contract", "Contract"),
+    ]
+
+    class Meta:
+        db_table = "job_posting"
+        managed = True
+        ordering = ["-created_at"]
+
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    location = models.CharField(max_length=200, blank=True, default="")
+    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_CHOICES, default="full_time")
+    department = models.CharField(max_length=200, blank=True, default="")
+    description = models.TextField()
+    responsibilities = models.TextField(blank=True, default="")
+    requirements = models.TextField(blank=True, default="")
+    required_skills = models.JSONField(default=list, blank=True)
+    experience_level = models.CharField(max_length=50, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class JobApplication(models.Model):
+    STATUS_CHOICES = [
+        ("new", "New"),
+        ("screening", "Screening"),
+        ("shortlisted", "Shortlisted"),
+        ("rejected", "Rejected"),
+        ("interview", "Interview"),
+        ("hired", "Hired"),
+    ]
+
+    class Meta:
+        db_table = "job_application"
+        managed = True
+        ordering = ["-created_at"]
+
+    id = models.AutoField(primary_key=True)
+    job = models.ForeignKey(JobPosting, on_delete=models.CASCADE, related_name="applications", db_column="job_id")
+    candidate_name = models.CharField(max_length=255)
+    email = models.EmailField(max_length=255)
+    phone = models.CharField(max_length=50, blank=True, default="")
+    resume_file = models.CharField(max_length=500, blank=True, null=True)
+    resume_text = models.TextField(blank=True, default="")
+    cover_letter = models.TextField(blank=True, default="")
+    portfolio_link = models.CharField(max_length=500, blank=True, default="")
+    github_link = models.CharField(max_length=500, blank=True, default="")
+    linkedin_link = models.CharField(max_length=500, blank=True, default="")
+    ai_score = models.IntegerField(default=0)
+    ai_summary = models.TextField(blank=True, default="")
+    matched_skills = models.JSONField(default=list, blank=True)
+    missing_skills = models.JSONField(default=list, blank=True)
+    screening_status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="new")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.candidate_name} -> {self.job.title}"
+
+
+class InterviewInvitation(models.Model):
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("sent", "Sent"),
+        ("failed", "Failed"),
+    ]
+
+    class Meta:
+        db_table = "interview_invitation"
+        managed = True
+        ordering = ["-sent_at", "-created_at"]
+
+    id = models.AutoField(primary_key=True)
+    application = models.ForeignKey(JobApplication, on_delete=models.CASCADE, related_name="interview_invitations", db_column="application_id")
+    template_name = models.CharField(max_length=200, blank=True, default="")
+    subject = models.CharField(max_length=500)
+    body = models.TextField()
+    meeting_link = models.CharField(max_length=500, blank=True, default="")
+    test_link = models.CharField(max_length=500, blank=True, default="")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+    sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Invitation for {self.application.candidate_name}"
+
+
 class EmailTemplate(models.Model):
     class Meta:
         db_table = "email_template"
