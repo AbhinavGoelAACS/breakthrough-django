@@ -13,7 +13,11 @@ from rest_framework.views import APIView
 
 from .models import JobApplication, JobPosting, InterviewInvitation
 from .services.career_screening import screen_candidate_for_job
-from .services.email_service import send_email
+from .services.email_service import (
+    notify_editorial_new_application,
+    queue_email_task,
+    send_email,
+)
 
 # A resume is a user-supplied file written to disk, so extension and size are
 # both checked before anything is saved — the same rule the proposal
@@ -156,6 +160,10 @@ class JobApplicationCreateView(APIView):
             missing_skills=screening["missing_skills"],
             screening_status="new",
         )
+
+        # Queued so a slow SMTP host cannot make the application form hang —
+        # the same treatment the proposal forms get.
+        queue_email_task(notify_editorial_new_application, application)
 
         return Response({
             "id": application.id,

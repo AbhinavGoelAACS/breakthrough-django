@@ -824,6 +824,64 @@ def notify_editorial_new_proposal(proposal, kind):
     return send_email(recipient, subject, plain_body)
 
 
+# ---------------------------------------------------------------------------
+# Careers
+# ---------------------------------------------------------------------------
+
+
+def notify_editorial_new_application(application):
+    """Alert the editorial inbox that a job application has arrived.
+
+    Mirrors notify_editorial_new_proposal: the hiring inbox is the same
+    EDITORIAL_EMAIL address, and the body carries enough to triage without
+    signing in. The resume link is included rather than the file, so the
+    reviewer opens it from the admin queue where access is at least behind a
+    login.
+    """
+    recipient = getattr(settings, "EDITORIAL_EMAIL", None)
+    if not recipient:
+        logger.warning(
+            "EDITORIAL_EMAIL is not configured; application %s not notified",
+            application.id,
+        )
+        return False, "EDITORIAL_EMAIL not configured"
+
+    job = application.job
+    frontend = _get_frontend_url()
+    matched = ", ".join(application.matched_skills or []) or "None matched"
+    missing = ", ".join(application.missing_skills or []) or "None"
+
+    subject = f"New application: {job.title} — {application.candidate_name}"
+    plain_body = (
+        f"A new job application has been submitted.\n\n"
+        f"Role: {job.title}\n"
+        f"Department: {job.department or 'Not specified'}\n"
+        f"Location: {job.location or 'Not specified'}\n"
+        f"Received: {application.created_at:%d %b %Y %H:%M} UTC\n\n"
+        f"--- Candidate ---\n"
+        f"Name: {application.candidate_name}\n"
+        f"Email: {application.email}\n"
+        f"Phone: {application.phone or 'Not provided'}\n"
+        f"Portfolio: {application.portfolio_link or 'Not provided'}\n"
+        f"GitHub: {application.github_link or 'Not provided'}\n"
+        f"LinkedIn: {application.linkedin_link or 'Not provided'}\n"
+        f"Resume attached: {'yes' if application.resume_file else 'no (text only)'}\n\n"
+        f"--- Automated screening ---\n"
+        f"This is a keyword match against the role's required skills, not an "
+        f"assessment of the candidate.\n"
+        f"Fit score: {application.ai_score or 0}%\n"
+        f"Matched skills: {matched}\n"
+        f"Missing skills: {missing}\n"
+        f"Summary: {application.ai_summary or 'No summary produced.'}\n\n"
+        f"--- Cover letter ---\n"
+        f"{application.cover_letter or '(none)'}\n\n"
+        f"Review this application, and send an interview invite, at "
+        f"{frontend}/admin/careers\n"
+    )
+
+    return send_email(recipient, subject, plain_body)
+
+
 def send_guest_editor_invitation(guest_editor, book):
     """Invite someone to guest-edit a specific volume."""
     frontend = _get_frontend_url()
