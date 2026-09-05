@@ -3,31 +3,63 @@
 from django.db import migrations, models
 
 
+def create_table_if_missing(apps, schema_editor):
+    """Create paper_access_audit_log only where it is not already there.
+
+    Same guard as 0002: on servers whose schema was built outside Django the
+    table can already exist, and a bare CreateModel would raise
+    (1050, "Table ... already exists"), aborting the whole migrate run and
+    everything after it. The CreateModel below is state-only; this is the
+    database half.
+    """
+    model = apps.get_model("api", "PaperAccessAuditLog")
+    if model._meta.db_table in schema_editor.connection.introspection.table_names():
+        return
+    schema_editor.create_model(model)
+
+
+def drop_table_if_present(apps, schema_editor):
+    model = apps.get_model("api", "PaperAccessAuditLog")
+    if model._meta.db_table in schema_editor.connection.introspection.table_names():
+        schema_editor.delete_model(model)
+
+
 class Migration(migrations.Migration):
+
+    # MySQL cannot roll back DDL, so Django refuses CREATE TABLE from inside an
+    # atomic migration's RunPython.
+    atomic = False
 
     dependencies = [
         ("api", "0006_reviewer_invitation_queued_fields"),
     ]
 
     operations = [
-        migrations.CreateModel(
-            name="PaperAccessAuditLog",
-            fields=[
-                ("id", models.AutoField(primary_key=True, serialize=False)),
-                ("published_paper_id", models.IntegerField()),
-                ("paper_submission_id", models.IntegerField(blank=True, null=True)),
-                ("journal_id", models.IntegerField(blank=True, null=True)),
-                ("old_access_type", models.CharField(max_length=20)),
-                ("new_access_type", models.CharField(max_length=20)),
-                ("changed_by_id", models.IntegerField(blank=True, null=True)),
-                ("changed_by_email", models.CharField(blank=True, max_length=255, null=True)),
-                ("changed_by_role", models.CharField(blank=True, max_length=50, null=True)),
-                ("changed_at", models.DateTimeField(auto_now_add=True)),
+        # State only — no DDL is emitted here.
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name="PaperAccessAuditLog",
+                    fields=[
+                        ("id", models.AutoField(primary_key=True, serialize=False)),
+                        ("published_paper_id", models.IntegerField()),
+                        ("paper_submission_id", models.IntegerField(blank=True, null=True)),
+                        ("journal_id", models.IntegerField(blank=True, null=True)),
+                        ("old_access_type", models.CharField(max_length=20)),
+                        ("new_access_type", models.CharField(max_length=20)),
+                        ("changed_by_id", models.IntegerField(blank=True, null=True)),
+                        ("changed_by_email", models.CharField(blank=True, max_length=255, null=True)),
+                        ("changed_by_role", models.CharField(blank=True, max_length=50, null=True)),
+                        ("changed_at", models.DateTimeField(auto_now_add=True)),
+                    ],
+                    options={
+                        "db_table": "paper_access_audit_log",
+                        "managed": True,
+                        "ordering": ["-changed_at"],
+                    },
+                ),
             ],
-            options={
-                "db_table": "paper_access_audit_log",
-                "managed": True,
-                "ordering": ["-changed_at"],
-            },
         ),
+        # ...and the DDL, which now sees the model in the migration state.
+        migrations.RunPython(create_table_if_missing, drop_table_if_present),
     ]
