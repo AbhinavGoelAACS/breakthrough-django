@@ -279,12 +279,22 @@
   color: var(--j-on-surface-variant, #414844);
 }
 
+/* Holds the bottom row of the card, so both actions sit on the same
+   baseline no matter how much description a role carries. */
+.jobFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 1.35rem;
+}
+
 .jobLink {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: auto;
-  padding-top: 1.35rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--j-primary, #012d1d);
@@ -294,6 +304,40 @@
 .jobLink:hover {
   color: var(--j-primary, #012d1d);
   text-decoration: underline;
+}
+
+.shareBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--j-on-surface-variant, #414844);
+  background: none;
+  border: 1px solid var(--j-outline-variant, #c1c8c2);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.shareBtn:hover {
+  border-color: var(--j-primary, #012d1d);
+  color: var(--j-primary, #012d1d);
+}
+
+.shareBtn:focus-visible {
+  outline: 2px solid var(--j-primary, #012d1d);
+  outline-offset: 2px;
+}
+
+.shareBtnCopied,
+.shareBtnCopied:hover {
+  background: var(--j-primary-fixed, #c1ecd4);
+  border-color: var(--j-primary-fixed, #c1ecd4);
+  color: #10391f;
 }
 
 /* ── Role detail ── */

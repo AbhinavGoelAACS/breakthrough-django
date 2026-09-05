@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import acsApi from '../../api/apiService';
 import { describeApiError, isNotFound } from '../../utils/apiError';
@@ -18,6 +18,11 @@ export const CareersPage = () => {
   // "no openings" — the reader needs to know it is worth retrying.
   const [error, setError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // Which card is currently showing its "Link copied" confirmation, if any.
+  const [copiedJobId, setCopiedJobId] = useState(null);
+  const copiedTimer = useRef(null);
+
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -40,6 +45,54 @@ export const CareersPage = () => {
     };
     fetchJobs();
   }, [reloadKey]);
+
+  const copyText = async (text) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    // The async clipboard is gated behind a secure context, so keep the old
+    // selection trick for anyone hitting the site over plain http.
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+    document.execCommand('copy');
+    document.body.removeChild(field);
+  };
+
+  const handleShare = async (job) => {
+    const url = `${window.location.origin}/careers/${job.slug}`;
+
+    // On phones the OS share sheet is what people expect; on desktop it is
+    // usually absent, and copying the link is the useful equivalent.
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: job.title,
+          text: `${job.title} at Breakthrough Publishers India`,
+          url,
+        });
+        return;
+      } catch (err) {
+        // Dismissing the sheet is a choice, not a failure — only a real error
+        // is worth falling back for.
+        if (err?.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await copyText(url);
+      setCopiedJobId(job.id);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopiedJobId(null), 2000);
+    } catch (err) {
+      console.error('Error sharing job:', err);
+    }
+  };
 
   return (
     <div className={styles.pageWrapper}>
@@ -140,12 +193,34 @@ export const CareersPage = () => {
                     </div>
                   )}
 
-                  <Link to={`/careers/${job.slug}`} className={styles.jobLink}>
-                    View role and apply
-                    <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>
-                      arrow_forward
-                    </span>
-                  </Link>
+                  <div className={styles.jobFooter}>
+                    <Link to={`/careers/${job.slug}`} className={styles.jobLink}>
+                      View role and apply
+                      <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>
+                        arrow_forward
+                      </span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      className={`${styles.shareBtn} ${
+                        copiedJobId === job.id ? styles.shareBtnCopied : ''
+                      }`}
+                      onClick={() => handleShare(job)}
+                      aria-label={`Share ${job.title}`}
+                    >
+                      <span
+                        className="material-symbols-rounded"
+                        style={{ fontSize: '1rem' }}
+                        aria-hidden="true"
+                      >
+                        {copiedJobId === job.id ? 'check' : 'link'}
+                      </span>
+                      <span aria-live="polite">
+                        {copiedJobId === job.id ? 'Link copied' : 'Share'}
+                      </span>
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
