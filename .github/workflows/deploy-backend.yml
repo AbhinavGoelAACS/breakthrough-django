@@ -52,7 +52,7 @@ jobs:
 
           # Force Passenger to reload the Python app on next request.
           mkdir -p ../deploy_package/tmp
-          date -u +"restart %Y-%m-%dT%H:%M:%SZ" > ../deploy_package/tmp/restart.txt
+          echo "restart ${GITHUB_SHA} $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > ../deploy_package/tmp/restart.txt
           
           # List files to be deployed
           echo "Files to deploy:"
@@ -153,7 +153,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-          ssh -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USERNAME@$SSH_HOST" <<'EOF'
+          ssh -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USERNAME@$SSH_HOST" "GITHUB_SHA='$GITHUB_SHA' bash -s" <<'EOF'
           set -e
           cd /home2/aacsjour/BreakThrough
 
@@ -167,9 +167,44 @@ jobs:
 
           # Force Passenger to reload app code and write a visible marker.
           touch passenger_wsgi.py
-          date -u +"restart %Y-%m-%dT%H:%M:%SZ" > tmp/restart.txt
+          echo "restart ${GITHUB_SHA} $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > tmp/restart.txt
           echo "Backend deployment complete!"
           EOF
+
+      - name: Verify live dev API reflects deployed build
+        run: |
+          set -euo pipefail
+          BASE_URL="https://devapi.breakthroughpublishers.com"
+          EXPECTED_SHA="$GITHUB_SHA"
+
+          marker=""
+          for i in 1 2 3 4 5 6; do
+            marker="$(curl -fsS "$BASE_URL/tmp/restart.txt" || true)"
+            echo "Attempt $i marker: $marker"
+            if printf '%s' "$marker" | grep -q "$EXPECTED_SHA"; then
+              break
+            fi
+            sleep 10
+          done
+
+          if ! printf '%s' "$marker" | grep -q "$EXPECTED_SHA"; then
+            echo "::error::Deployed marker on dev API did not update to this commit ($EXPECTED_SHA)."
+            exit 1
+          fi
+
+          for path in \
+            "/api/v1/books/?skip=0&limit=1" \
+            "/api/v1/book-series/" \
+            "/api/v1/proceedings/downloads/" \
+            "/api/v1/careers/jobs/"
+          do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL$path")"
+            echo "$path -> HTTP $code"
+            if [ "$code" = "404" ]; then
+              echo "::error::Live endpoint still returns 404 after deploy: $BASE_URL$path"
+              exit 1
+            fi
+          done
             
       - name: Deployment Summary
         run: |
