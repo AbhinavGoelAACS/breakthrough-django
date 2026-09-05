@@ -240,8 +240,16 @@ const CareersAdminPage = () => {
     try {
       setSavingJob(true);
       if (editingJobId) {
-        await acsApi.careers.admin.updateJob(editingJobId, payload);
-        success(`“${jobForm.title}” updated.`);
+        const saved = await acsApi.careers.admin.updateJob(editingJobId, payload);
+        // Editing the description, skills, requirements or responsibilities
+        // rescores everyone who applied, so say so rather than letting the
+        // numbers change under the admin without explanation.
+        const rescored = saved?.rescored_applications || 0;
+        success(
+          rescored
+            ? `“${jobForm.title}” updated — ${rescored} ${rescored === 1 ? 'applicant' : 'applicants'} rescored.`
+            : `“${jobForm.title}” updated.`
+        );
       } else {
         delete payload.slug; // let the backend derive it from the title
         await acsApi.careers.admin.createJob(payload);
@@ -555,6 +563,10 @@ const CareersAdminPage = () => {
 
       <section className={styles.block}>
         <h2 className={styles.blockTitle}>Applicants</h2>
+        <p className={styles.blockNote}>
+          Ranked by fit — the closest match to the role’s skills, requirements,
+          responsibilities and description appears first.
+        </p>
 
         <div className={styles.filters} role="group" aria-label="Filter applicants by status">
           {STATUS_FILTERS.map((filter) => (

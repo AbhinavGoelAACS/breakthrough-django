@@ -137,6 +137,12 @@
   color: var(--j-primary, #012d1d);
 }
 
+.blockNote {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--j-on-surface-variant, #414844);
+}
+
 /* ── Filters ── */
 .filters {
   display: flex;

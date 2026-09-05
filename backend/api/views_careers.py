@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import JobApplication, JobPosting, InterviewInvitation
-from .services.career_screening import screen_candidate_for_job
+from .services.career_screening import job_screening_fields, screen_candidate_for_job
 from .services.email_service import (
     notify_editorial_new_application,
     queue_email_task,
@@ -137,11 +137,7 @@ class JobApplicationCreateView(APIView):
             stored_resume_path = default_storage.save(f"{RESUME_DIR}/{resume_file.name}", resume_file)
             extracted_resume_text = self._extract_resume_text(stored_resume_path, resume_file)
 
-        screening = screen_candidate_for_job({
-            "title": job.title,
-            "required_skills": job.required_skills,
-            "experience_level": job.experience_level,
-        }, extracted_resume_text)
+        screening = screen_candidate_for_job(job_screening_fields(job), extracted_resume_text)
 
         application = JobApplication.objects.create(
             job=job,
@@ -265,6 +261,38 @@ class AdminCareerJobsView(APIView):
         return Response({"id": job.id, "slug": job.slug, "message": "Job posting created successfully"}, status=status.HTTP_201_CREATED)
 
 
+def rescore_applications_for_job(job):
+    """Recalculate every applicant's fit for a posting. Returns how many changed.
+
+    Scoring is pure text work with no I/O, so even a few hundred applicants is
+    cheap; the writes are batched into one statement.
+    """
+    fields = job_screening_fields(job)
+    applications = list(job.applications.all())
+    changed = []
+
+    for application in applications:
+        screening = screen_candidate_for_job(fields, application.resume_text or "")
+        if (
+            application.ai_score == screening["score"]
+            and application.ai_summary == screening["summary"]
+            and application.matched_skills == screening["matched_skills"]
+            and application.missing_skills == screening["missing_skills"]
+        ):
+            continue
+        application.ai_score = screening["score"]
+        application.ai_summary = screening["summary"]
+        application.matched_skills = screening["matched_skills"]
+        application.missing_skills = screening["missing_skills"]
+        changed.append(application)
+
+    if changed:
+        JobApplication.objects.bulk_update(
+            changed, ["ai_score", "ai_summary", "matched_skills", "missing_skills"]
+        )
+    return len(changed)
+
+
 class AdminCareerJobDetailView(APIView):
     """GET/PATCH one job posting so an admin can edit a role after it is live."""
 
@@ -276,6 +304,9 @@ class AdminCareerJobDetailView(APIView):
         "title", "location", "department", "description",
         "responsibilities", "requirements", "experience_level",
     )
+
+    # Changing any of these changes what every applicant is measured against.
+    SCORING_FIELDS = ("description", "responsibilities", "requirements", "required_skills")
 
     def _job_payload(self, job):
         return {
@@ -376,9 +407,18 @@ class AdminCareerJobDetailView(APIView):
             return Response({"detail": "No editable fields were supplied"}, status=status.HTTP_400_BAD_REQUEST)
 
         job.save()
+
+        # Editing what the score is built from silently invalidates every
+        # applicant's fit, so they are rescored here rather than left showing a
+        # number calculated against a posting that no longer exists.
+        rescored = 0
+        if any(field in updated for field in self.SCORING_FIELDS):
+            rescored = rescore_applications_for_job(job)
+
         payload = self._job_payload(job)
         payload["message"] = "Job posting updated successfully"
         payload["updated_fields"] = updated
+        payload["rescored_applications"] = rescored
         return Response(payload, status=status.HTTP_200_OK)
 
 
@@ -389,7 +429,8 @@ class AdminCareerApplicationsView(APIView):
         if not request.user or (getattr(request.user, 'role', '') or '').lower() != 'admin':
             return Response({"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
 
-        applications = JobApplication.objects.select_related("job").all().order_by("-created_at")
+        # Best fit first; recency breaks ties so two equal scores stay stable.
+        applications = JobApplication.objects.select_related("job").all().order_by("-ai_score", "-created_at")
         data = []
         for application in applications:
             data.append({
