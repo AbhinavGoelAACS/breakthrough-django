@@ -136,38 +136,40 @@ jobs:
             **/.htaccess
             
       - name: Trigger cPanel Python App Restart (via SSH)
-        if: ${{ env.HAS_SSH_KEY == 'true' }}
         env:
-          HAS_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY != '' }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            cd /home2/aacsjour/BreakThrough
-            
-            # Activate virtual environment if exists
-            if [ -d "venv" ]; then
-              source venv/bin/activate
-            fi
-            
-            # Install/update dependencies
-            pip install -r requirements.txt --quiet
-            
-            # Run migrations
-            python manage.py migrate --no-input
-            
-            # Collect static files
-            python manage.py collectstatic --no-input
-            
-            # Force Passenger to reload app code and write a visible marker.
-            touch tmp/restart.txt
-            touch passenger_wsgi.py
-            date -u +"restart %Y-%m-%dT%H:%M:%SZ" > tmp/restart.txt
-            
-            echo "Backend deployment complete!"
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT || 22 }}
+        run: |
+          if [ -z "${SSH_PRIVATE_KEY}" ]; then
+            echo "SSH_PRIVATE_KEY not configured; skipping SSH restart commands."
+            exit 0
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          ssh -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USERNAME@$SSH_HOST" <<'EOF'
+          set -e
+          cd /home2/aacsjour/BreakThrough
+
+          if [ -d "venv" ]; then
+            . venv/bin/activate
+          fi
+
+          pip install -r requirements.txt --quiet
+          python manage.py migrate --no-input
+          python manage.py collectstatic --no-input
+
+          # Force Passenger to reload app code and write a visible marker.
+          touch passenger_wsgi.py
+          date -u +"restart %Y-%m-%dT%H:%M:%SZ" > tmp/restart.txt
+          echo "Backend deployment complete!"
+          EOF
             
       - name: Deployment Summary
         run: |
