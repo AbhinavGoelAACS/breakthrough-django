@@ -15,6 +15,29 @@ from .models import JobApplication, JobPosting, InterviewInvitation
 from .services.career_screening import screen_candidate_for_job
 from .services.email_service import send_email
 
+# A resume is a user-supplied file written to disk, so extension and size are
+# both checked before anything is saved — the same rule the proposal
+# attachments follow in views_books.py.
+ALLOWED_RESUME_EXTENSIONS = {".pdf", ".doc", ".docx"}
+MAX_RESUME_BYTES = 10 * 1024 * 1024  # 10 MB
+
+RESUME_DIR = "careers/resumes"
+
+
+def resume_url(request, application):
+    """Absolute URL for a stored resume, or None when there is no file.
+
+    Built server-side because the admin portal is served from a different
+    origin than the API, so a relative /media/... path would 404 against the
+    frontend. Rows written before the storage path was recorded hold a bare
+    filename; those are resolved against the resume directory.
+    """
+    stored = (application.resume_file or "").strip()
+    if not stored:
+        return None
+    path = stored if "/" in stored else f"{RESUME_DIR}/{stored}"
+    return request.build_absolute_uri(f"/media/{path}")
+
 
 class CareerJobsListView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -90,10 +113,25 @@ class JobApplicationCreateView(APIView):
         if not resume_file and not resume_text:
             return Response({"detail": "Resume is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        extracted_resume_text = resume_text
+        # Checked before the application row exists, so a rejected file cannot
+        # leave an orphan record behind.
         if resume_file:
-            file_name = default_storage.save(f"careers/resumes/{resume_file.name}", resume_file)
-            extracted_resume_text = self._extract_resume_text(file_name, resume_file)
+            extension = os.path.splitext(resume_file.name)[1].lower()
+            if extension not in ALLOWED_RESUME_EXTENSIONS:
+                return Response({
+                    "detail": f"Invalid file type '{extension}'. Allowed: "
+                              f"{', '.join(sorted(ALLOWED_RESUME_EXTENSIONS))}",
+                }, status=status.HTTP_400_BAD_REQUEST)
+            if resume_file.size > MAX_RESUME_BYTES:
+                return Response({"detail": "Resume is larger than 10 MB."}, status=status.HTTP_400_BAD_REQUEST)
+
+        extracted_resume_text = resume_text
+        stored_resume_path = None
+        if resume_file:
+            # Storage may rename on collision, so keep what it actually wrote —
+            # the original filename alone cannot locate the file again.
+            stored_resume_path = default_storage.save(f"{RESUME_DIR}/{resume_file.name}", resume_file)
+            extracted_resume_text = self._extract_resume_text(stored_resume_path, resume_file)
 
         screening = screen_candidate_for_job({
             "title": job.title,
@@ -106,7 +144,7 @@ class JobApplicationCreateView(APIView):
             candidate_name=candidate_name,
             email=email,
             phone=phone,
-            resume_file=resume_file.name if resume_file else None,
+            resume_file=stored_resume_path,
             resume_text=extracted_resume_text,
             cover_letter=cover_letter,
             portfolio_link=portfolio_link,
@@ -241,6 +279,7 @@ class AdminCareerApplicationsView(APIView):
                 "matched_skills": application.matched_skills,
                 "missing_skills": application.missing_skills,
                 "screening_status": application.screening_status,
+                "has_resume": bool(application.resume_file),
                 "created_at": application.created_at.isoformat(),
             })
         return Response({"applications": data}, status=status.HTTP_200_OK)
@@ -272,11 +311,21 @@ class AdminCareerApplicationDetailView(APIView):
             "matched_skills": application.matched_skills,
             "missing_skills": application.missing_skills,
             "screening_status": application.screening_status,
+            "resume_url": resume_url(request, application),
             "job": {
                 "id": application.job.id,
                 "title": application.job.title,
                 "required_skills": application.job.required_skills,
             },
+            "invitations": [
+                {
+                    "id": invitation.id,
+                    "subject": invitation.subject,
+                    "status": invitation.status,
+                    "sent_at": invitation.sent_at.isoformat() if invitation.sent_at else None,
+                }
+                for invitation in application.interview_invitations.all()
+            ],
             "created_at": application.created_at.isoformat(),
         }, status=status.HTTP_200_OK)
 
@@ -290,8 +339,13 @@ class AdminCareerApplicationDetailView(APIView):
 
         status_value = request.data.get("screening_status")
         if status_value:
+            valid_statuses = {choice for choice, _ in JobApplication.STATUS_CHOICES}
+            if status_value not in valid_statuses:
+                return Response({
+                    "detail": f"Unknown status '{status_value}'. Allowed: {', '.join(sorted(valid_statuses))}",
+                }, status=status.HTTP_400_BAD_REQUEST)
             application.screening_status = status_value
-            application.save()
+            application.save(update_fields=["screening_status", "updated_at"])
 
         return Response({"message": "Application updated successfully", "screening_status": application.screening_status}, status=status.HTTP_200_OK)
 

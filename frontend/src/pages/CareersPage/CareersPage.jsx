@@ -1,111 +1,176 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiService } from '../../api/apiService';
+import acsApi from '../../api/apiService';
+import { describeApiError, isNotFound } from '../../utils/apiError';
 import styles from './CareersPage.module.css';
 
-const CareersPage = () => {
+const EMPLOYMENT_LABELS = {
+  full_time: 'Full-time',
+  part_time: 'Part-time',
+  internship: 'Internship',
+  contract: 'Contract',
+};
+
+export const CareersPage = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // Tracked separately from `jobs` so a failed request is never rendered as
+  // "no openings" — the reader needs to know it is worth retrying.
+  const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    const loadJobs = async () => {
+    const fetchJobs = async () => {
       try {
         setLoading(true);
-        setError('');
-        const data = await apiService.get('/api/v1/careers/jobs', { skipAuth: true });
+        setError(null);
+        const data = await acsApi.careers.listJobs();
         const list = Array.isArray(data) ? data : data?.jobs || [];
         setJobs(list);
       } catch (err) {
-        setError(err.response?.data?.detail || 'Unable to load open roles right now.');
+        // A 404 means there is nothing here, not that something broke.
+        if (!isNotFound(err)) {
+          console.error('Error fetching jobs:', err);
+          setError(describeApiError(err, 'We could not load the open roles.'));
+        }
         setJobs([]);
       } finally {
         setLoading(false);
       }
     };
-
-    loadJobs();
-  }, []);
+    fetchJobs();
+  }, [reloadKey]);
 
   return (
-    <div className={styles.page}>
+    <div className={styles.pageWrapper}>
+      {/* ── Hero — the dark-green band used across the public site ── */}
       <section className={styles.hero}>
         <div className={styles.heroInner}>
           <div>
-            <span className={styles.eyebrow}>Breakthrough Publishers</span>
-            <h1 className={styles.title}>Build the next chapter of scholarly publishing.</h1>
-            <p className={styles.subtitle}>
-              Join a team that is shaping research, editorial operations, and digital publishing across journals,
-              books, and scholarly communities.
+            <span className={styles.heroLabel}>Careers</span>
+            <h1 className={styles.heroTitle}>Work on the record of research.</h1>
+            <div className={styles.heroDivider} />
+            <p className={styles.heroSubtitle}>
+              Breakthrough Publishers India produces peer-reviewed journals, scholarly books and
+              conference proceedings. The people who do that work — editors, reviewers coordinators,
+              production staff and engineers — are what the imprint is.
             </p>
-            <div className={styles.heroActions}>
-              <a href="#open-roles" className={styles.primaryBtn}>View open roles</a>
-              <a href="#how-we-work" className={styles.secondaryBtn}>Why work with us</a>
+            <div className={styles.heroButtons}>
+              <a href="#open-roles" className={styles.btnHeroPrimary}>
+                View open roles
+              </a>
             </div>
           </div>
 
-          <div className={styles.stats}>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>{jobs.length || 0}</span>
-              <span className={styles.statLabel}>Open positions</span>
+          <div className={styles.heroStats}>
+            <div className={styles.heroStat}>
+              <span className={styles.heroStatValue}>
+                {loading || error ? '—' : jobs.length}
+              </span>
+              <span className={styles.heroStatLabel}>
+                {jobs.length === 1 ? 'Open position' : 'Open positions'}
+              </span>
             </div>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>Remote-ready</span>
-              <span className={styles.statLabel}>Flexible collaboration</span>
-            </div>
-            <div className={styles.statCard}>
-              <span className={styles.statValue}>Research-first</span>
-              <span className={styles.statLabel}>Mission-driven culture</span>
+            <div className={styles.heroStat}>
+              <span className={styles.heroStatValue}>Journals · Books</span>
+              <span className={styles.heroStatLabel}>What we publish</span>
             </div>
           </div>
         </div>
       </section>
 
-      <main className={styles.content}>
-        <section id="open-roles">
+      {/* ── Open roles ── */}
+      <section id="open-roles" className={`${styles.section} ${styles.sectionSurface}`}>
+        <div className={styles.sectionInner}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Open roles</h2>
-            <span className={styles.sectionMeta}>{jobs.length} roles currently live</span>
+            <span className={styles.sectionLabel}>Open roles</span>
+            <h2 className={styles.sectionTitle}>Positions we are hiring for</h2>
+            <p className={styles.sectionBody}>
+              Every role below is live. Applications are read by the editorial and operations leads
+              who would work with you.
+            </p>
           </div>
 
           {loading ? (
-            <div className={styles.emptyState}>Loading opportunities...</div>
+            <p className={styles.stateMessage}>Loading open roles…</p>
           ) : error ? (
-            <div className={styles.emptyState}>{error}</div>
+            <div className={styles.loadError}>
+              <span className="material-symbols-rounded">cloud_off</span>
+              <div>
+                <p className={styles.loadErrorTitle}>{error}</p>
+                <button
+                  type="button"
+                  className={styles.retryBtn}
+                  onClick={() => setReloadKey((k) => k + 1)}
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
           ) : jobs.length === 0 ? (
-            <div className={styles.emptyState}>No roles are open right now. Please check back soon.</div>
+            <p className={styles.stateMessage}>
+              No roles are open at the moment. New openings are posted here first.
+            </p>
           ) : (
-            <div className={styles.jobsGrid}>
+            <div className={styles.jobGrid}>
               {jobs.map((job) => (
                 <article key={job.id} className={styles.jobCard}>
-                  <div className={styles.jobHeader}>
+                  <div className={styles.jobHead}>
                     <h3 className={styles.jobTitle}>{job.title}</h3>
-                    <span className={styles.jobType}>{job.employment_type || 'Full Time'}</span>
+                    <span className={styles.jobType}>
+                      {EMPLOYMENT_LABELS[job.employment_type] || 'Full-time'}
+                    </span>
                   </div>
 
-                  <div className={styles.jobMeta}>
-                    <span>{job.location || 'Remote'}</span>
-                    <span className={styles.dot}>•</span>
-                    <span>{job.department || 'Operations'}</span>
-                    <span className={styles.dot}>•</span>
-                    <span>{job.experience_level || 'Mid-Senior'}</span>
-                  </div>
+                  <p className={styles.jobMeta}>
+                    {[job.department, job.location, job.experience_level]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
 
-                  <p className={styles.jobDesc}>{job.description}</p>
+                  {job.description && <p className={styles.jobDesc}>{job.description}</p>}
 
-                  <div className={styles.skillList}>
-                    {(job.required_skills || []).slice(0, 5).map((skill) => (
-                      <span key={skill} className={styles.skillPill}>{skill}</span>
-                    ))}
-                  </div>
+                  {(job.required_skills || []).length > 0 && (
+                    <div className={styles.skillList}>
+                      {job.required_skills.slice(0, 5).map((skill) => (
+                        <span key={skill} className={styles.skillPill}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-                  <Link to={`/careers/${job.slug}`} className={styles.cardLink}>View role and apply</Link>
+                  <Link to={`/careers/${job.slug}`} className={styles.jobLink}>
+                    View role and apply
+                    <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>
+                      arrow_forward
+                    </span>
+                  </Link>
                 </article>
               ))}
             </div>
           )}
-        </section>
-      </main>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerBrand}>
+            <span className={styles.footerName}>Breakthrough Publishers India</span>
+            <p className={styles.footerCopyright}>
+              &copy; {new Date().getFullYear()} Breakthrough Publishers India. Excellence in Academic
+              Publishing.
+            </p>
+          </div>
+          <div className={styles.footerLinks}>
+            <Link to="/journals">Journals</Link>
+            <Link to="/books">Books</Link>
+            <Link to="/privacy-policy">Privacy Policy</Link>
+            <Link to="/terms-of-service">Terms of Service</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

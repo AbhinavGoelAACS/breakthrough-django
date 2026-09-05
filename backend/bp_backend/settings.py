@@ -205,7 +205,13 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Use Whitenoise to serve static files
+# Declaring STORAGES replaces Django's defaults wholesale, so "default" has to
+# be restated here — without it default_storage raises and every user upload
+# that goes through it (career resumes) fails with a 500.
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },

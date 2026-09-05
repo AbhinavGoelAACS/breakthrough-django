@@ -215,8 +215,11 @@ export const acsApi = {
     submitApplication: (formData) => apiService.post('/api/v1/careers/applications', formData),
     admin: {
       listJobs: () => apiService.get('/api/v1/admin/careers/jobs'),
+      createJob: (payload) => apiService.post('/api/v1/admin/careers/jobs', payload),
       listApplications: () => apiService.get('/api/v1/admin/careers/applications'),
       getApplication: (applicationId) => apiService.get(`/api/v1/admin/careers/applications/${applicationId}`),
+      updateApplication: (applicationId, payload) =>
+        apiService.patch(`/api/v1/admin/careers/applications/${applicationId}`, payload),
       sendInvite: (applicationId, payload) => apiService.post(`/api/v1/admin/careers/applications/${applicationId}/invite`, payload),
     },
   },

@@ -1,7 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { apiService } from '../../api/apiService';
+import acsApi from '../../api/apiService';
+import { describeApiError } from '../../utils/apiError';
 import styles from './CareersPage.module.css';
+
+const EMPLOYMENT_LABELS = {
+  full_time: 'Full-time',
+  part_time: 'Part-time',
+  internship: 'Internship',
+  contract: 'Contract',
+};
 
 const defaultForm = {
   candidate_name: '',
@@ -18,32 +26,31 @@ const CareerDetailsPage = () => {
   const { slug } = useParams();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // Kept apart from submitError so a failed application never replaces the
+  // role the candidate is still reading.
+  const [loadError, setLoadError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [resumeFile, setResumeFile] = useState(null);
   const [submission, setSubmission] = useState(null);
 
   useEffect(() => {
-    const loadJob = async () => {
+    const fetchJob = async () => {
       try {
         setLoading(true);
-        setError('');
-        const data = await apiService.get(`/api/v1/careers/jobs/${slug}`, { skipAuth: true });
+        setLoadError(null);
+        const data = await acsApi.careers.getJob(slug);
         setJob(data);
       } catch (err) {
-        setError(err.response?.data?.detail || 'This role is not available right now.');
+        console.error('Error fetching job:', err);
+        setLoadError(describeApiError(err, 'This role is not open at the moment.'));
       } finally {
         setLoading(false);
       }
     };
-
-    if (slug) {
-      loadJob();
-    }
+    if (slug) fetchJob();
   }, [slug]);
-
-  const requiredSkills = useMemo(() => job?.required_skills || [], [job]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -54,8 +61,14 @@ const CareerDetailsPage = () => {
     event.preventDefault();
     if (!job) return;
 
+    if (!resumeFile && !form.resume_text.trim()) {
+      setSubmitError('Attach a resume file or paste your experience below — one of the two.');
+      return;
+    }
+
     try {
       setSubmitting(true);
+      setSubmitError(null);
       const payload = new FormData();
       payload.append('job_id', String(job.id));
       Object.entries(form).forEach(([key, value]) => {
@@ -63,136 +76,251 @@ const CareerDetailsPage = () => {
       });
       if (resumeFile) payload.append('resume', resumeFile);
 
-      const data = await apiService.post('/api/v1/careers/applications', payload);
+      const data = await acsApi.careers.submitApplication(payload);
       setSubmission(data);
       setForm(defaultForm);
       setResumeFile(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Unable to submit your application.');
+      setSubmitError(describeApiError(err, 'We could not submit your application.'));
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return <div className={styles.pageContainer}><div className={styles.emptyState}>Loading role details...</div></div>;
+    return (
+      <div className={styles.pageWrapper}>
+        <div className={styles.detailInner}>
+          <p className={styles.stateMessage}>Loading role…</p>
+        </div>
+      </div>
+    );
   }
 
-  if (error || !job) {
+  if (loadError || !job) {
     return (
-      <div className={styles.pageContainer}>
-        <div className={styles.emptyState}>{error || 'Role not found.'}</div>
-        <div style={{ marginTop: 18, textAlign: 'center' }}>
-          <Link to="/careers" className={styles.primaryBtn}>Back to careers</Link>
+      <div className={styles.pageWrapper}>
+        <div className={styles.detailInner}>
+          <p className={styles.stateMessage}>{loadError || 'We could not find that role.'}</p>
+          <div className={styles.centreAction}>
+            <Link to="/careers" className={styles.btnPrimary}>
+              Back to all roles
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.pageContainer}>
-      <div style={{ marginBottom: 20 }}>
-        <Link to="/careers" className={styles.smallBtn}>← Back to careers</Link>
-      </div>
+    <div className={styles.pageWrapper}>
+      {/* ── Role header, on the same dark-green band as the careers list ── */}
+      <section className={styles.detailHero}>
+        <div className={styles.detailHeroInner}>
+          <Link to="/careers" className={styles.backLink}>
+            <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>
+              arrow_back
+            </span>
+            All roles
+          </Link>
+          <span className={styles.heroLabel}>{job.department || 'Breakthrough Publishers'}</span>
+          <h1 className={styles.detailTitle}>{job.title}</h1>
+          <div className={styles.heroDivider} />
+          <p className={styles.detailMetaLine}>
+            {[
+              job.location,
+              EMPLOYMENT_LABELS[job.employment_type] || 'Full-time',
+              job.experience_level,
+            ]
+              .filter(Boolean)
+              .join('  ·  ')}
+          </p>
+        </div>
+      </section>
 
-      <div className={styles.gridTwo}>
-        <section className={styles.detailCard}>
-          <span className={styles.eyebrow} style={{ color: '#0f172a', borderColor: '#dbeafe', background: '#eff6ff' }}>{job.department || 'Operations'}</span>
-          <h2 style={{ marginTop: 18 }}>{job.title}</h2>
+      <section className={`${styles.section} ${styles.sectionSurface}`}>
+        <div className={styles.detailGrid}>
+          {/* ── The role ── */}
+          <div className={styles.detailMain}>
+            {job.description && (
+              <div className={styles.detailBlock}>
+                <h2 className={styles.detailBlockTitle}>About the role</h2>
+                <p className={styles.prose}>{job.description}</p>
+              </div>
+            )}
 
-          <div className={styles.metaList}>
-            <div className={styles.metaItem}><span className={styles.label}>Location</span>{job.location || 'Remote'}</div>
-            <div className={styles.metaItem}><span className={styles.label}>Experience</span>{job.experience_level || 'Mid-Senior'}</div>
-            <div className={styles.metaItem}><span className={styles.label}>Employment Type</span>{job.employment_type || 'Full Time'}</div>
+            {job.responsibilities && (
+              <div className={styles.detailBlock}>
+                <h2 className={styles.detailBlockTitle}>Responsibilities</h2>
+                <p className={styles.prose}>{job.responsibilities}</p>
+              </div>
+            )}
+
+            {job.requirements && (
+              <div className={styles.detailBlock}>
+                <h2 className={styles.detailBlockTitle}>What we are looking for</h2>
+                <p className={styles.prose}>{job.requirements}</p>
+              </div>
+            )}
+
+            {(job.required_skills || []).length > 0 && (
+              <div className={styles.detailBlock}>
+                <h2 className={styles.detailBlockTitle}>Skills</h2>
+                <div className={styles.skillList}>
+                  {job.required_skills.map((skill) => (
+                    <span key={skill} className={styles.skillPill}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div style={{ marginTop: 28 }}>
-            <h3>Role overview</h3>
-            <p className={styles.jobDesc}>{job.description}</p>
+          {/* ── Apply ── */}
+          <aside className={styles.applyCard} id="apply">
+            <h2 className={styles.applyTitle}>Apply for this role</h2>
+
+            {submission ? (
+              <div className={styles.successBox}>
+                <p className={styles.successTitle}>Application received.</p>
+                <p className={styles.successBody}>
+                  Thank you, {submission.candidate_name || 'and welcome'}. Your application for{' '}
+                  {job.title} has been logged and will be read by our hiring team. We will be in
+                  touch at {submission.email || 'the address you gave'}.
+                </p>
+                <Link to="/careers" className={styles.btnSecondary}>
+                  Back to all roles
+                </Link>
+              </div>
+            ) : (
+              <form className={styles.form} onSubmit={handleSubmit}>
+                <div className={styles.formRow}>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Full name *</span>
+                    <input
+                      className={styles.input}
+                      name="candidate_name"
+                      value={form.candidate_name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Email *</span>
+                    <input
+                      className={styles.input}
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+                </div>
+
+                <div className={styles.formRow}>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Phone</span>
+                    <input
+                      className={styles.input}
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Portfolio or website</span>
+                    <input
+                      className={styles.input}
+                      name="portfolio_link"
+                      value={form.portfolio_link}
+                      onChange={handleChange}
+                    />
+                  </label>
+                </div>
+
+                <div className={styles.formRow}>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>GitHub</span>
+                    <input
+                      className={styles.input}
+                      name="github_link"
+                      value={form.github_link}
+                      onChange={handleChange}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>LinkedIn</span>
+                    <input
+                      className={styles.input}
+                      name="linkedin_link"
+                      value={form.linkedin_link}
+                      onChange={handleChange}
+                    />
+                  </label>
+                </div>
+
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Resume</span>
+                  <input
+                    className={styles.fileField}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                  />
+                  <span className={styles.hint}>PDF, DOC or DOCX, up to 10 MB.</span>
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Or paste your experience</span>
+                  <textarea
+                    className={styles.textarea}
+                    name="resume_text"
+                    value={form.resume_text}
+                    onChange={handleChange}
+                    placeholder="Your background, the work you have done, and the skills you would bring."
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Cover letter</span>
+                  <textarea
+                    className={styles.textarea}
+                    name="cover_letter"
+                    value={form.cover_letter}
+                    onChange={handleChange}
+                    placeholder="Why this role, and why Breakthrough."
+                  />
+                </label>
+
+                {submitError && <p className={styles.formError}>{submitError}</p>}
+
+                <button type="submit" className={styles.btnPrimary} disabled={submitting}>
+                  {submitting ? 'Submitting…' : 'Submit application'}
+                </button>
+              </form>
+            )}
+          </aside>
+        </div>
+      </section>
+
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerBrand}>
+            <span className={styles.footerName}>Breakthrough Publishers India</span>
+            <p className={styles.footerCopyright}>
+              &copy; {new Date().getFullYear()} Breakthrough Publishers India. Excellence in Academic
+              Publishing.
+            </p>
           </div>
-
-          <div style={{ marginTop: 26 }}>
-            <h3>Key responsibilities</h3>
-            <p className={styles.jobDesc}>{job.responsibilities || 'You will support high-impact publishing operations, cross-functional collaboration, and continuous improvement.'}</p>
+          <div className={styles.footerLinks}>
+            <Link to="/careers">All roles</Link>
+            <Link to="/privacy-policy">Privacy Policy</Link>
+            <Link to="/terms-of-service">Terms of Service</Link>
           </div>
-
-          <div style={{ marginTop: 26 }}>
-            <h3>Required skills</h3>
-            <div className={styles.skillList}>
-              {requiredSkills.map((skill) => (
-                <span key={skill} className={styles.skillPill}>{skill}</span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <aside className={styles.formCard}>
-          <h3>Apply for this role</h3>
-          <form className={styles.form} onSubmit={handleSubmit}>
-            <div className={styles.row}>
-              <div>
-                <label className={styles.label}>Full name</label>
-                <input className={styles.input} name="candidate_name" value={form.candidate_name} onChange={handleChange} required />
-              </div>
-              <div>
-                <label className={styles.label}>Email</label>
-                <input className={styles.input} type="email" name="email" value={form.email} onChange={handleChange} required />
-              </div>
-            </div>
-
-            <div className={styles.row}>
-              <div>
-                <label className={styles.label}>Phone</label>
-                <input className={styles.input} name="phone" value={form.phone} onChange={handleChange} />
-              </div>
-              <div>
-                <label className={styles.label}>Portfolio</label>
-                <input className={styles.input} name="portfolio_link" value={form.portfolio_link} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div className={styles.row}>
-              <div>
-                <label className={styles.label}>GitHub</label>
-                <input className={styles.input} name="github_link" value={form.github_link} onChange={handleChange} />
-              </div>
-              <div>
-                <label className={styles.label}>LinkedIn</label>
-                <input className={styles.input} name="linkedin_link" value={form.linkedin_link} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <label className={styles.label}>Resume upload</label>
-              <input className={styles.fileField} type="file" accept=".pdf,.doc,.docx" onChange={(e) => setResumeFile(e.target.files?.[0] || null)} />
-            </div>
-
-            <div>
-              <label className={styles.label}>Resume text (optional if file uploaded)</label>
-              <textarea className={styles.textarea} name="resume_text" value={form.resume_text} onChange={handleChange} placeholder="Paste a summary of your experience, skills, and achievements..." />
-            </div>
-
-            <div>
-              <label className={styles.label}>Cover letter</label>
-              <textarea className={styles.textarea} name="cover_letter" value={form.cover_letter} onChange={handleChange} />
-            </div>
-
-            <button type="submit" className={styles.submitBtn} disabled={submitting}>
-              {submitting ? 'Submitting...' : 'Submit application'}
-            </button>
-          </form>
-
-          {submission && (
-            <div className={styles.successBox}>
-              <strong>Application submitted successfully.</strong>
-              <div style={{ marginTop: 8 }}>AI score: <span className={styles.scorePill}>{submission.ai_score || 0}%</span></div>
-              <div style={{ marginTop: 8 }}>{submission.ai_summary || 'Your profile has been added to review.'}</div>
-            </div>
-          )}
-
-          {error && !submission && <div className={styles.successBox} style={{ background: '#fff7ed', borderColor: '#fdba74', color: '#9a4d00' }}>{error}</div>}
-        </aside>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 };
