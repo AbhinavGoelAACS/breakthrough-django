@@ -265,21 +265,39 @@ jobs:
           while IFS= read -r dir; do
             [ -n "$dir" ] || continue
             printf -- '--- %s : ' "$dir"
+
+            served=""
+            # Probe #1: docroot/deploy-probe.txt
             run_ftp "put -O \"$dir\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-              echo "not writable over FTP"
-              results="${results}${dir} : not writable"$'\n'
-              continue
+            if [ $? -eq 0 ]; then
+              sleep 2
+              body="$(curl -sf --max-time 20 "$SITE_URL/deploy-probe.txt" 2>/dev/null || true)"
+              run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1 || true
+              if [ "$body" = "$token" ]; then
+                served="root"
+              fi
             fi
-            sleep 3
-            body="$(curl -sf --max-time 20 "$SITE_URL/deploy-probe.txt" 2>/dev/null)"
-            run_ftp "rm -f \"${dir}deploy-probe.txt\"" >/dev/null 2>&1
-            if [ "$body" = "$token" ]; then
-              echo "SERVED at $SITE_URL — this is the deploy directory"
-              results="${results}${dir} : SERVED"$'\n'
+
+            # Probe #2: docroot/tmp/deploy-probe.txt
+            if [ -z "$served" ]; then
+              run_ftp "put -O \"${dir}tmp/\" probe.txt -o deploy-probe.txt" >/dev/null 2>&1
+              if [ $? -eq 0 ]; then
+                sleep 2
+                body="$(curl -sf --max-time 20 "$SITE_URL/tmp/deploy-probe.txt" 2>/dev/null || true)"
+                run_ftp "rm -f \"${dir}tmp/deploy-probe.txt\"" >/dev/null 2>&1 || true
+                if [ "$body" = "$token" ]; then
+                  served="tmp"
+                fi
+              fi
+            fi
+
+            if [ -n "$served" ]; then
+              echo "SERVED at $SITE_URL ($served probe) — this is the deploy directory"
+              results="${results}${dir} : SERVED via ${served}"$'\n'
               found="$dir"
               break
             fi
+
             echo "written, but not served"
             results="${results}${dir} : written, not served"$'\n'
           done <<< "$candidates"
