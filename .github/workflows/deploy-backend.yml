@@ -135,42 +135,6 @@ jobs:
             **/.DS_Store
             **/.htaccess
             
-      - name: Trigger cPanel Python App Restart (via SSH)
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_PORT: ${{ secrets.SSH_PORT || 22 }}
-        run: |
-          if [ -z "${SSH_PRIVATE_KEY}" ]; then
-            echo "SSH_PRIVATE_KEY not configured; skipping SSH restart commands."
-            exit 0
-          fi
-
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-
-          ssh -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USERNAME@$SSH_HOST" "GITHUB_SHA='$GITHUB_SHA' bash -s" <<'EOF'
-          set -e
-          cd /home2/aacsjour/BreakThrough
-
-          if [ -d "venv" ]; then
-            . venv/bin/activate
-          fi
-
-          pip install -r requirements.txt --quiet
-          python manage.py migrate --no-input
-          python manage.py collectstatic --no-input
-
-          # Force Passenger to reload app code and write a visible marker.
-          touch passenger_wsgi.py
-          echo "restart ${GITHUB_SHA} $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > tmp/restart.txt
-          echo "Backend deployment complete!"
-          EOF
-
       - name: Verify live dev API reflects deployed build
         run: |
           set -euo pipefail
