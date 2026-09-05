@@ -23,6 +23,12 @@ gunicorn>=21.2.0
 #phpmyadmin
 mysqlclient>=2.2.4
 
+# Resume parsing for careers screening. Without these every PDF resume scored
+# ~1% because the text was never extracted. Installing them on cPanel needs
+# Setup Python App > Run Pip Install — the deploy only uploads files.
+pypdf>=4.0.0
+python-docx>=1.1.0
+
 # NLP / Machine Learning (for recommendation systems)
 scikit-learn>=1.0
 numpy>=1.21  # Deployment trigger

@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 
 from .models import JobApplication, JobPosting, InterviewInvitation
 from .services.career_screening import job_screening_fields, screen_candidate_for_job
+from .services.resume_text import extract_resume_text
 from .services.email_service import (
     notify_editorial_new_application,
     queue_email_task,
@@ -135,7 +136,11 @@ class JobApplicationCreateView(APIView):
             # Storage may rename on collision, so keep what it actually wrote —
             # the original filename alone cannot locate the file again.
             stored_resume_path = default_storage.save(f"{RESUME_DIR}/{resume_file.name}", resume_file)
-            extracted_resume_text = self._extract_resume_text(stored_resume_path, resume_file)
+            # Falls back to whatever the candidate pasted if the file cannot be
+            # read, rather than to placeholder prose that would then be scored.
+            extracted_resume_text = (
+                extract_resume_text(default_storage.path(stored_resume_path)) or resume_text
+            )
 
         screening = screen_candidate_for_job(job_screening_fields(job), extracted_resume_text)
 
@@ -172,40 +177,6 @@ class JobApplicationCreateView(APIView):
             "missing_skills": application.missing_skills,
             "message": "Application submitted successfully",
         }, status=status.HTTP_201_CREATED)
-
-    def _extract_resume_text(self, file_name, file_obj):
-        file_extension = os.path.splitext(file_name)[1].lower()
-        text = ""
-
-        try:
-            if file_extension == ".pdf":
-                try:
-                    import pypdf
-                    pdf_path = default_storage.path(file_name)
-                    reader = pypdf.PdfReader(pdf_path)
-                    pages = []
-                    for page in reader.pages:
-                        pages.append(page.extract_text() or "")
-                    text = "\n".join(pages)
-                except Exception:
-                    text = ""
-            elif file_extension in [".doc", ".docx"]:
-                try:
-                    from docx import Document
-                    file_path = default_storage.path(file_name)
-                    doc = Document(file_path)
-                    paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
-                    text = "\n".join(paragraphs)
-                except Exception:
-                    text = ""
-            else:
-                text = ""
-        except Exception:
-            text = ""
-
-        if not text:
-            return "Resume uploaded. Manual review required."
-        return text
 
 
 class AdminCareerJobsView(APIView):
